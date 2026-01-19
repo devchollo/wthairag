@@ -1,3 +1,5 @@
+import { use } from 'react';
+
 const legalContent = {
     terms: `
     # Terms of Service
@@ -14,11 +16,14 @@ const legalContent = {
   `,
 };
 
-export default function LegalPage({ type }: { type: 'terms' | 'privacy' }) {
+export default function LegalPage(props: { searchParams: Promise<{ type?: string }> }) {
+    const searchParams = use(props.searchParams);
+    const type = (searchParams.type as 'terms' | 'privacy') || 'terms';
+
     return (
         <div className="container section-padding">
             <div className="glass card" style={{ padding: '48px' }}>
-                <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
+                <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', color: 'var(--foreground)' }}>
                     {legalContent[type as keyof typeof legalContent]}
                 </pre>
             </div>
