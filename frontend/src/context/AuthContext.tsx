@@ -2,30 +2,46 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
+interface Workspace {
+    name: string;
+    slug: string;
+}
+
+interface User {
+    name: string;
+    email: string;
+    avatar?: string;
+}
+
 interface AuthContextType {
-    user: any;
-    workspaces: any[];
-    login: (data: any) => void;
+    user: User | null;
+    workspaces: Workspace[];
+    login: (data: { user: User; token: string; memberships: { workspaceId: Workspace }[] }) => void;
     logout: () => void;
-    currentWorkspace: any;
-    setCurrentWorkspace: (workspace: any) => void;
+    currentWorkspace: Workspace | null;
+    setCurrentWorkspace: (workspace: Workspace | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<any>(null);
-    const [workspaces, setWorkspaces] = useState<any[]>([]);
-    const [currentWorkspace, setCurrentWorkspace] = useState<any>(null);
+    const [user, setUser] = useState<User | null>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('user');
+            return saved ? JSON.parse(saved) : null;
+        }
+        return null;
+    });
+    const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+    const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
 
     useEffect(() => {
-        const savedUser = localStorage.getItem('user');
-        if (savedUser) setUser(JSON.parse(savedUser));
+        // Initial workspaces load could go here if persistent
     }, []);
 
-    const login = (data: any) => {
+    const login = (data: { user: User; token: string; memberships: { workspaceId: Workspace }[] }) => {
         setUser(data.user);
-        setWorkspaces(data.memberships.map((m: any) => m.workspaceId));
+        setWorkspaces(data.memberships.map((m) => m.workspaceId));
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('token', data.token);
     };

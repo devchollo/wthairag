@@ -3,9 +3,15 @@
 import { useState } from 'react';
 import styles from './tool-detail.module.css';
 
+interface DNSResults {
+    A?: string[];
+    MX?: { exchange: string; priority: number }[];
+    aiReport: string;
+}
+
 export default function DNSChecker() {
     const [domain, setDomain] = useState('');
-    const [results, setResults] = useState<any>(null);
+    const [results, setResults] = useState<DNSResults | null>(null);
     const [loading, setLoading] = useState(false);
 
     const handleLookup = async () => {

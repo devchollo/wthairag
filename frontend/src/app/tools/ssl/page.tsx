@@ -3,9 +3,16 @@
 import { useState } from 'react';
 import styles from '../dns/tool-detail.module.css';
 
+interface SSLResults {
+    status: string;
+    expiry: string;
+    issuer: string;
+    aiReport: string;
+}
+
 export default function SSLAnalyzer() {
     const [domain, setDomain] = useState('');
-    const [results, setResults] = useState<any>(null);
+    const [results, setResults] = useState<SSLResults | null>(null);
     const [loading, setLoading] = useState(false);
 
     const handleLookup = async () => {

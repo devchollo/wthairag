@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import styles from './workspace.module.css';
 
 interface Document {
     id: string;
@@ -11,7 +10,7 @@ interface Document {
 }
 
 export default function KnowledgeBase() {
-    const [documents, setDocuments] = useState<Document[]>([
+    const [documents] = useState<Document[]>([
         { id: '1', title: 'Company Handbook.pdf', type: 'PDF', date: '2026-01-15' },
         { id: '2', title: 'Q3 Financials.csv', type: 'CSV', date: '2026-01-10' },
     ]);
