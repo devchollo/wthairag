@@ -1,4 +1,4 @@
-export const legalContent = {
+const legalContent = {
     terms: `
     # Terms of Service
     Welcome to WorkToolsHub. By using our platform, you agree to...
