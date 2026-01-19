@@ -4,8 +4,8 @@ import { AuthProvider } from "@/context/AuthContext";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "WorkToolsHub — Public Advanced Tools & AI RAG Workspace",
-  description: "Advanced Web Tools and a Privacy-First AI RAG Workspace. No login required for tools.",
+  title: "WorkToolsHub — Advanced Public Tools & AI Workspace",
+  description: "A unified suite of high-performance public tools and a private AI RAG workspace.",
 };
 
 export default function RootLayout({
@@ -21,20 +21,20 @@ export default function RootLayout({
             <div className="container nav-content">
               <Link href="/" className="logo">WorkToolsHub</Link>
               <div className="nav-links">
-                <Link href="/tools">Tools</Link>
-                <Link href="/workspace">Workspace</Link>
-                <Link href="/donate">Donate</Link>
+                <Link href="/tools">tools</Link>
+                <Link href="/workspace">workspace</Link>
+                <Link href="/donate">donate</Link>
               </div>
               <div className="nav-actions">
-                <Link href="/login" className="btn-login">Sign In</Link>
+                <Link href="/login" className="btn-login">sign in</Link>
               </div>
             </div>
           </nav>
           <main>{children}</main>
           <footer className="section-padding">
             <div className="container">
-              <p style={{ textAlign: 'center', fontSize: '14px', opacity: 0.6 }}>
-                © 2026 WorkToolsHub. Built with Privacy in Mind.
+              <p style={{ textAlign: 'center', fontSize: '13px', opacity: 0.5, letterSpacing: '-0.02em' }}>
+                © 2026 worktoolshub. designed for privacy.
               </p>
             </div>
           </footer>
@@ -43,4 +43,5 @@ export default function RootLayout({
     </html>
   );
 }
+
 
