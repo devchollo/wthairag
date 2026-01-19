@@ -12,7 +12,7 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
                 <div className={styles.sidebarHeader}>
                     <select
                         value={currentWorkspace?.slug}
-                        onChange={(e) => setCurrentWorkspace(workspaces.find(w => w.slug === e.target.value))}
+                        onChange={(e) => setCurrentWorkspace(workspaces.find(w => w.slug === e.target.value) || null)}
                         className={styles.tenantSelector}
                     >
                         {workspaces.map(w => (
