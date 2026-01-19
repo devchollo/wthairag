@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "WorkToolsHub — Public Advanced Tools & AI RAG Workspace",
@@ -16,23 +17,25 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <AuthProvider>
-          <nav className="glass sticky-nav">
+          <nav className="sticky-nav">
             <div className="container nav-content">
-              <div className="logo">WorkToolsHub</div>
+              <Link href="/" className="logo">WorkToolsHub</Link>
               <div className="nav-links">
-                <a href="/tools">Tools</a>
-                <a href="/workspace">Workspace</a>
-                <a href="/donate">Donate</a>
+                <Link href="/tools">Tools</Link>
+                <Link href="/workspace">Workspace</Link>
+                <Link href="/donate">Donate</Link>
               </div>
               <div className="nav-actions">
-                <button className="btn-primary">Get Started</button>
+                <Link href="/login" className="btn-login">Sign In</Link>
               </div>
             </div>
           </nav>
           <main>{children}</main>
-          <footer className="footer section-padding">
+          <footer className="section-padding">
             <div className="container">
-              <p>© 2026 WorkToolsHub. Built with Privacy in Mind.</p>
+              <p style={{ textAlign: 'center', fontSize: '14px', opacity: 0.6 }}>
+                © 2026 WorkToolsHub. Built with Privacy in Mind.
+              </p>
             </div>
           </footer>
         </AuthProvider>
@@ -40,3 +43,4 @@ export default function RootLayout({
     </html>
   );
 }
+
