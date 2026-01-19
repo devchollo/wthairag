@@ -3,8 +3,15 @@
 import { useState } from 'react';
 import styles from '../workspace.module.css';
 
+interface Alert {
+    id: string;
+    title: string;
+    severity: string;
+    status: 'open' | 'resolved';
+}
+
 export default function AlertsPage() {
-    const [alerts, setAlerts] = useState([
+    const [alerts, setAlerts] = useState<Alert[]>([
         { id: '1', title: 'Unauthorized Login Attempt', severity: 'high', status: 'open' },
         { id: '2', title: 'Server Memory Spike', severity: 'medium', status: 'resolved' },
     ]);
