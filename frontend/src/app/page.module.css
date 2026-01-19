@@ -1,87 +1,128 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 80px;
+  gap: 120px;
 }
 
 .heroContent {
   text-align: center;
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
 }
 
 .headline {
-  font-size: 64px;
-  line-height: 1.1;
+  font-size: clamp(40px, 8vw, 72px);
+  line-height: 1.05;
   margin-bottom: 24px;
+  background: linear-gradient(180deg, var(--foreground) 0%, rgba(var(--accent-rgb), 0.8) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .subheadline {
-  font-size: 24px;
-  margin-bottom: 40px;
+  font-size: clamp(18px, 4vw, 24px);
+  margin-bottom: 48px;
+  color: var(--secondary);
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .ctas {
   display: flex;
-  gap: 16px;
+  gap: 20px;
   justify-content: center;
 }
 
-.btn {
-  padding: 16px 32px;
-  border-radius: 40px;
-  font-weight: 600;
-  transition: transform 0.2s, opacity 0.2s;
-}
-
-.btn:hover {
-  transform: scale(1.02);
-}
-
-.btnPrimary {
-  background: var(--accent);
-  color: white;
-}
-
-.btnSecondary {
-  background: var(--tertiary);
-  color: var(--foreground);
-}
-
 .sectionTitle {
-  font-size: 32px;
-  margin-bottom: 40px;
+  font-size: 40px;
+  margin-bottom: 60px;
   text-align: center;
+  letter-spacing: -0.04em;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 32px;
 }
 
 .card {
-  padding: 32px;
+  padding: 40px;
   border-radius: var(--radius);
-  transition: transform 0.3s;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card:hover {
-  transform: translateY(-8px);
+  transform: translateY(-12px) scale(1.02);
+  background: rgba(var(--accent-rgb), 0.03);
+  border-color: rgba(var(--accent-rgb), 0.2);
+}
+
+.card h3 {
+  font-size: 24px;
+  color: var(--foreground);
+}
+
+.card p {
+  font-size: 16px;
 }
 
 .badge {
-  display: inline-block;
-  margin-top: 16px;
-  padding: 4px 12px;
-  background: rgba(0, 122, 255, 0.1);
+  display: inline-flex;
+  align-items: center;
+  margin-top: auto;
+  padding: 6px 14px;
+  background: rgba(var(--accent-rgb), 0.1);
   color: var(--accent);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-  border-radius: 20px;
+  border-radius: 30px;
+  width: fit-content;
 }
 
 .badge.dark {
   background: var(--foreground);
   color: var(--background);
+}
+
+/* Privacy Section */
+.privacySection {
+  background: radial-gradient(circle at top, rgba(var(--accent-rgb), 0.05) 0%, transparent 70%);
+}
+
+.privacyCard {
+  padding: 60px;
+  border-radius: 32px;
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.privacyCard h2 {
+  font-size: 32px;
+  margin-bottom: 24px;
+}
+
+.privacyCard p {
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+
+.privacyCard strong {
+  color: var(--accent);
+}
+
+@media (max-width: 768px) {
+  .page {
+    gap: 80px;
+  }
+
+  .ctas {
+    flex-direction: column;
+  }
 }
