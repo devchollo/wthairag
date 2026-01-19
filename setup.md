@@ -38,8 +38,24 @@ This guide outlines the environment variables and platform settings required for
 
 ---
 
+## 🛠 Local Development
+To prevent Vercel from getting confused by the monorepo structure, the root `package.json` has been removed. Use these commands:
+
+### Running Frontend
+```bash
+cd frontend && npm install && npm run dev
+```
+
+### Running Backend
+```bash
+cd backend && npm install && npm run dev
+```
+
+---
+
 ### ❓ Troubleshooting the 404 Error
-If you see a 404 after deployment:
-1. **Wrong Root Directory**: This is a monorepo. You MUST tell Vercel/Render that the apps are in the `frontend` and `backend` folders respectively.
-2. **Missing Build Scripts**: ensure the backend has `"build": "tsc"` and `"start": "node dist/server.js"` in its `package.json` (I have just added these for you).
-3. **Environment Variables**: Ensure `NEXT_PUBLIC_API_URL` is set on Vercel, or the frontend won't know where to send requests.
+If you still see a 404 after deployment:
+1. **GitHub Sync**: Ensure the deletion of the root `package.json` has been pushed to GitHub.
+2. **Vercel Settings**: Deep check **Override Output Directory**. It should be **DISABLED** (Off). Vercel handles the output automatically for Next.js.
+3. **Invalid Next Version**: I have corrected the `frontend/package.json` to use `next@15.1.4`. The previous version `16.x` was likely causing the build artifacts to be misrouted.
+4. **Clean Redeploy**: Go to Vercel Deployments > [...] > **Redeploy** and ensuring **"Use existing Build Cache"** is checked as **OFF**.
