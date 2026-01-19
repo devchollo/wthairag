@@ -1,0 +1,87 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 80px;
+}
+
+.heroContent {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.headline {
+  font-size: 64px;
+  line-height: 1.1;
+  margin-bottom: 24px;
+}
+
+.subheadline {
+  font-size: 24px;
+  margin-bottom: 40px;
+}
+
+.ctas {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.btn {
+  padding: 16px 32px;
+  border-radius: 40px;
+  font-weight: 600;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.btn:hover {
+  transform: scale(1.02);
+}
+
+.btnPrimary {
+  background: var(--accent);
+  color: white;
+}
+
+.btnSecondary {
+  background: var(--tertiary);
+  color: var(--foreground);
+}
+
+.sectionTitle {
+  font-size: 32px;
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.card {
+  padding: 32px;
+  border-radius: var(--radius);
+  transition: transform 0.3s;
+}
+
+.card:hover {
+  transform: translateY(-8px);
+}
+
+.badge {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 4px 12px;
+  background: rgba(0, 122, 255, 0.1);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 20px;
+}
+
+.badge.dark {
+  background: var(--foreground);
+  color: var(--background);
+}

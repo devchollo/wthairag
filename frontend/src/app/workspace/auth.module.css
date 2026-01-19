@@ -1,0 +1,37 @@
+.authCard {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 48px;
+    border-radius: var(--radius);
+    text-align: center;
+}
+
+.authCard h1 {
+    margin-bottom: 12px;
+}
+
+.authCard p {
+    margin-bottom: 32px;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form input {
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid var(--card-border);
+    background: var(--tertiary);
+    color: var(--foreground);
+    font-size: 16px;
+}
+
+.toggle {
+    margin-top: 24px;
+    color: var(--accent);
+    font-size: 14px;
+    font-weight: 500;
+}
