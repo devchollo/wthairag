@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
 import { Github, Twitter, Linkedin, Terminal } from "lucide-react";
+import CookieBanner from "@/components/CookieBanner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -59,6 +60,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-white">
         <AuthProvider>
           <Navbar />
+          <CookieBanner />
           <main className="min-h-[calc(100vh-400px)]">{children}</main>
 
           <footer className="border-t border-border-light bg-surface-light/30 pt-20 pb-12">
@@ -85,7 +87,9 @@ export default function RootLayout({
                   <ul className="space-y-4 text-[13px] font-bold text-text-muted">
                     <li><a href="/tools/dns" className="hover:text-blue-600 transition-colors">DNS Debugger</a></li>
                     <li><a href="/tools/ssl" className="hover:text-blue-600 transition-colors">TLS Audit</a></li>
-                    <li><a href="/tools/password" className="hover:text-blue-600 transition-colors">Pass Generator</a></li>
+                    <li><a href="/tools/ip" className="hover:text-blue-600 transition-colors">IP Analyzer</a></li>
+                    <li><a href="/tools/json-schema" className="hover:text-blue-600 transition-colors">JSON Validator</a></li>
+                    <li><a href="/tools/webhook" className="hover:text-blue-600 transition-colors">Webhook Debugger</a></li>
                     <li><a href="/tools" className="hover:text-blue-600 transition-colors">All Utilities</a></li>
                   </ul>
                 </div>

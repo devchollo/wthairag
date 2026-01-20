@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import {
     Shield, Globe, Key, QrCode, Search, MessageSquare, Sparkles, Cpu,
-    Server, Files, Image as ImageIcon, FileText, Settings, Database, ArrowRight, Terminal, Zap, RefreshCw
+    Server, Files, Image as ImageIcon, FileText, Settings, Database, ArrowRight, Terminal, Zap, RefreshCw,
+    Network, FileCode, Send
 } from 'lucide-react';
 import JsonLd from '@/components/JsonLd';
 
@@ -44,6 +45,15 @@ const tools = [
         category: 'Security',
         color: 'text-emerald-600',
         bg: 'bg-emerald-50'
+    },
+    {
+        id: 'ip',
+        name: 'IP Analyzer',
+        desc: 'Advanced geolocation, ASN mapping, and reverse DNS primitives for network intelligence.',
+        icon: Network,
+        category: 'Networking',
+        color: 'text-blue-500',
+        bg: 'bg-blue-50'
     },
 
     // SEO / AI Analysis
@@ -111,6 +121,24 @@ const tools = [
         category: 'AI / Accessibility',
         color: 'text-teal-600',
         bg: 'bg-teal-50'
+    },
+    {
+        id: 'json-schema',
+        name: 'JSON Schema Validator',
+        desc: 'Browser-native JSON structural audits and schema validation for data integrity.',
+        icon: FileCode,
+        category: 'Data',
+        color: 'text-zinc-700',
+        bg: 'bg-zinc-100'
+    },
+    {
+        id: 'webhook',
+        name: 'Webhook Debugger',
+        desc: 'Trigger and analyze outbound HTTP payloads with custom headers and body schemas.',
+        icon: Send,
+        category: 'Development',
+        color: 'text-emerald-600',
+        bg: 'bg-emerald-50'
     },
 
     // File Processing

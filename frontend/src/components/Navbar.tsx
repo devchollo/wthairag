@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import Link from 'next/link';
-import { ChevronDown, Shield, Server, Search, Settings, Lock, Menu, X, Database, Terminal, Globe, Key, QrCode, ArrowRight, MessageSquare } from 'lucide-react';
+import { ChevronDown, Shield, Server, Search, Settings, Lock, Menu, X, Database, Terminal, Globe, Key, QrCode, ArrowRight, MessageSquare, Network, Send } from 'lucide-react';
 
 const toolSections = [
     {
@@ -11,7 +11,8 @@ const toolSections = [
             { name: "DNS Debugger", desc: "Global resolution logs", icon: Globe, href: "/tools/dns" },
             { name: "WHOIS Lookup", desc: "Domain registration data", icon: Search, href: "/tools/whois" },
             { name: "Hosting Provider", desc: "Origin IP & ASN", icon: Server, href: "/tools/hosting" },
-            { name: "TLS Chain Audit", desc: "SSL integrity checks", icon: Shield, href: "/tools/ssl" }
+            { name: "TLS Chain Audit", desc: "SSL integrity checks", icon: Shield, href: "/tools/ssl" },
+            { name: "IP Analyzer", desc: "Network intelligence", icon: Network, href: "/tools/ip" }
         ]
     },
     {
@@ -28,8 +29,8 @@ const toolSections = [
         items: [
             { name: "Entropy Generator", desc: "Secure key generation", icon: Key, href: "/tools/password" },
             { name: "Payload Encoder", desc: "High-density QR encoding", icon: QrCode, href: "/tools/qr" },
-            { name: "AI Alt Text", desc: "Smart image descriptions", icon: Search, href: "/tools/alt-text" },
-            { name: "File Tools", desc: "PDF & Image tools", icon: QrCode, href: "/tools" }
+            { name: "JSON Validator", desc: "Data schema audits", icon: Terminal, href: "/tools/json-schema" },
+            { name: "Webhook Debugger", desc: "API payload testing", icon: Send, href: "/tools/webhook" }
         ]
     }
 ];

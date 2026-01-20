@@ -7,6 +7,23 @@ import Membership from '../models/Membership';
 import Verification from '../models/Verification';
 import { sendVerificationEmail } from '../services/emailService';
 import { sendSuccess, sendError } from '../utils/response';
+import { z } from 'zod';
+
+const loginSchema = z.object({
+    email: z.string().email('Invalid email format').trim(),
+    password: z.string().min(6, 'Password must be at least 6 characters')
+});
+
+const initiateSignupSchema = z.object({
+    email: z.string().email('Invalid email format').trim()
+});
+
+const completeSignupSchema = z.object({
+    signupToken: z.string(),
+    name: z.string().min(2, 'Name too short').max(50, 'Name too long').trim(),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
+    orgName: z.string().max(100, 'Organization name too long').optional()
+});
 
 const generateToken = (id: string) => {
     return jwt.sign({ id }, process.env.JWT_SECRET || 'secret', {
@@ -16,8 +33,11 @@ const generateToken = (id: string) => {
 
 export const initiateSignup = async (req: Request, res: Response) => {
     try {
-        const { email } = req.body;
-        if (!email) return sendError(res, 'Email is required', 400);
+        const validated = initiateSignupSchema.safeParse(req.body);
+        if (!validated.success) {
+            return sendError(res, validated.error.issues[0].message, 400);
+        }
+        const { email } = validated.data;
 
         // Check if user already exists
         const userExists = await User.findOne({ email });
@@ -72,7 +92,11 @@ export const verifyEmail = async (req: Request, res: Response) => {
 
 export const completeSignup = async (req: Request, res: Response) => {
     try {
-        const { signupToken, name, password, orgName } = req.body;
+        const validated = completeSignupSchema.safeParse(req.body);
+        if (!validated.success) {
+            return sendError(res, validated.error.issues[0].message, 400);
+        }
+        const { signupToken, name, password, orgName } = validated.data;
 
         if (!signupToken) return sendError(res, 'Signup token required', 400);
 
@@ -120,12 +144,20 @@ export const completeSignup = async (req: Request, res: Response) => {
             role: 'owner',
         });
 
-        // Return Auth Token
+        // Set httpOnly cookie
+        const token = generateToken(user._id.toString());
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+        });
+
+        // Return user data (NO TOKEN in response)
         return sendSuccess(res, {
             _id: user._id,
             name: user.name,
             email: user.email,
-            token: generateToken(user._id.toString()),
         }, 'Account created successfully', 201);
 
     } catch (error: any) {
@@ -140,7 +172,11 @@ export const login = async (req: Request, res: Response) => {
     const start = Date.now();
 
     try {
-        const { email, password } = req.body;
+        const validated = loginSchema.safeParse(req.body);
+        if (!validated.success) {
+            return sendError(res, validated.error.issues[0].message, 400);
+        }
+        const { email, password } = validated.data;
 
         const user = await User.findOne({ email });
         if (!user || !user.password) {
@@ -157,12 +193,35 @@ export const login = async (req: Request, res: Response) => {
         const elapsed = Date.now() - start;
         if (elapsed < minTime) await new Promise(r => setTimeout(r, minTime - elapsed));
 
+        // Set httpOnly cookie
+        const token = generateToken(user._id.toString());
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+        });
+
+        // Return user data (NO TOKEN in response)
         return sendSuccess(res, {
             _id: user._id,
             name: user.name,
             email: user.email,
-            token: generateToken(user._id.toString()),
         }, 'Login successful');
+    } catch (error: any) {
+        return sendError(res, error.message, 500);
+    }
+};
+
+export const logout = async (req: Request, res: Response) => {
+    try {
+        // Clear the auth cookie
+        res.clearCookie('token', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict'
+        });
+        return sendSuccess(res, {}, 'Logged out successfully');
     } catch (error: any) {
         return sendError(res, error.message, 500);
     }

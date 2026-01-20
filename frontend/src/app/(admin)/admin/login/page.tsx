@@ -22,21 +22,15 @@ export default function AdminLogin() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
+                credentials: 'include'
             });
 
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Login failed');
 
-            // Update auth context
-            // Note: We need memberships from the response to match AuthContext structure.
-            // If the login endpoint doesn't return memberships, we might need to fetch profile or adjust context.
-            // Assuming login returns user & token, we might need to fetch /me or stub it for now if backend login doesn't return exactly what's needed.
-            // For now, let's look at what login returns in backend/authController.ts. 
-            // It returns { _id, name, email, token }. It does NOT return memberships directly except in getMe.
-            // So we should probably login then fetch /me using the token.
-
             const meRes = await fetch(`${apiUrl}/api/auth/me`, {
-                headers: { 'Authorization': `Bearer ${data.data.token}` }
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
             });
             const meData = await meRes.json();
 
@@ -44,7 +38,6 @@ export default function AdminLogin() {
 
             login({
                 user: meData.data.user,
-                token: data.data.token,
                 memberships: meData.data.memberships
             });
 
@@ -89,6 +82,7 @@ export default function AdminLogin() {
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="block w-full rounded-xl border-0 bg-white/5 py-4 pl-12 text-white shadow-sm ring-1 ring-inset ring-white/10 placeholder:text-zinc-600 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 font-bold transition-all"
                                 placeholder="Admin Identifier"
+                                autoComplete="username"
                             />
                         </div>
                         <div className="relative group">
@@ -102,6 +96,7 @@ export default function AdminLogin() {
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="block w-full rounded-xl border-0 bg-white/5 py-4 pl-12 text-white shadow-sm ring-1 ring-inset ring-white/10 placeholder:text-zinc-600 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 font-bold transition-all"
                                 placeholder="Passphrase"
+                                autoComplete="current-password"
                             />
                         </div>
                     </div>

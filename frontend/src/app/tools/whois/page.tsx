@@ -6,6 +6,13 @@ import { useState } from 'react';
 import { Globe, Calendar, Server, Shield, AlertCircle, CheckCircle, Activity, Copy, ExternalLink, ArrowLeft } from 'lucide-react';
 import FAQ from '@/components/FAQ';
 
+interface WhoisContact {
+    name: string | null;
+    organization: string | null;
+    email: string | null;
+    country?: string | null;
+}
+
 interface WhoisResults {
     domain: string;
     registrar: string;
@@ -19,6 +26,9 @@ interface WhoisResults {
     abuseContact: string | null;
     abusePhone: string | null;
     queryTime: number;
+    registrant?: WhoisContact;
+    admin?: WhoisContact;
+    tech?: WhoisContact;
 }
 
 export default function WhoisLookup() {
@@ -140,6 +150,40 @@ export default function WhoisLookup() {
                                     {results.dnssec?.toLowerCase().includes('signed') ? 'SIGNED' : 'UNSIGNED'}
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Contact Information */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {[
+                                { label: 'Registrant', data: results.registrant },
+                                { label: 'Administrative', data: results.admin },
+                                { label: 'Technical', data: results.tech }
+                            ].map((contact, idx) => (
+                                <div key={idx} className="p-5 rounded-2xl bg-white border border-border-light shadow-sm">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-4">{contact.label} Contact</div>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <div className="text-[9px] font-black uppercase tracking-widest text-text-muted mb-0.5">Name / Org</div>
+                                            <div className="text-sm font-black text-text-primary truncate">
+                                                {contact.data?.name || 'Redacted'}
+                                            </div>
+                                            {contact.data?.organization && (
+                                                <div className="text-[11px] font-bold text-text-secondary truncate">{contact.data.organization}</div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <div className="text-[9px] font-black uppercase tracking-widest text-text-muted mb-0.5">Email</div>
+                                            <div className="text-sm font-black text-text-primary truncate">{contact.data?.email || 'Redacted'}</div>
+                                        </div>
+                                        {contact.data?.country && (
+                                            <div>
+                                                <div className="text-[9px] font-black uppercase tracking-widest text-text-muted mb-0.5">Country</div>
+                                                <div className="text-sm font-black text-text-primary">{contact.data.country}</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
 
                         {/* Nameservers */}

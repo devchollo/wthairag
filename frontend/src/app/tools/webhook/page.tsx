@@ -2,51 +2,25 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Webhook, Activity, AlertCircle, ArrowLeft, Send, Play, Code } from 'lucide-react';
+import { Terminal, Activity, AlertCircle, CheckCircle, ArrowLeft, Send, Shield, Globe } from 'lucide-react';
 import FAQ from '@/components/FAQ';
-
-interface WebhookResponse {
-    status: number;
-    statusText: string;
-    headers: any;
-    data: any;
-    duration: number;
-}
 
 export default function WebhookDebugger() {
     const [url, setUrl] = useState('');
     const [method, setMethod] = useState('POST');
     const [headers, setHeaders] = useState('{\n  "Content-Type": "application/json"\n}');
-    const [body, setBody] = useState('{\n  "test": true\n}');
+    const [body, setBody] = useState('{\n  "event": "test",\n  "timestamp": "' + new Date().toISOString() + '"\n}');
 
-    const [response, setResponse] = useState<WebhookResponse | null>(null);
+    const [response, setResponse] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const handleSend = async () => {
+    const handleTest = async () => {
         setLoading(true);
         setError(null);
         setResponse(null);
 
         try {
-            // Parse headers and body
-            let parsedHeaders = {};
-            let parsedBody = {};
-
-            try {
-                parsedHeaders = JSON.parse(headers);
-            } catch (e) {
-                throw new Error('Invalid JSON in Headers');
-            }
-
-            try {
-                if (method !== 'GET') {
-                    parsedBody = JSON.parse(body);
-                }
-            } catch (e) {
-                throw new Error('Invalid JSON in Body');
-            }
-
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
             const res = await fetch(`${apiUrl}/api/tools/webhook`, {
                 method: 'POST',
@@ -54,16 +28,13 @@ export default function WebhookDebugger() {
                 body: JSON.stringify({
                     url,
                     method,
-                    headers: parsedHeaders,
-                    body: parsedBody
+                    headers: JSON.parse(headers || '{}'),
+                    body: JSON.parse(body || '{}')
                 })
             });
 
             const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.message || 'Request failed');
-            }
+            if (!res.ok) throw new Error(data.message || 'Webhook test failed');
 
             setResponse(data.data);
         } catch (err: any) {
@@ -79,131 +50,121 @@ export default function WebhookDebugger() {
                 <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
                 Back to Tools
             </Link>
+
             <div className="mb-10">
                 <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
-                    <Webhook className="h-3.5 w-3.5" /> WorkToolsHub / API Tester
+                    <Terminal className="h-3.5 w-3.5" /> WorkToolsHub / API Debugger
                 </div>
                 <h1 className="text-4xl font-black text-text-primary tracking-tighter">Webhook Debugger.</h1>
                 <p className="mt-3 text-sm font-bold text-text-secondary max-w-2xl">
-                    Test your webhook endpoints by simulating payloads. Inspect status codes, headers, and response bodies in real-time.
+                    Trigger and debug webhooks with custom payloads and headers. Verify endpoint responses and latency in real-time.
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Request Config */}
-                <div className="card border border-border-light bg-white p-6 shadow-sm">
-                    <h3 className="text-lg font-bold text-text-primary mb-6 flex items-center gap-2">
-                        <Send className="h-4 w-4" /> Request Configuration
-                    </h3>
-
-                    <div className="space-y-4">
-                        <div className="flex gap-4">
-                            <select
-                                value={method}
-                                onChange={(e) => setMethod(e.target.value)}
-                                className="h-10 rounded-lg border border-border-light bg-surface-light px-3 text-sm font-bold outline-none focus:border-blue-600 transition-all font-mono"
-                            >
-                                <option value="GET">GET</option>
-                                <option value="POST">POST</option>
-                                <option value="PUT">PUT</option>
-                                <option value="DELETE">DELETE</option>
-                                <option value="PATCH">PATCH</option>
-                            </select>
-                            <input
-                                type="url"
-                                placeholder="https://api.example.com/webhook"
-                                value={url}
-                                onChange={(e) => setUrl(e.target.value)}
-                                className="h-10 flex-1 rounded-lg border border-border-light bg-surface-light px-4 text-sm font-bold outline-none focus:border-blue-600 transition-all font-mono"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2 block">Headers (JSON)</label>
-                            <textarea
-                                value={headers}
-                                onChange={(e) => setHeaders(e.target.value)}
-                                className="w-full h-32 rounded-lg border border-border-light bg-surface-light px-4 py-3 text-xs font-mono outline-none focus:border-blue-600 transition-all resize-none"
-                            />
-                        </div>
-
-                        {method !== 'GET' && (
-                            <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2 block">Body (JSON)</label>
-                                <textarea
-                                    value={body}
-                                    onChange={(e) => setBody(e.target.value)}
-                                    className="w-full h-48 rounded-lg border border-border-light bg-surface-light px-4 py-3 text-xs font-mono outline-none focus:border-blue-600 transition-all resize-none"
-                                />
-                            </div>
-                        )}
-
-                        <button
-                            onClick={handleSend}
-                            disabled={loading || !url}
-                            className="btn-primary w-full h-12 gap-2 mt-2"
+            <div className="card border border-border-light bg-white p-6 shadow-sm mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div className="md:col-span-1">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2 block">Method</label>
+                        <select
+                            value={method}
+                            onChange={(e) => setMethod(e.target.value)}
+                            className="w-full h-10 rounded-lg border border-border-light bg-surface-light px-3 text-xs font-black outline-none focus:border-blue-600 appearance-none cursor-pointer"
                         >
-                            {loading ? <Activity className="h-4 w-4 animate-spin" /> : 'Send Request'}
-                        </button>
-
-                        {error && (
-                            <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-red-600 text-xs font-bold">
-                                {error}
-                            </div>
-                        )}
+                            <option>POST</option>
+                            <option>GET</option>
+                            <option>PUT</option>
+                            <option>PATCH</option>
+                            <option>DELETE</option>
+                        </select>
+                    </div>
+                    <div className="md:col-span-3">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2 block">Endpoint URL</label>
+                        <input
+                            type="url"
+                            placeholder="https://your-api.com/webhook"
+                            value={url}
+                            onChange={(e) => setUrl(e.target.value)}
+                            className="w-full h-10 rounded-lg border border-border-light bg-surface-light px-4 text-sm font-bold outline-none focus:border-blue-600 font-mono"
+                        />
                     </div>
                 </div>
 
-                {/* Response Viewer */}
-                <div className="card border border-border-light bg-white p-6 shadow-sm flex flex-col h-full">
-                    <h3 className="text-lg font-bold text-text-primary mb-6 flex items-center gap-2">
-                        <Code className="h-4 w-4" /> Response Output
-                    </h3>
-
-                    {response ? (
-                        <div className="space-y-4 flex-1 flex flex-col">
-                            <div className="flex items-center gap-4">
-                                <div className={`badge ${response.status >= 200 && response.status < 300 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'} font-mono font-bold px-3 py-1 rounded-md`}>
-                                    Status: {response.status} {response.statusText}
-                                </div>
-                                <div className="text-xs font-mono text-text-muted">
-                                    Time: {response.duration}ms
-                                </div>
-                            </div>
-
-                            <div className="flex-1 flex flex-col min-h-[300px]">
-                                <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Response Body</div>
-                                <pre className="flex-1 w-full rounded-lg border border-border-light bg-surface-light p-4 text-xs font-mono overflow-auto max-h-[500px]">
-                                    {typeof response.data === 'object' ? JSON.stringify(response.data, null, 2) : response.data}
-                                </pre>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center text-text-muted opacity-50 border-2 border-dashed border-border-light rounded-xl">
-                            <Activity className="h-8 w-8 mb-2" />
-                            <span className="text-xs font-bold">No request sent yet</span>
-                        </div>
-                    )}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2 block">Custom Headers (JSON)</label>
+                        <textarea
+                            value={headers}
+                            onChange={(e) => setHeaders(e.target.value)}
+                            className="w-full h-[150px] p-4 rounded-xl border border-border-light bg-surface-light font-mono text-[11px] focus:ring-2 focus:ring-blue-500/20 outline-none transition-all resize-none"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2 block">Payload Body (JSON)</label>
+                        <textarea
+                            value={body}
+                            onChange={(e) => setBody(e.target.value)}
+                            className="w-full h-[150px] p-4 rounded-xl border border-border-light bg-surface-light font-mono text-[11px] focus:ring-2 focus:ring-blue-500/20 outline-none transition-all resize-none"
+                        />
+                    </div>
                 </div>
+
+                <button
+                    onClick={handleTest}
+                    className="btn-primary w-full py-4 gap-2"
+                    disabled={loading || !url}
+                >
+                    {loading ? <Activity className="h-4 w-4 animate-spin" /> : <Send size={18} />}
+                    Trigger Webhook Request
+                </button>
             </div>
+
+            {error && (
+                <div className="mb-8 p-4 bg-red-50 border border-red-100 rounded-lg flex items-center gap-3 text-red-600 text-sm font-bold">
+                    <AlertCircle className="h-5 w-5" />
+                    {error}
+                </div>
+            )}
+
+            {response && (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-xl font-black text-text-primary tracking-tight">Execution Result.</h3>
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2 text-blue-600 font-black text-xs uppercase tracking-widest">
+                                <Activity size={14} /> {response.duration}ms latency
+                            </div>
+                            <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${response.status < 300 ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>
+                                HTTP {response.status} {response.statusText}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2 block">Response Headers</label>
+                            <pre className="p-4 rounded-xl bg-surface-light border border-border-light font-mono text-[10px] overflow-auto max-h-[300px]">
+                                {JSON.stringify(response.headers, null, 2)}
+                            </pre>
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2 block">Response Body</label>
+                            <pre className="p-4 rounded-xl bg-surface-light border border-border-light font-mono text-[10px] overflow-auto max-h-[300px]">
+                                {JSON.stringify(response.data, null, 2)}
+                            </pre>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <FAQ
                 items={[
                     {
-                        question: "What is a Webhook?",
-                        answer: "A webhook is a way for an app to provide other applications with real-time information. It delivers data to other applications as it happens, meaning you get data immediately."
+                        question: "Proxied Requests?",
+                        answer: "All requests are proxied through our core infrastructure to ensure your origin IP is protected and to bypass CORS restrictions for your testing."
                     },
                     {
-                        question: "How do I use this debugger?",
-                        answer: "Enter your webhook destination URL, select the HTTP method (usually POST), configure your headers, and paste your JSON payload. Click 'Send Request' to simulate a webhook event."
-                    },
-                    {
-                        question: "Does this tool support mutual TLS?",
-                        answer: "Currently, this tool supports standard HTTPS connections. Mutual TLS (client certificates) is not supported in this version."
-                    },
-                    {
-                        question: "Can I test local URLs?",
-                        answer: "This tool runs from our servers, so it cannot access 'localhost'. Use a service like ngrok to expose your local server to the internet if you need to test it."
+                        question: "Rate Limits",
+                        answer: "Webhook debugging is subject to standard system limits to prevent abuse. For heavy testing, consider utilizing our CLI primitive."
                     }
                 ]}
             />

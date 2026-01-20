@@ -91,22 +91,26 @@ export default function SignupPage() {
                     name,
                     password,
                     orgName
-                })
+                }),
+                credentials: 'include'
             });
 
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Failed to create account');
 
+            // Fetch user profile with memberships to ensure we have the newly created workspace
+            const meRes = await fetch(`${apiUrl}/api/auth/me`, {
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+            });
+            const meData = await meRes.json();
+
+            if (!meRes.ok) throw new Error('Failed to fetch profile after signup');
+
             // Auto-login logic
             login({
-                user: {
-                    _id: data.data._id,
-                    name: data.data.name,
-                    email: data.data.email
-                },
-                token: data.data.token,
-                memberships: [] // Ideally backend returns this, but let's re-fetch or assume empty for now. 
-                // Wait, completeSignup response should maybe include memberships or we handle it in dashboard redirect
+                user: meData.data.user,
+                memberships: meData.data.memberships
             });
 
             router.push('/workspace/dashboard');
@@ -146,9 +150,10 @@ export default function SignupPage() {
                                 placeholder="work@company.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="h-10 w-full rounded-lg border border-border-light bg-surface-light pl-10 pr-4 text-sm font-bold outline-none focus:border-blue-600 transition-all"
+                                className="h_10 w_full rounded_lg border border_border_light bg_surface_light pl_10 pr_4 text_sm font_bold outline_none focus:border_blue_600 transition_all"
                                 required
                                 autoFocus
+                                autoComplete="email"
                             />
                         </div>
                         <button type="submit" disabled={loading} className="btn-primary w-full gap-2">
@@ -192,9 +197,10 @@ export default function SignupPage() {
                                 placeholder="Full Name"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="h-10 w-full rounded-lg border border-border-light bg-surface-light pl-10 pr-4 text-sm font-bold outline-none focus:border-blue-600 transition-all"
+                                className="h_10 w_full rounded_lg border border_border_light bg_surface_light pl_10 pr_4 text_sm font_bold outline_none focus:border_blue_600 transition_all"
                                 required
                                 autoFocus
+                                autoComplete="name"
                             />
                         </div>
                         <div className="relative">
@@ -215,9 +221,7 @@ export default function SignupPage() {
                                 placeholder="Secure Password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="h-10 w-full rounded-lg border border-border-light bg-surface-light pl-10 pr-4 text-sm font-bold outline-none focus:border-blue-600 transition-all"
-                                required
-                                minLength={8}
+                                autoComplete="new-password"
                             />
                         </div>
 

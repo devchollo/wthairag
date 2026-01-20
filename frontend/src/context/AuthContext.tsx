@@ -12,12 +12,13 @@ interface User {
     name: string;
     email: string;
     avatar?: string;
+    isAdmin?: boolean;
 }
 
 interface AuthContextType {
     user: User | null;
     workspaces: Workspace[];
-    login: (data: { user: User; token: string; memberships: { workspaceId: Workspace }[] }) => void;
+    login: (data: { user: User; memberships: { workspaceId: Workspace }[] }) => void;
     logout: () => void;
     currentWorkspace: Workspace | null;
     setCurrentWorkspace: (workspace: Workspace | null) => void;
@@ -43,19 +44,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, []);
 
-    const login = (data: { user: User; token: string; memberships: { workspaceId: Workspace }[] }) => {
+    const login = (data: { user: User; memberships: { workspaceId: Workspace }[] }) => {
         setUser(data.user);
         setWorkspaces(data.memberships.map((m) => m.workspaceId));
         localStorage.setItem('user', JSON.stringify(data.user));
-        localStorage.setItem('token', data.token);
+        // Cookie is handled by browser automatically
     };
 
-    const logout = () => {
+    const logout = async () => {
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            await fetch(`${apiUrl}/api/auth/logout`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+        } catch (e) {
+            console.error("Logout error", e);
+        }
+
         setUser(null);
         setWorkspaces([]);
         setCurrentWorkspace(null);
         localStorage.removeItem('user');
-        localStorage.removeItem('token');
     };
 
     return (

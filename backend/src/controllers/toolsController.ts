@@ -259,7 +259,23 @@ export const whoisLookup = async (req: Request, res: Response) => {
             status: result.domainStatus || result.status || [],
             dnssec: result.dnssec || 'unsigned',
             abuseContact: result.registrarAbuseContactEmail || null,
-            abusePhone: result.registrarAbuseContactPhone || null
+            abusePhone: result.registrarAbuseContactPhone || null,
+            registrant: {
+                name: result.registrantName || result.registrant || null,
+                organization: result.registrantOrganization || null,
+                email: result.registrantEmail || null,
+                country: result.registrantCountry || null
+            },
+            admin: {
+                name: result.adminName || null,
+                organization: result.adminOrganization || null,
+                email: result.adminEmail || null
+            },
+            tech: {
+                name: result.techName || null,
+                organization: result.techOrganization || null,
+                email: result.techEmail || null
+            }
         };
 
         // Convert nameServers to array if string
@@ -369,6 +385,18 @@ export const whoIsHostingThis = async (req: Request, res: Response) => {
                         results.hosting.provider = 'Fastly';
                         results.cdn.detected = true;
                         results.cdn.provider = 'Fastly';
+                    } else if (orgLower.includes('namecheap')) {
+                        results.hosting.provider = 'Namecheap';
+                    } else if (orgLower.includes('godaddy')) {
+                        results.hosting.provider = 'GoDaddy';
+                    } else if (orgLower.includes('bluehost')) {
+                        results.hosting.provider = 'Bluehost';
+                    } else if (orgLower.includes('hostgator')) {
+                        results.hosting.provider = 'HostGator';
+                    } else if (orgLower.includes('siteground')) {
+                        results.hosting.provider = 'SiteGround';
+                    } else if (orgLower.includes('hostinger')) {
+                        results.hosting.provider = 'Hostinger';
                     } else if (data.org) {
                         results.hosting.provider = data.org;
                     }
@@ -411,40 +439,40 @@ export const whoIsHostingThis = async (req: Request, res: Response) => {
 
 export const getIpDetails = async (req: Request, res: Response) => {
     try {
-        let ip = req.body.ip || req.ip || req.connection.remoteAddress;
+        let ip = req.body.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
-        // Clean up IP format
-        if (typeof ip === 'string' && ip.startsWith('::ffff:')) {
-            ip = ip.replace('::ffff:', '');
-        }
+        if (Array.isArray(ip)) ip = ip[0];
+        if (typeof ip === 'string' && ip.startsWith('::ffff:')) ip = ip.replace('::ffff:', '');
 
-        // If localhost, try to fetch public IP for dev utility
-        if (ip === '127.0.0.1' || ip === '::1') {
+        // Handle localhost for dev mode
+        if (!ip || ip === '127.0.0.1' || ip === '::1') {
             try {
                 const axios = require('axios');
-                const publicIp = await axios.get('https://api.ipify.org?format=json');
-                ip = publicIp.data.ip;
+                const publicIpRes = await axios.get('https://api64.ipify.org?format=json');
+                ip = publicIpRes.data.ip;
             } catch (e) {
-                // Keep localhost
+                ip = '8.8.8.8'; // Default fallback for dev testing
             }
         }
 
         const axios = require('axios');
         const response = await axios.get(`https://ipinfo.io/${ip}/json?token=${process.env.IPINFO_TOKEN || ''}`);
 
-        return sendSuccess(res, {
-            ip: response.data.ip,
-            hostname: response.data.hostname,
-            city: response.data.city,
-            region: response.data.region,
-            country: response.data.country,
-            loc: response.data.loc,
-            org: response.data.org,
-            timezone: response.data.timezone,
-            asn: response.data.org?.split(' ')[0]
-        }, 'IP details retrieved');
+        const results = {
+            ip: response.data.ip || ip,
+            hostname: response.data.hostname || 'N/A',
+            city: response.data.city || 'Unknown',
+            region: response.data.region || 'Unknown',
+            country: response.data.country || 'Unknown',
+            loc: response.data.loc || '0,0',
+            org: response.data.org || 'Unknown Provider',
+            timezone: response.data.timezone || 'UTC',
+            asn: response.data.org?.split(' ')[0] || 'N/A'
+        };
+
+        return sendSuccess(res, results, 'IP details retrieved');
     } catch (error: any) {
-        return sendError(res, error.message, 500);
+        return sendError(res, `IP analysis failed: ${error.message}`, 500);
     }
 };
 

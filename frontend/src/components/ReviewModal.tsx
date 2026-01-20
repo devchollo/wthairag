@@ -31,7 +31,8 @@ export default function ReviewModal() {
             const res = await fetch(`${apiUrl}/api/testimonials`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...formData, rating })
+                body: JSON.stringify({ ...formData, rating }),
+                credentials: 'include'
             });
 
             if (res.ok) {
@@ -71,8 +72,8 @@ export default function ReviewModal() {
                 {toast && (
                     <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 animate-in slide-in-from-top-4 fade-in duration-300">
                         <div className={`flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-lg border ${toast.type === 'error'
-                                ? 'bg-red-50 border-red-200 text-red-800'
-                                : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                            ? 'bg-red-50 border-red-200 text-red-800'
+                            : 'bg-emerald-50 border-emerald-200 text-emerald-800'
                             }`}>
                             <AlertCircle className="h-5 w-5 flex-shrink-0" />
                             <span className="text-sm font-semibold">{toast.message}</span>
@@ -107,7 +108,7 @@ export default function ReviewModal() {
                                 </div>
                                 <h3 className="font-bold text-2xl text-zinc-900 tracking-tight">Share Your Feedback</h3>
                             </div>
-                            <p className="text-zinc-600 font-medium text-sm ml-14">
+                            <p className="text-zinc-600 font-medium text-sm">
                                 Help us improve by sharing your experience with WorkToolsHub
                             </p>
                         </div>
