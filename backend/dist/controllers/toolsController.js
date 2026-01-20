@@ -423,6 +423,46 @@ const whoIsHostingThis = async (req, res) => {
                             return 'SiteGround';
                         if (low.includes('hostinger'))
                             return 'Hostinger';
+                        if (low.includes('bluehost'))
+                            return 'Bluehost';
+                        if (low.includes('dreamhost'))
+                            return 'DreamHost';
+                        if (low.includes('hostgator'))
+                            return 'HostGator';
+                        if (low.includes('a2 hosting'))
+                            return 'A2 Hosting';
+                        if (low.includes('fastcomet'))
+                            return 'FastComet';
+                        if (low.includes('liquid web'))
+                            return 'Liquid Web';
+                        if (low.includes('iweb'))
+                            return 'iWeb';
+                        if (low.includes('ovh'))
+                            return 'OVHcloud';
+                        if (low.includes('scaleway'))
+                            return 'Scaleway';
+                        if (low.includes('online.net'))
+                            return 'Scaleway (Online.net)';
+                        if (low.includes('leaseweb'))
+                            return 'LeaseWeb';
+                        if (low.includes('softlayer') || low.includes('ibm'))
+                            return 'IBM Cloud';
+                        if (low.includes('shinjiru'))
+                            return 'Shinjiru';
+                        if (low.includes('balticservers'))
+                            return 'BalticServers';
+                        if (low.includes('orange'))
+                            return 'Orange';
+                        if (low.includes('ovh'))
+                            return 'OVH Sas';
+                        if (low.includes('aliyun') || low.includes('alibaba'))
+                            return 'Alibaba Cloud';
+                        if (low.includes('tencent'))
+                            return 'Tencent Cloud';
+                        if (low.includes('baidu'))
+                            return 'Baidu Cloud';
+                        if (low.includes('huawei'))
+                            return 'Huawei Cloud';
                         return orgStr;
                     };
                     if (data.org)
@@ -505,7 +545,7 @@ const whoIsHostingThis = async (req, res) => {
 exports.whoIsHostingThis = whoIsHostingThis;
 const getIpDetails = async (req, res) => {
     try {
-        const ip = getEffectiveIp(req);
+        const ip = req.body.ip || getEffectiveIp(req);
         // Safe API Call with fallback to prevent 500 crashes
         let responseData = {};
         try {
@@ -518,7 +558,7 @@ const getIpDetails = async (req, res) => {
             // Fallback for 429 or other API errors
             try {
                 console.log('Falling back to ip-api.com...');
-                const fallbackRes = await axios_1.default.get(`http://ip-api.com/json/${ip}`);
+                const fallbackRes = await axios_1.default.get(`http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query`);
                 if (fallbackRes.data && fallbackRes.data.status === 'success') {
                     const d = fallbackRes.data;
                     responseData = {
@@ -527,8 +567,9 @@ const getIpDetails = async (req, res) => {
                         region: d.regionName,
                         country: d.countryCode,
                         loc: `${d.lat},${d.lon}`,
-                        org: d.isp,
-                        timezone: d.timezone
+                        org: d.org || d.isp || d.as || 'Unknown',
+                        timezone: d.timezone,
+                        asn: d.as?.split(' ')[0] || 'N/A'
                     };
                 }
                 else {
@@ -549,7 +590,7 @@ const getIpDetails = async (req, res) => {
             loc: responseData.loc || '0,0',
             org: responseData.org || 'Unknown Provider',
             timezone: responseData.timezone || 'UTC',
-            asn: responseData.org?.split(' ')[0] || 'N/A'
+            asn: responseData.asn || responseData.org?.split(' ')[0] || 'N/A'
         };
         return (0, response_1.sendSuccess)(res, results, 'IP details retrieved');
     }

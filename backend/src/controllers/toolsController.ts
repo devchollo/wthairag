@@ -512,7 +512,7 @@ export const whoIsHostingThis = async (req: Request, res: Response) => {
 
 export const getIpDetails = async (req: Request, res: Response) => {
     try {
-        const ip = getEffectiveIp(req);
+        const ip = req.body.ip || getEffectiveIp(req);
 
         // Safe API Call with fallback to prevent 500 crashes
         let responseData: any = {};
@@ -525,7 +525,7 @@ export const getIpDetails = async (req: Request, res: Response) => {
             // Fallback for 429 or other API errors
             try {
                 console.log('Falling back to ip-api.com...');
-                const fallbackRes = await axios.get(`http://ip-api.com/json/${ip}`);
+                const fallbackRes = await axios.get(`http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query`);
                 if (fallbackRes.data && fallbackRes.data.status === 'success') {
                     const d = fallbackRes.data;
                     responseData = {
@@ -534,8 +534,9 @@ export const getIpDetails = async (req: Request, res: Response) => {
                         region: d.regionName,
                         country: d.countryCode,
                         loc: `${d.lat},${d.lon}`,
-                        org: d.isp,
-                        timezone: d.timezone
+                        org: d.org || d.isp || d.as || 'Unknown',
+                        timezone: d.timezone,
+                        asn: d.as?.split(' ')[0] || 'N/A'
                     };
                 } else {
                     responseData = { ip };
@@ -555,7 +556,7 @@ export const getIpDetails = async (req: Request, res: Response) => {
             loc: responseData.loc || '0,0',
             org: responseData.org || 'Unknown Provider',
             timezone: responseData.timezone || 'UTC',
-            asn: responseData.org?.split(' ')[0] || 'N/A'
+            asn: responseData.asn || responseData.org?.split(' ')[0] || 'N/A'
         };
 
         return sendSuccess(res, results, 'IP details retrieved');

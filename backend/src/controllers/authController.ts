@@ -148,8 +148,8 @@ export const completeSignup = async (req: Request, res: Response) => {
         const token = generateToken(user._id.toString());
         res.cookie('token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            secure: true,
+            sameSite: 'none',
             path: '/', // Ensure cookie is available site-wide
             maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
         });
@@ -198,8 +198,8 @@ export const login = async (req: Request, res: Response) => {
         const token = generateToken(user._id.toString());
         res.cookie('token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            secure: true,
+            sameSite: 'none',
             path: '/', // Ensure cookie is available site-wide
             maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
         });
@@ -220,8 +220,9 @@ export const logout = async (req: Request, res: Response) => {
         // Clear the auth cookie
         res.clearCookie('token', {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax'
+            secure: true,
+            sameSite: 'none',
+            path: '/'
         });
         return sendSuccess(res, {}, 'Logged out successfully');
     } catch (error: any) {
