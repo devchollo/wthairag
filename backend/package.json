@@ -41,8 +41,7 @@
     "sharp": "^0.33.2",
     "pdf-parse": "^1.1.1",
     "mammoth": "^1.6.0",
-    "office-text-extractor": "^3.0.0",
-    "html-to-docx": "^3.2.0",
+    "html-to-docx": "^1.8.0",
     "express-rate-limit": "^7.1.5",
     "hpp": "^0.2.3",
     "ip-range-check": "^0.2.0"

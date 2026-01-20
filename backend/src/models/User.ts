@@ -16,6 +16,7 @@ const UserSchema: Schema = new Schema(
         password: { type: String, required: false }, // Optional for SSO if added later
         name: { type: String, required: true },
         isVerified: { type: Boolean, default: false },
+        isAdmin: { type: Boolean, default: false },
         avatar: { type: String },
     },
     { timestamps: true }

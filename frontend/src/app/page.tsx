@@ -162,11 +162,16 @@ export default function Home() {
 
           {/* SSL Audit */}
           <ScrollReveal delay={300}>
-            <div className="card h-full bg-surface-light hover:bg-white flex flex-col justify-between border-2 hover:border-blue-600/30">
-              <Shield className="h-8 w-8 text-emerald-600" />
-              <div>
-                <h3 className="font-bold text-xl tracking-tight">TLS Audit</h3>
-                <p className="text-[12px] font-medium text-text-muted leading-tight">Full chain verification.</p>
+            <div className="card h-full bg-surface-light hover:bg-white flex flex-col justify-between border-2 hover:border-emerald-600/30 group transition-all relative overflow-hidden">
+              <div className="relative z-10">
+                <Shield className="h-8 w-8 text-emerald-600 mb-4 group-hover:scale-110 transition-transform" />
+                <h3 className="font-bold text-xl tracking-tight text-text-primary mb-2">TLS Chain Audit</h3>
+                <p className="text-sm font-medium text-text-secondary leading-snug">
+                  Deep inspection of certificate chains, cipher suites, and protocol vulnerabilities.
+                </p>
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-600 opacity-60 group-hover:opacity-100 transition-opacity">
+                Run Analysis <ArrowRight className="h-3 w-3" />
               </div>
             </div>
           </ScrollReveal>
@@ -228,9 +233,53 @@ export default function Home() {
                 <ChevronRight className="h-5 w-5 text-text-muted" />
               </button>
             </div>
+
+            <div className="mt-10 text-center">
+              <button
+                onClick={() => (document.getElementById('review-modal') as any)?.showModal()}
+                className="text-xs font-black uppercase tracking-widest text-text-muted hover:text-blue-600 transition-colors border-b border-transparent hover:border-blue-600 pb-0.5"
+              >
+                + Add a review
+              </button>
+            </div>
           </div>
         </ScrollReveal>
       </section>
+
+      {/* Basic Review Modal (Native Dialog) */}
+      <dialog id="review-modal" className="modal p-0 rounded-2xl shadow-2xl backdrop:bg-black/50">
+        <form method="dialog" className="modal-box bg-white p-8 max-w-md w-full relative">
+          <button className="absolute right-4 top-4 btn-sm btn-circle btn-ghost text-lg">✕</button>
+          <h3 className="font-bold text-xl text-text-primary mb-6">Submit Feedback</h3>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-bold uppercase tracking-widest text-text-secondary block mb-2">Name</label>
+              <input type="text" placeholder="Your Name" className="input-field w-full" required />
+            </div>
+            <div>
+              <label className="text-xs font-bold uppercase tracking-widest text-text-secondary block mb-2">Role & Company</label>
+              <input type="text" placeholder="Senior Dev @ TechCorp" className="input-field w-full" required />
+            </div>
+            <div>
+              <label className="text-xs font-bold uppercase tracking-widest text-text-secondary block mb-2">Feedback</label>
+              <textarea placeholder="Share your experience..." className="input-field w-full h-24 pt-2" required></textarea>
+            </div>
+            <div>
+              <label className="text-xs font-bold uppercase tracking-widest text-text-secondary block mb-2">Rating</label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map(star => (
+                  <button key={star} type="button" className="text-amber-400 hover:scale-110 transition-transform">
+                    <Star className="h-6 w-6 fill-amber-400" />
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button className="btn-primary w-full h-12 mt-4">Submit for Review</button>
+          </div>
+          <p className="text-[10px] text-text-muted mt-4 text-center">Reviews are moderated before appearing publicly.</p>
+        </form>
+      </dialog>
 
       {/* Advanced Capabilities */}
       <section className="mx-auto max-w-[1100px] px-6 py-16 border-y border-border-light bg-surface-light/30">
