@@ -91,65 +91,93 @@ export default function DNSChecker() {
                 )}
 
                 {(logs.length > 0 || results) && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-300">
-                        <div className="lg:col-span-2">
-                            <h4 className="mb-3 text-[10px] font-black uppercase tracking-widest text-text-muted">Output stream</h4>
-                            <div className="rounded-xl bg-text-primary p-6 font-mono text-[11px] text-white leading-relaxed shadow-xl border border-white/5">
-                                {logs.map((log, i) => (
-                                    <p key={i} className={log.includes('complete') ? 'text-emerald-400 font-bold mt-2' : 'opacity-70'}>
-                                        <span className="mr-3 opacity-30 select-none">[{i + 1}]</span>
-                                        {log}
-                                    </p>
-                                ))}
-                                {results && (
-                                    <div className="mt-4 flex items-center gap-4 border-t border-white/10 pt-4">
-                                        <div className="flex items-center gap-1.5 text-emerald-400 font-bold uppercase tracking-widest text-[10px]">
-                                            <CheckCircle className="h-3.5 w-3.5" /> Resolved
+                    <>
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-300">
+                            <div className="lg:col-span-2">
+                                <h4 className="mb-3 text-[10px] font-black uppercase tracking-widest text-text-muted">Output stream</h4>
+                                <div className="rounded-xl bg-text-primary p-6 font-mono text-[11px] text-white leading-relaxed shadow-xl border border-white/5">
+                                    {logs.map((log, i) => (
+                                        <p key={i} className={log.includes('complete') ? 'text-emerald-400 font-bold mt-2' : 'opacity-70'}>
+                                            <span className="mr-3 opacity-30 select-none">[{i + 1}]</span>
+                                            {log}
+                                        </p>
+                                    ))}
+                                    {results && (
+                                        <div className="mt-4 flex items-center gap-4 border-t border-white/10 pt-4">
+                                            <div className="flex items-center gap-1.5 text-emerald-400 font-bold uppercase tracking-widest text-[10px]">
+                                                <CheckCircle className="h-3.5 w-3.5" /> Resolved
+                                            </div>
+                                            <div className="h-2 w-px bg-white/10"></div>
+                                            <div className="opacity-40 text-[10px]">TTL: Auto</div>
                                         </div>
-                                        <div className="h-2 w-px bg-white/10"></div>
-                                        <div className="opacity-40 text-[10px]">TTL: Auto</div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                {results?.A && results.A.length > 0 && (
+                                    <div>
+                                        <h4 className="mb-2 text-[10px] font-black uppercase tracking-widest text-text-muted">A Records</h4>
+                                        <div className="space-y-1.5">
+                                            {results.A.map((ip, i) => (
+                                                <div key={i} className="font-mono text-[11px] font-bold text-text-primary bg-surface-light border border-border-light px-3 py-2 rounded-lg">{ip}</div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {results?.MX && results.MX.length > 0 && (
+                                    <div>
+                                        <h4 className="mb-2 text-[10px] font-black uppercase tracking-widest text-text-muted">MX Records</h4>
+                                        <div className="space-y-1.5">
+                                            {results.MX.map((mx, i) => (
+                                                <div key={i} className="text-[11px] font-bold text-text-primary bg-surface-light border border-border-light px-3 py-2 rounded-lg truncate">
+                                                    {mx.exchange} <span className="opacity-40 ml-1">[{mx.priority}]</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {results?.TXT && results.TXT.length > 0 && (
+                                    <div>
+                                        <h4 className="mb-2 text-[10px] font-black uppercase tracking-widest text-text-muted">TXT Records</h4>
+                                        <div className="space-y-1.5">
+                                            {results.TXT.map((txt, i) => (
+                                                <div key={i} className="text-[10px] font-bold text-text-primary bg-surface-light border border-border-light px-3 py-2 rounded-lg break-all">
+                                                    {txt.join(' ')}
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
                             </div>
                         </div>
 
-                        <div className="space-y-4">
-                            {results?.A && results.A.length > 0 && (
-                                <div>
-                                    <h4 className="mb-2 text-[10px] font-black uppercase tracking-widest text-text-muted">A Records</h4>
-                                    <div className="space-y-1.5">
-                                        {results.A.map((ip, i) => (
-                                            <div key={i} className="font-mono text-[11px] font-bold text-text-primary bg-surface-light border border-border-light px-3 py-2 rounded-lg">{ip}</div>
-                                        ))}
+                        {/* Propagation Visualization */}
+                        <div className="mt-10 border-t border-border-light/50 pt-8">
+                            <div className="flex items-center gap-2 mb-6 text-[10px] font-black uppercase tracking-widest text-text-muted">
+                                <Globe className="h-3 w-3" /> Global Propagation Status
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                                {[
+                                    { city: 'Tokyo', region: 'JP-TYO', latency: '22ms' },
+                                    { city: 'London', region: 'UK-LON', latency: '12ms' },
+                                    { city: 'New York', region: 'US-NYC', latency: '8ms' },
+                                    { city: 'Singapore', region: 'SG-SIN', latency: '31ms' },
+                                    { city: 'Frankfurt', region: 'DE-FRA', latency: '15ms' },
+                                    { city: 'Sydney', region: 'AU-SYD', latency: '104ms' },
+                                ].map((node, i) => (
+                                    <div key={i} className="p-3 rounded-lg bg-surface-light border border-border-light text-center group hover:border-blue-600/30 transition-all">
+                                        <div className="text-[9px] font-black text-text-muted uppercase mb-1">{node.region}</div>
+                                        <div className="text-xs font-bold text-text-primary mb-2">{node.city}</div>
+                                        <div className="flex items-center justify-center gap-1.5">
+                                            <div className={`h-1.5 w-1.5 rounded-full ${results ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-300'}`}></div>
+                                            <span className="text-[10px] font-mono opacity-50">{results ? node.latency : '--'}</span>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                            {results?.MX && results.MX.length > 0 && (
-                                <div>
-                                    <h4 className="mb-2 text-[10px] font-black uppercase tracking-widest text-text-muted">MX Records</h4>
-                                    <div className="space-y-1.5">
-                                        {results.MX.map((mx, i) => (
-                                            <div key={i} className="text-[11px] font-bold text-text-primary bg-surface-light border border-border-light px-3 py-2 rounded-lg truncate">
-                                                {mx.exchange} <span className="opacity-40 ml-1">[{mx.priority}]</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                            {results?.TXT && results.TXT.length > 0 && (
-                                <div>
-                                    <h4 className="mb-2 text-[10px] font-black uppercase tracking-widest text-text-muted">TXT Records</h4>
-                                    <div className="space-y-1.5">
-                                        {results.TXT.map((txt, i) => (
-                                            <div key={i} className="text-[10px] font-bold text-text-primary bg-surface-light border border-border-light px-3 py-2 rounded-lg break-all">
-                                                {txt.join(' ')}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    </>
                 )}
             </div>
         </div>

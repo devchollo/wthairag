@@ -8,6 +8,7 @@ import {
   MessageSquare, Database, FileText, Command, Zap, Layers, RefreshCcw, Layout
 } from 'lucide-react';
 import ScrollReveal from '@/components/ScrollReveal';
+import TerminalSimulation from '@/components/TerminalSimulation';
 
 export default function Home() {
   return (
@@ -65,14 +66,18 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="mt-4 bg-black/40 rounded-xl p-6 font-mono text-[12px] text-emerald-400 space-y-2 border border-white/5 relative z-10">
-                <p className="opacity-40 select-none"># Requesting global resolution...</p>
-                <p><span className="text-blue-400">$</span> dig +short worktoolshub.com A</p>
-                <p className="text-white">104.21.78.231</p>
-                <p className="text-white">172.67.135.244</p>
-                <p className="pt-2"><span className="text-blue-400">$</span> dig +short worktoolshub.com MX</p>
-                <p className="text-white">10 aspmx.l.google.com.</p>
-                <p className="text-white">20 alt1.aspmx.l.google.com.</p>
+              <div className="mt-4 bg-black/40 rounded-xl p-6 relative z-10 border border-white/5">
+                <TerminalSimulation
+                  lines={[
+                    { text: '# Requesting global resolution...', type: 'comment' },
+                    { text: 'dig +short worktoolshub.com A', type: 'input' },
+                    { text: '104.21.78.231', type: 'output' },
+                    { text: '172.67.135.244', type: 'output' },
+                    { text: 'dig +short worktoolshub.com MX', type: 'input', delay: 1000 },
+                    { text: '10 aspmx.l.google.com.', type: 'output' },
+                    { text: '20 alt1.aspmx.l.google.com.', type: 'output' },
+                  ]}
+                />
               </div>
               <div className="absolute inset-0 bg-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </div>
