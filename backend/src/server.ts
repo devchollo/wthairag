@@ -43,6 +43,16 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // NoSQL Injection Protection
+// Express 5 makes req.query a getter; mongoSanitize needs it to be writable
+app.use((req, res, next) => {
+    Object.defineProperty(req, 'query', {
+        value: { ...req.query },
+        writable: true,
+        enumerable: true,
+        configurable: true
+    });
+    next();
+});
 app.use(mongoSanitize());
 
 // Pollution Protection
