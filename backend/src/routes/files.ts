@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { combinePDFs, downloadFile, convertImage, textToPdf } from '../controllers/fileController';
+import { combinePDFs, downloadFile, convertImage, textToPdf, convertPdfToWord, convertWordToPdf } from '../controllers/fileController';
 import { generateAltText } from '../controllers/aiToolsController';
 
 const router = express.Router();
@@ -18,6 +18,8 @@ const upload = multer({
 router.post('/pdf/combine', upload.array('files', 10), combinePDFs);
 router.post('/image/convert', upload.single('file'), convertImage);
 router.post('/text-to-pdf', textToPdf);
+router.post('/pdf/to-word', upload.single('file'), convertPdfToWord);
+router.post('/word/to-pdf', upload.single('file'), convertWordToPdf);
 router.post('/alt-text', upload.single('file'), generateAltText);
 router.get('/download/:filename', downloadFile);
 

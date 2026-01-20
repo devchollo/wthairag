@@ -3,6 +3,10 @@ import { PDFDocument } from 'pdf-lib';
 import path from 'path';
 import fs from 'fs';
 import { sendSuccess, sendError } from '../utils/response';
+const sharp = require('sharp');
+const pdfParse = require('pdf-parse');
+const mammoth = require('mammoth');
+const htmlToDocx = require('html-to-docx');
 
 const TEMP_DIR = path.join(process.cwd(), 'temp');
 
@@ -131,7 +135,6 @@ export const convertImage = async (req: Request, res: Response) => {
             return sendError(res, 'Invalid target format. Use: png, jpg, jpeg, or webp', 400);
         }
 
-        const sharp = require('sharp');
         let converted: Buffer;
 
         switch (targetFormat.toLowerCase()) {
@@ -168,6 +171,45 @@ export const convertImage = async (req: Request, res: Response) => {
     }
 };
 
+// Helper: Create PDF from Text
+const createPdfBuffFromText = async (text: string): Promise<Uint8Array> => {
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage([612, 792]);
+    const fontSize = 12;
+    const margin = 50;
+    const lineHeight = fontSize * 1.5;
+    const maxWidth = page.getWidth() - margin * 2;
+
+    const words = text.split(' ');
+    let lines: string[] = [];
+    let currentLine = '';
+
+    for (const word of words) {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        if (testLine.length * (fontSize * 0.5) > maxWidth) {
+            lines.push(currentLine);
+            currentLine = word;
+        } else {
+            currentLine = testLine;
+        }
+    }
+    if (currentLine) lines.push(currentLine);
+
+    let y = page.getHeight() - margin;
+    let currentPage = page;
+
+    for (const line of lines) {
+        if (y < margin) {
+            currentPage = pdfDoc.addPage([612, 792]);
+            y = currentPage.getHeight() - margin;
+        }
+        currentPage.drawText(line, { x: margin, y, size: fontSize });
+        y -= lineHeight;
+    }
+
+    return await pdfDoc.save();
+};
+
 // Text to PDF Converter
 export const textToPdf = async (req: Request, res: Response) => {
     try {
@@ -177,44 +219,7 @@ export const textToPdf = async (req: Request, res: Response) => {
             return sendError(res, 'Text content is required', 400);
         }
 
-        const pdfDoc = await PDFDocument.create();
-        const page = pdfDoc.addPage([612, 792]); // Letter size
-
-        // Simple text rendering (basic implementation)
-        const fontSize = 12;
-        const margin = 50;
-        const lineHeight = fontSize * 1.5;
-        const maxWidth = page.getWidth() - margin * 2;
-
-        // Split text into lines
-        const words = text.split(' ');
-        let lines: string[] = [];
-        let currentLine = '';
-
-        for (const word of words) {
-            const testLine = currentLine ? `${currentLine} ${word}` : word;
-            if (testLine.length * (fontSize * 0.5) > maxWidth) {
-                lines.push(currentLine);
-                currentLine = word;
-            } else {
-                currentLine = testLine;
-            }
-        }
-        if (currentLine) lines.push(currentLine);
-
-        // Draw text
-        let y = page.getHeight() - margin;
-        for (const line of lines) {
-            if (y < margin) {
-                // Add new page if needed
-                const newPage = pdfDoc.addPage([612, 792]);
-                y = newPage.getHeight() - margin;
-            }
-            page.drawText(line, { x: margin, y, size: fontSize });
-            y -= lineHeight;
-        }
-
-        const pdfBytes = await pdfDoc.save();
+        const pdfBytes = await createPdfBuffFromText(text);
         const filename = `text_${Date.now()}.pdf`;
         const filePath = path.join(TEMP_DIR, filename);
         fs.writeFileSync(filePath, Buffer.from(pdfBytes));
@@ -222,10 +227,78 @@ export const textToPdf = async (req: Request, res: Response) => {
         return sendSuccess(res, {
             filename,
             downloadUrl: `/api/files/download/${filename}`,
-            pageCount: pdfDoc.getPageCount(),
+            convertedSize: pdfBytes.length,
             expiresIn: '30 minutes'
         }, 'Text converted to PDF');
     } catch (error: any) {
         return sendError(res, `Conversion failed: ${error.message}`, 500);
     }
 };
+
+// PDF to Word (Simple Text Extraction)
+export const convertPdfToWord = async (req: Request, res: Response) => {
+    try {
+        const file = req.file as Express.Multer.File;
+        if (!file) return sendError(res, 'PDF file is required', 400);
+
+        const data = await pdfParse(file.buffer);
+        const text = data.text;
+
+        // Wrap text in basic HTML for docx conversion with preserved paragraphs
+        const htmlContent = `<html><body>${text.split('\n').map((line: string) => `<p>${line || '&nbsp;'}</p>`).join('')}</body></html>`;
+
+        const docxBuffer = await htmlToDocx(htmlContent, null, {
+            table: { row: { cantSplit: true } },
+            footer: true,
+            pageNumber: true,
+        });
+
+        const filename = `converted_${Date.now()}.docx`;
+        const filePath = path.join(TEMP_DIR, filename);
+        fs.writeFileSync(filePath, docxBuffer);
+
+        return sendSuccess(res, {
+            filename,
+            downloadUrl: `/api/files/download/${filename}`,
+            originalSize: file.size,
+            convertedSize: docxBuffer.length,
+            format: 'docx',
+            expiresIn: '30 minutes'
+        }, 'PDF converted to Word successfully');
+
+    } catch (error: any) {
+        return sendError(res, `PDF to Word failed: ${error.message}`, 500);
+    }
+};
+
+// Word to PDF
+export const convertWordToPdf = async (req: Request, res: Response) => {
+    try {
+        const file = req.file as Express.Multer.File;
+        if (!file) return sendError(res, 'Word file is required', 400);
+
+        // Extract raw text
+        const result = await mammoth.extractRawText({ buffer: file.buffer });
+        const text = result.value;
+
+        if (!text) return sendError(res, 'Could not extract text from Word document', 400);
+
+        const pdfBytes = await createPdfBuffFromText(text);
+
+        const filename = `converted_${Date.now()}.pdf`;
+        const filePath = path.join(TEMP_DIR, filename);
+        fs.writeFileSync(filePath, Buffer.from(pdfBytes));
+
+        return sendSuccess(res, {
+            filename,
+            downloadUrl: `/api/files/download/${filename}`,
+            convertedSize: pdfBytes.length,
+            format: 'pdf',
+            expiresIn: '30 minutes'
+        }, 'Word converted to PDF successfully');
+
+    } catch (error: any) {
+        return sendError(res, `Word to PDF failed: ${error.message}`, 500);
+    }
+};
+

@@ -25,7 +25,13 @@ export default function WhoisLookup() {
     const [error, setError] = useState<string | null>(null);
 
     const handleLookup = async () => {
-        if (!domain) return;
+        let target = domain;
+        if (!target) return;
+
+        // Force naked domain format
+        target = target.replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0];
+        setDomain(target);
+
         setLoading(true);
         setError(null);
         setResults(null);

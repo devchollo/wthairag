@@ -38,7 +38,13 @@ export default function DNSChecker() {
     const addLog = (msg: string) => setLogs(prev => [...prev, msg]);
 
     const handleLookup = async () => {
-        if (!domain) return;
+        let target = domain;
+        if (!target) return;
+
+        // Force naked domain format
+        target = target.replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0];
+        setDomain(target);
+
         setLoading(true);
         setError(null);
         setResults(null);

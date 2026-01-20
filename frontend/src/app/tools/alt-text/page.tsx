@@ -44,7 +44,17 @@ export default function AltTextGenerator() {
     };
 
     const handleGenerate = async () => {
-        if (!file && !imageUrl) {
+        let finalImageUrl = imageUrl;
+
+        // Force full URL format if URL is used
+        if (!file && finalImageUrl) {
+            if (!/^https?:\/\//i.test(finalImageUrl)) {
+                finalImageUrl = 'https://' + finalImageUrl;
+                setImageUrl(finalImageUrl);
+            }
+        }
+
+        if (!file && !finalImageUrl) {
             setError('Please provide an image file or URL');
             return;
         }
@@ -58,7 +68,7 @@ export default function AltTextGenerator() {
             if (file) {
                 formData.append('file', file);
             } else {
-                formData.append('imageUrl', imageUrl);
+                formData.append('imageUrl', finalImageUrl);
             }
 
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';

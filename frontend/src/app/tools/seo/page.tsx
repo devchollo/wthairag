@@ -51,7 +51,15 @@ export default function SEOChecker() {
     const [error, setError] = useState<string | null>(null);
 
     const handleAnalyze = async () => {
-        if (!url) return;
+        let target = url;
+        if (!target) return;
+
+        // Force full URL format
+        if (!/^https?:\/\//i.test(target)) {
+            target = 'https://' + target;
+        }
+        setUrl(target);
+
         setLoading(true);
         setError(null);
         setResults(null);
