@@ -18,10 +18,12 @@ export default function Home() {
   const [testimonialIndex, setTestimonialIndex] = useState(0);
 
   const testimonials = [
-    { name: 'Alex Chen', role: 'Lead DevOps @ Fintech Startup', text: 'Finally, a DNS tool that doesn\'t cache old records. Saved us hours debugging a migration.', rating: 5 },
-    { name: 'Sarah Kim', role: 'Security Engineer @ Healthcare SaaS', text: 'The SSL audit is incredibly thorough. Protocol version, cipher suites, expiry countdown - all in one place.', rating: 5 },
-    { name: 'Marcus Rodriguez', role: 'Full Stack Developer', text: 'I use the password generator daily. Clean, fast, and actually cryptographically secure.', rating: 4 },
-    { name: 'Emily Tanaka', role: 'CTO @ Logistics Platform', text: 'We migrated our internal docs to the RAG system. Query accuracy is impressive for private data.', rating: 5 },
+    {
+      name: 'Be the first to review',
+      role: 'Your feedback helps improve this tool',
+      text: 'This tool is new and hasn’t been reviewed yet. Share your experience and help others decide.',
+      rating: null
+    }
   ];
 
   useEffect(() => {
