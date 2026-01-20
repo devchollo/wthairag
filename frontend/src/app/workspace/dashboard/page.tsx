@@ -1,36 +1,72 @@
 'use client';
 
-import styles from '../workspace.module.css';
+import { LayoutDashboard, Zap, FileText, Users, TrendingUp, ArrowUpRight } from 'lucide-react';
 
 export default function Dashboard() {
-    return (
-        <div>
-            <h1>Workspace Overview</h1>
-            <p className={styles.subtitle}>Insights and analytics for your organization.</p>
+    const stats = [
+        { label: 'AI Token Usage', value: '12.4k', trend: '+14%', icon: Zap },
+        { label: 'Documents Ingested', value: '42', trend: '+2', icon: FileText },
+        { label: 'Active Members', value: '8', trend: 'Stable', icon: Users },
+    ];
 
-            <div className={styles.statsGrid} style={{ marginTop: '32px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
-                <div className="glass card" style={{ padding: '24px' }}>
-                    <h4>AI Token Usage</h4>
-                    <p style={{ fontSize: '32px', fontWeight: '700', color: 'var(--foreground)', marginTop: '8px' }}>12.4k</p>
-                </div>
-                <div className="glass card" style={{ padding: '24px' }}>
-                    <h4>Documents Ingested</h4>
-                    <p style={{ fontSize: '32px', fontWeight: '700', color: 'var(--foreground)', marginTop: '8px' }}>42</p>
-                </div>
-                <div className="glass card" style={{ padding: '24px' }}>
-                    <h4>Active Members</h4>
-                    <p style={{ fontSize: '32px', fontWeight: '700', color: 'var(--foreground)', marginTop: '8px' }}>8</p>
+    return (
+        <div className="space-y-10">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-text-primary dark:text-text-dark flex items-center gap-2">
+                        <LayoutDashboard className="h-6 w-6 text-primary" />
+                        Workspace Overview
+                    </h1>
+                    <p className="text-text-secondary dark:text-muted mt-1">Insights and analytics for your private organization.</p>
                 </div>
             </div>
 
-            <div className="glass card" style={{ marginTop: '32px', padding: '32px' }}>
-                <h3>Most Queried Topics</h3>
-                <ul style={{ marginTop: '16px', listStyle: 'none' }}>
-                    <li style={{ padding: '12px 0', borderBottom: '1px solid var(--card-border)' }}>1. Vacation Policy</li>
-                    <li style={{ padding: '12px 0', borderBottom: '1px solid var(--card-border)' }}>2. Security Protocols</li>
-                    <li style={{ padding: '12px 0', borderBottom: '1px solid var(--card-border)' }}>3. Onboarding Steps</li>
-                </ul>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                {stats.map((stat) => (
+                    <div key={stat.label} className="card">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                <stat.icon className="h-5 w-5" />
+                            </div>
+                            <div className={`flex items-center gap-1 text-xs font-bold ${stat.trend.startsWith('+') ? 'text-green-600' : 'text-text-muted'}`}>
+                                {stat.trend} <ArrowUpRight className="h-3 w-3" />
+                            </div>
+                        </div>
+                        <div className="text-[13px] font-bold uppercase tracking-wider text-text-muted mb-1">
+                            {stat.label}
+                        </div>
+                        <div className="text-3xl font-extrabold text-text-primary dark:text-text-dark">
+                            {stat.value}
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            <div className="card">
+                <div className="flex items-center gap-2 mb-6 text-text-primary dark:text-text-dark">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    <h3 className="font-bold text-lg">Most Queried Topics</h3>
+                </div>
+                <div className="divide-y divide-border-light dark:divide-border-dark">
+                    {[
+                        { topic: 'Vacation Policy', queries: 245 },
+                        { topic: 'Security Protocols', queries: 189 },
+                        { topic: 'Onboarding Steps', queries: 132 },
+                        { topic: 'Healthcare Benefits', queries: 94 },
+                    ].map((item, i) => (
+                        <div key={item.topic} className="flex items-center justify-between py-4">
+                            <div className="flex items-center gap-4">
+                                <span className="text-sm font-bold text-text-muted w-4">{i + 1}.</span>
+                                <span className="font-semibold text-text-primary dark:text-text-dark">{item.topic}</span>
+                            </div>
+                            <div className="text-sm text-text-secondary dark:text-muted">
+                                {item.queries} queries
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     );
 }
+
