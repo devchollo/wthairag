@@ -89,7 +89,7 @@ export const downloadFile = async (req: Request, res: Response) => {
         const { filename } = req.params;
 
         // Sanitize filename to prevent directory traversal
-        const sanitizedFilename = path.basename(filename);
+        const sanitizedFilename = path.basename(filename as string);
         const filePath = path.join(TEMP_DIR, sanitizedFilename);
 
         if (!fs.existsSync(filePath)) {

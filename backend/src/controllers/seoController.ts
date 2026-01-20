@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { sendSuccess, sendError } from '../utils/response';
-import { generateAIReport } from '../services/aiService';
 
 // SEO Checker
 export const seoChecker = async (req: Request, res: Response) => {
@@ -49,7 +48,7 @@ export const seoChecker = async (req: Request, res: Response) => {
             },
             images: {
                 total: $('img').length,
-                withAlt: $('img[alt]').filter((_, el) => $(el).attr('alt')?.trim()).length,
+                withAlt: $('img[alt]').filter((_, el) => !!$(el).attr('alt')?.trim()).length,
                 withoutAlt: $('img').filter((_, el) => !$(el).attr('alt')?.trim()).length
             },
             structuredData: {
