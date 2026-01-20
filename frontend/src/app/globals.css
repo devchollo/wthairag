@@ -1,24 +1,26 @@
 @import "tailwindcss";
 
 @theme {
-  /* Developer Hub Palette - Clean, Airy, and Professional */
+  /* High-Contrast Developer Palette */
   --color-primary: #2563eb;
-  /* Vibrant Royal Blue */
   --color-primary-hover: #1d4ed8;
 
-  /* Backgrounds */
-  --color-background-light: #fcfcfd;
+  /* Absolute Backgrounds */
+  --color-background-light: #ffffff;
+  /* Pure White for max contrast */
   --color-background-dark: #020617;
 
-  /* Surfaces - Floating effect */
-  --color-surface-light: #ffffff;
+  /* Surfaces */
+  --color-surface-light: #f8fafc;
+  /* Slate 50 */
   --color-surface-dark: #0f172a;
 
-  /* Borders - Minimalist */
-  --color-border-light: #f1f5f9;
+  /* Borders */
+  --color-border-light: #e2e8f0;
+  /* Slate 200 */
   --color-border-dark: #1e293b;
 
-  /* Text - High-Fidelity Developer Contrast */
+  /* Text - GUARANTEED READABILITY */
   --color-text-primary: #020617;
   /* Charcoal 950 */
   --color-text-secondary: #334155;
@@ -28,30 +30,24 @@
   --color-text-dark: #f8fafc;
   /* Near White */
 
-  /* Radius - Modern Softness */
-  --radius-xl: 12px;
-  --radius-2xl: 18px;
+  /* Radius */
+  --radius-xl: 8px;
+  --radius-2xl: 12px;
 }
 
 :root {
-  --background: #fcfcfd;
+  --background: #ffffff;
   --foreground: #020617;
-  --card-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --header-blur: saturate(180%) blur(20px);
-}
-
-[data-theme='dark'] {
-  --background: #020617;
-  --foreground: #f8fafc;
-  --card-shadow: 0 0 0 1px rgb(255 255 255 / 0.1);
 }
 
 @layer base {
   body {
     @apply bg-background-light text-text-primary antialiased;
-    color: var(--foreground);
-    background: var(--background);
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    color: #020617;
+    /* Default visibility */
+    background: #ffffff;
+    line-height: 1.5;
+    /* Tighter line height */
     letter-spacing: -0.01em;
   }
 
@@ -60,42 +56,61 @@
   h3,
   h4 {
     @apply font-black tracking-tighter;
-    color: var(--foreground);
+    color: #020617;
+    /* Default visibility for headings */
     line-height: 1.1;
   }
 }
 
 @layer components {
 
-  /* Premium Developer Buttons */
+  /* High-Density Buttons */
   .btn-primary {
-    @apply h-11 px-6 rounded-xl bg-primary text-white font-bold transition-all hover:bg-primary-hover active:scale-[0.98] flex items-center justify-center shadow-md shadow-primary/10;
+    @apply h-10 px-5 rounded-lg bg-primary text-white font-bold transition-all duration-300 hover:bg-primary-hover active:scale-[0.98] flex items-center justify-center shadow-lg shadow-primary/20;
   }
 
   .btn-secondary {
-    @apply h-11 px-6 rounded-xl bg-white border border-border-light text-text-primary font-bold shadow-sm transition-all hover:bg-surface-light active:scale-[0.98] flex items-center justify-center;
+    @apply h-10 px-5 rounded-lg bg-white border border-border-light text-text-primary font-bold transition-all duration-300 hover:bg-surface-light active:scale-[0.98] flex items-center justify-center shadow-sm;
   }
 
-  /* Bento-style Cards */
+  /* Compact Cards with Motion */
   .card {
-    @apply bg-white border border-border-light rounded-2xl p-8 transition-all duration-300;
-    box-shadow: var(--card-shadow);
+    @apply bg-white border border-border-light rounded-xl p-6 transition-all duration-500 ease-in-out;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   }
 
   .card:hover {
-    @apply shadow-xl shadow-black/[0.02] -translate-y-1;
+    @apply shadow-2xl shadow-black/10 border-primary/20 -translate-y-1 scale-[1.01];
   }
 
-  [data-theme='dark'] .btn-secondary {
-    @apply bg-surface-dark border-border-dark text-text-dark hover:bg-background-dark;
+  /* Animation Primitives */
+  .reveal {
+    @apply opacity-0 translate-y-8 pointer-events-none transition-all duration-1000 ease-out;
   }
 
-  [data-theme='dark'] .card {
-    @apply bg-surface-dark border-border-dark;
+  .reveal.active {
+    @apply opacity-100 translate-y-0 pointer-events-auto;
   }
 }
 
-/* Fluid animations */
+/* Scroll Animation Keyframes */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(2rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-reveal {
+  animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
 * {
-  @apply transition-all duration-200 ease-out;
+  @apply transition-all;
+  transition-duration: 300ms;
 }

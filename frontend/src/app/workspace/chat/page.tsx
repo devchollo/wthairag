@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Send, User, Bot, BookOpen } from 'lucide-react';
+import { Send, User, Bot, BookOpen, Terminal, Activity } from 'lucide-react';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -11,7 +11,7 @@ interface Message {
 
 export default function RAGChat() {
     const [messages, setMessages] = useState<Message[]>([
-        { role: 'assistant', content: 'Hello! I am your AI assistant. Ask me anything about your uploaded documents in the knowledge base.' }
+        { role: 'assistant', content: 'Protocol Active. Your knowledge vaults (2 docs) are synchronized. How can I assist with your workflow today?' }
     ]);
     const [input, setInput] = useState('');
 
@@ -25,35 +25,34 @@ export default function RAGChat() {
         setTimeout(() => {
             setMessages([...newMessages, {
                 role: 'assistant',
-                content: 'Based on the Company Handbook, the vacation policy is 20 days per year, accruable after the 6th month of employment.',
-                citations: ['Handbook.pdf, Page 12']
+                content: 'Refactoring task context: Your internal "Backend Architecture" documentation recommends using an isolated proxy for cross-domain auth. Would you like me to draft a configuration?',
+                citations: ['Backend_Specs.md, Page 4']
             } as Message]);
-        }, 1000);
+        }, 800);
     };
 
     return (
-        <div className="flex flex-col h-[calc(100vh-160px)]">
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold tracking-tight text-text-primary dark:text-text-dark flex items-center gap-2">
-                    <Bot className="h-6 w-6 text-primary" />
-                    AI RAG Chat
-                </h1>
-                <p className="text-text-secondary dark:text-muted mt-1">Context-aware productivity assistant.</p>
+        <div className="flex flex-col h-[calc(100vh-140px)] gap-6">
+            <div className="mb-2">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">
+                    <Terminal className="h-3.5 w-3.5" /> Workspace / RAG Console
+                </div>
+                <h1 className="text-3xl font-black tracking-tighter text-text-primary">AI Contextual Assistant.</h1>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-6 pb-8">
+            <div className="flex-1 overflow-y-auto space-y-4 px-1">
                 {messages.map((m, i) => (
                     <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`flex max-w-[80%] gap-3 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${m.role === 'assistant' ? 'bg-primary/10 text-primary' : 'bg-surface-light text-text-secondary dark:bg-surface-dark'}`}>
-                                {m.role === 'assistant' ? <Bot className="h-5 w-5" /> : <User className="h-5 w-5" />}
+                        <div className={`flex max-w-[85%] gap-2.5 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${m.role === 'assistant' ? 'bg-blue-600 text-white' : 'bg-surface-light text-text-secondary border border-border-light'}`}>
+                                {m.role === 'assistant' ? <Bot className="h-4 w-4" /> : <User className="h-4 w-4" />}
                             </div>
-                            <div className={`rounded-xl px-4 py-3 text-sm leading-relaxed ${m.role === 'assistant' ? 'bg-surface-light text-text-primary dark:bg-surface-dark dark:text-text-dark' : 'bg-primary text-white'}`}>
+                            <div className={`rounded-xl px-4 py-3 text-sm font-bold leading-relaxed shadow-sm ${m.role === 'assistant' ? 'bg-white border border-border-light text-text-primary' : 'bg-blue-600 text-white'}`}>
                                 {m.content}
                                 {m.citations && (
-                                    <div className="mt-3 flex flex-wrap gap-2 border-t border-border-light pt-3 dark:border-border-dark">
+                                    <div className="mt-3 flex flex-wrap gap-2 border-t border-border-light pt-3">
                                         {m.citations.map((cite, i) => (
-                                            <div key={i} className="flex items-center gap-1.5 rounded bg-white px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-primary dark:bg-background-dark">
+                                            <div key={i} className="flex items-center gap-1.5 rounded bg-surface-light px-2 py-1 text-[10px] font-black uppercase tracking-wider text-blue-600 border border-border-light">
                                                 <BookOpen className="h-3 w-3" />
                                                 {cite}
                                             </div>
@@ -66,18 +65,18 @@ export default function RAGChat() {
                 ))}
             </div>
 
-            <div className="mt-4 flex gap-3">
+            <div className="mt-2 flex gap-2 bg-surface-light p-2 rounded-xl border border-border-light">
                 <input
                     type="text"
-                    placeholder="Ask a question about your documents..."
+                    placeholder="Query your knowledge base..."
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                    className="h-11 flex-1 rounded-lg border border-border-light bg-white px-4 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 dark:border-border-dark dark:bg-background-dark dark:text-text-dark"
+                    className="h-10 flex-1 bg-transparent px-4 text-sm font-bold outline-none placeholder:text-text-muted"
                 />
                 <button
                     onClick={handleSend}
-                    className="btn-primary h-11 w-11 p-0 flex items-center justify-center"
+                    className="btn-primary h-10 w-10 p-0 shadow-none hover:shadow-lg"
                     disabled={!input.trim()}
                 >
                     <Send className="h-4 w-4" />
@@ -86,4 +85,3 @@ export default function RAGChat() {
         </div>
     );
 }
-

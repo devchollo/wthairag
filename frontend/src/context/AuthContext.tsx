@@ -25,18 +25,21 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<User | null>(() => {
-        if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('user');
-            return saved ? JSON.parse(saved) : null;
-        }
-        return null;
-    });
+    const [user, setUser] = useState<User | null>(null);
     const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
     const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
 
     useEffect(() => {
-        // Initial workspaces load could go here if persistent
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+            try {
+                const parsedUser = JSON.parse(savedUser);
+                setUser(parsedUser);
+                // Also load workspaces if we had them or let the app refetch
+            } catch (e) {
+                console.error("Failed to parse saved user", e);
+            }
+        }
     }, []);
 
     const login = (data: { user: User; token: string; memberships: { workspaceId: Workspace }[] }) => {

@@ -1,83 +1,120 @@
+'use client';
+
 import Link from 'next/link';
-import { Shield, Server, Search, Settings, Lock, ArrowRight, Zap, Globe, Terminal } from 'lucide-react';
+import { Shield, Server, Search, Settings, Lock, ArrowRight, Zap, Globe, Terminal, MessageSquare, Database, Key, QrCode } from 'lucide-react';
 
 const tools = [
     {
         id: 'ssl',
         name: 'TLS Chain Audit',
-        desc: 'Deep verification of SSL/TLS certificates and chain-of-trust integrity.',
+        desc: 'Chain-of-trust verification and cryptographic security audits for domain integrity.',
         icon: Shield,
-        category: 'Security'
+        category: 'Security',
+        color: 'text-emerald-600',
+        bg: 'bg-emerald-50'
     },
     {
         id: 'dns',
         name: 'DNS Debugger',
-        desc: 'Sub-second propagation logs and global record resolution primitives.',
-        icon: Server,
-        category: 'Networking'
+        desc: 'Global resolution logs for A, MX, and TXT record primitives with sub-second latency.',
+        icon: Globe,
+        category: 'Networking',
+        color: 'text-blue-600',
+        bg: 'bg-blue-50'
     },
     {
         id: 'password',
         name: 'Entropy Generator',
-        desc: 'Browser-native cryptographic passphrases with high entropy entropy.',
-        icon: Lock,
-        category: 'Crypto'
+        desc: 'Browser-native passphrase generation using system-level cryptographic entropy.',
+        icon: Key,
+        category: 'Crypto',
+        color: 'text-amber-500',
+        bg: 'bg-amber-50'
     },
     {
         id: 'qr',
-        name: 'QR Payload Encoder',
-        desc: 'High-density payload encoding for physical-to-digital data transfer.',
-        icon: Zap,
-        category: 'Encoding'
+        name: 'Payload Encoder',
+        desc: 'High-density QR data encoding for digital-to-physical transfer and rapid sharing.',
+        icon: QrCode,
+        category: 'Encoding',
+        color: 'text-indigo-600',
+        bg: 'bg-indigo-50'
     }
 ];
 
 export default function ToolsPage() {
     return (
-        <div className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-            <div className="mb-16 text-left">
-                <div className="mb-4 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-text-muted">
-                    <Terminal className="h-4 w-4" /> WorkToolsHub / Network Primitives
+        <div className="mx-auto max-w-[1240px] px-6 py-12 lg:py-20 bg-white">
+            <div className="mb-16">
+                <div className="mb-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
+                    <Terminal className="h-4 w-4" /> WorkToolsHub / System Architecture & Primitives
                 </div>
-                <h1 className="text-5xl font-black tracking-tighter text-text-primary sm:text-6xl">
-                    Development Primitives.
+                <h1 className="text-5xl font-black tracking-tighter text-text-primary sm:text-6xl mb-6">
+                    Professional Utilities.
                 </h1>
-                <p className="mt-6 text-xl font-bold text-text-secondary max-w-2xl leading-relaxed">
-                    A high-performance suite of stateless utilities optimized for low-latency network debugging and cryptographic operations.
+                <p className="text-lg font-bold text-text-secondary max-w-2xl leading-snug">
+                    A fleet of high-performance network and security primitives optimized for your daily engineering task flow. Stateless, private, and built for precision.
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+                {/* AI RAG Featured in Tools - Premium Card */}
+                <Link
+                    href="/workspace/chat"
+                    className="card md:col-span-2 bg-blue-600 text-white border-none p-8 flex flex-col justify-between hover:scale-[1.01] transition-transform shadow-2xl shadow-blue-600/20 relative overflow-hidden group"
+                >
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-4 mb-12">
+                            <div className="h-12 w-12 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/5">
+                                <Database className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <div className="text-[10px] font-black uppercase tracking-widest text-blue-100 mb-0.5">Core Intelligence</div>
+                                <div className="text-xs font-black">RAG Pipeline Active</div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 className="text-3xl font-black tracking-tight mb-3">Query Your Knowledge.</h3>
+                            <p className="text-sm font-bold text-blue-50 leading-relaxed max-w-md">
+                                Securely index your internal documentation into an isolated AI context. Retrieve specifications and resolve technical debt with zero data leakage.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="absolute bottom-[-20%] right-[-10%] w-[240px] h-[240px] bg-white/5 rounded-full blur-3xl group-hover:bg-white/10 transition-colors"></div>
+                </Link>
+
                 {tools.map((tool) => (
                     <Link
                         key={tool.id}
                         href={`/tools/${tool.id}`}
-                        className="card group hover:border-primary border-2 border-border-light bg-white p-10 flex flex-col justify-between"
+                        className="card flex flex-col justify-between p-7 border-2 hover:border-blue-600/30 group transition-all"
                     >
                         <div>
-                            <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-light border border-border-light text-primary transition-all group-hover:bg-primary group-hover:text-white">
-                                <tool.icon className="h-7 w-7" />
+                            <div className={`mb-6 flex h-12 w-12 items-center justify-center rounded-xl ${tool.bg} ${tool.color} border border-transparent group-hover:scale-110 transition-transform`}>
+                                <tool.icon className="h-6 w-6" />
                             </div>
-                            <div className="mb-2 text-[11px] font-black uppercase tracking-[0.2em] text-text-muted transition-colors group-hover:text-blue-600">
+                            <div className="mb-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
                                 {tool.category}
                             </div>
-                            <h3 className="mb-4 text-3xl font-black text-text-primary tracking-tight">
+                            <h3 className="mb-3 text-xl font-black text-text-primary tracking-tight">
                                 {tool.name}
                             </h3>
-                            <p className="font-bold text-text-secondary leading-relaxed text-sm">
+                            <p className="font-bold text-text-secondary leading-snug text-[13px] opacity-80">
                                 {tool.desc}
                             </p>
                         </div>
-                        <div className="mt-10 flex items-center justify-between">
-                            <span className="text-xs font-black uppercase tracking-widest text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
-                                Access Console <ArrowRight className="h-3 w-3" />
-                            </span>
-                            <div className="h-2 w-2 rounded-full bg-border-light group-hover:bg-primary transition-colors"></div>
+                        <div className="mt-8 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                            Access Primitive <ArrowRight className="h-3 w-3" />
                         </div>
                     </Link>
                 ))}
             </div>
+
+            <div className="mt-20 pt-10 border-t border-border-light text-center">
+                <p className="text-xs font-black uppercase tracking-widest text-text-muted">
+                    More primitives under development: IP Analyzer, JSON Schema Valdiator, Webhook Debugger.
+                </p>
+            </div>
         </div>
     );
 }
-
