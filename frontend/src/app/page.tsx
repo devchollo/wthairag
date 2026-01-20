@@ -22,7 +22,7 @@ export default function Home() {
       name: 'Be the first to review',
       role: 'Your feedback helps improve this tool',
       text: 'This tool is new and hasn’t been reviewed yet. Share your experience and help others decide.',
-      rating: null
+      rating: 5
     }
   ];
 
