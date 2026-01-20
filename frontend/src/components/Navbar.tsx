@@ -40,19 +40,19 @@ export default function Navbar() {
     return (
         <nav className="sticky top-0 z-50 w-full border-b border-border-light bg-background-light/80 backdrop-blur-md dark:border-border-dark dark:bg-background-dark/80">
             <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center gap-8">
-                    <Link href="/" className="text-xl font-bold tracking-tight text-text-primary dark:text-text-dark">
+                <div className="flex items-center gap-12">
+                    <Link href="/" className="text-xl font-bold tracking-tight text-text-primary dark:text-text-dark hover:opacity-80 transition-opacity">
                         WorkToolsHub
                     </Link>
 
-                    <div className="hidden items-center gap-6 lg:flex">
+                    <div className="hidden items-center gap-8 lg:flex">
                         <div
                             className="relative py-4"
                             onMouseEnter={handleMouseEnter}
                             onMouseLeave={handleMouseLeave}
                         >
                             <button
-                                className="flex items-center gap-1 text-[15px] font-medium text-text-secondary transition-colors hover:text-text-primary dark:text-muted dark:hover:text-text-dark"
+                                className="flex items-center gap-1 text-[15px] font-bold text-text-secondary transition-colors hover:text-text-primary dark:text-muted dark:hover:text-text-dark"
                                 aria-expanded={isToolsOpen}
                             >
                                 Tools
@@ -62,11 +62,11 @@ export default function Navbar() {
                             {/* Mega Dropdown */}
                             {isToolsOpen && (
                                 <div className="absolute left-[-100px] top-[100%] w-[600px] animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <div className="mt-2 rounded-xl border border-border-light bg-white p-6 shadow-xl shadow-black/5 dark:border-border-dark dark:bg-surface-dark">
+                                    <div className="mt-2 rounded-xl border border-border-light bg-white p-6 shadow-2xl shadow-black/10 dark:border-border-dark dark:bg-surface-dark">
                                         <div className="grid grid-cols-2 gap-8">
                                             {tools.map((section) => (
                                                 <div key={section.category}>
-                                                    <h4 className="mb-4 text-[13px] font-semibold uppercase tracking-wider text-text-muted">
+                                                    <h4 className="mb-4 text-[13px] font-bold uppercase tracking-widest text-text-muted">
                                                         {section.category}
                                                     </h4>
                                                     <div className="space-y-2">
@@ -78,7 +78,7 @@ export default function Navbar() {
                                                             >
                                                                 <item.icon className="mt-1 h-5 w-5 text-primary" />
                                                                 <div>
-                                                                    <div className="text-[15px] font-semibold text-text-primary dark:text-text-dark">
+                                                                    <div className="text-[15px] font-bold text-text-primary dark:text-text-dark">
                                                                         {item.name}
                                                                     </div>
                                                                     <div className="text-sm text-text-secondary dark:text-muted">
@@ -92,7 +92,7 @@ export default function Navbar() {
                                             ))}
                                         </div>
                                         <div className="mt-6 border-t border-border-light pt-4 dark:border-border-dark">
-                                            <Link href="/tools" className="text-sm font-semibold text-primary hover:underline">
+                                            <Link href="/tools" className="text-sm font-bold text-primary hover:underline">
                                                 View all tools →
                                             </Link>
                                         </div>
@@ -101,20 +101,20 @@ export default function Navbar() {
                             )}
                         </div>
 
-                        <Link href="/workspace" className="text-[15px] font-medium text-text-secondary transition-colors hover:text-text-primary dark:text-muted dark:hover:text-text-dark">
+                        <Link href="/workspace" className="text-[15px] font-bold text-text-secondary transition-colors hover:text-text-primary dark:text-muted dark:hover:text-text-dark">
                             Workspace
                         </Link>
-                        <Link href="/donate" className="text-[15px] font-medium text-text-secondary transition-colors hover:text-text-primary dark:text-muted dark:hover:text-text-dark">
+                        <Link href="/donate" className="text-[15px] font-bold text-text-secondary transition-colors hover:text-text-primary dark:text-muted dark:hover:text-text-dark">
                             Donate
                         </Link>
                     </div>
                 </div>
 
                 <div className="hidden items-center gap-4 lg:flex">
-                    <Link href="/login" className="btn-secondary h-10 px-5 text-sm">
+                    <Link href="/login" className="btn-secondary h-10 px-6 text-sm">
                         Sign In
                     </Link>
-                    <Link href="/login" className="btn-primary h-10 px-5 text-sm">
+                    <Link href="/signup" className="btn-primary h-10 px-6 text-sm">
                         Get Started
                     </Link>
                 </div>

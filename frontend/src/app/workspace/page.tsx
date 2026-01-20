@@ -1,106 +1,52 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Lock, Mail, User, Building, ArrowRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Lock, ShieldCheck, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 
-export default function LoginPage() {
-    const [isLogin, setIsLogin] = useState(true);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [name, setName] = useState('');
-    const [orgName, setOrgName] = useState('');
-    const { login } = useAuth();
+export default function WorkspacePage() {
+    const { user } = useAuth();
+    const router = useRouter();
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        const mockData = {
-            user: { name: name || 'User', email },
-            token: 'mock-token',
-            memberships: [{ workspaceId: { name: orgName || 'My Workspace', slug: 'my-workspace' } }]
-        };
-        login(mockData);
-        window.location.href = '/workspace/dashboard';
-    };
+    useEffect(() => {
+        if (user) {
+            router.push('/workspace/dashboard');
+        }
+    }, [user, router]);
 
     return (
-        <div className="mx-auto max-w-[440px] px-4 py-24 sm:py-32">
-            <div className="card">
-                <div className="text-center mb-8">
-                    <h1 className="text-2xl font-bold tracking-tight text-text-primary dark:text-text-dark">
-                        {isLogin ? 'Welcome Back' : 'Get Started'}
-                    </h1>
-                    <p className="mt-2 text-sm text-text-secondary dark:text-muted">
-                        {isLogin ? 'Login to access your workspace.' : 'Create your private AI vault today.'}
-                    </p>
+        <div className="mx-auto max-w-[1200px] px-4 py-24 sm:py-32 text-center">
+            <div className="card max-w-2xl mx-auto py-16 px-8 border-2 border-primary/10">
+                <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10 text-primary">
+                    <Lock className="h-10 w-10" />
+                </div>
+                <h1 className="text-3xl font-black text-text-primary dark:text-text-dark tracking-tighter mb-4">
+                    Secure Workspace Required
+                </h1>
+                <p className="text-lg font-bold text-text-secondary dark:text-muted mb-12 leading-relaxed">
+                    You are attempting to access a guarded environment. Please authenticate to verify your identity and access your organization's private AI vaults.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <Link href="/login" className="btn-primary min-w-[200px] gap-2">
+                        Sign Into Vault <ArrowRight className="h-4 w-4" />
+                    </Link>
+                    <Link href="/signup" className="btn-secondary min-w-[200px]">
+                        Request Access
+                    </Link>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {!isLogin && (
-                        <>
-                            <div className="relative">
-                                <User className="absolute left-3 top-3 h-5 w-5 text-text-muted" />
-                                <input
-                                    type="text"
-                                    placeholder="Full Name"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    className="h-11 w-full rounded-lg border border-border-light bg-white pl-10 pr-4 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 dark:border-border-dark dark:bg-background-dark dark:text-text-dark"
-                                    required
-                                />
-                            </div>
-                            <div className="relative">
-                                <Building className="absolute left-3 top-3 h-5 w-5 text-text-muted" />
-                                <input
-                                    type="text"
-                                    placeholder="Organization"
-                                    value={orgName}
-                                    onChange={(e) => setOrgName(e.target.value)}
-                                    className="h-11 w-full rounded-lg border border-border-light bg-white pl-10 pr-4 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 dark:border-border-dark dark:bg-background-dark dark:text-text-dark"
-                                    required
-                                />
-                            </div>
-                        </>
-                    )}
-                    <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-5 w-5 text-text-muted" />
-                        <input
-                            type="email"
-                            placeholder="Email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="h-11 w-full rounded-lg border border-border-light bg-white pl-10 pr-4 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 dark:border-border-dark dark:bg-background-dark dark:text-text-dark"
-                            required
-                        />
+                <div className="mt-16 pt-8 border-t border-border-light dark:border-border-dark flex items-center justify-center gap-8 text-xs font-black uppercase tracking-widest text-text-muted">
+                    <div className="flex items-center gap-2">
+                        <ShieldCheck className="h-4 w-4 text-primary" /> End-to-End Encrypted
                     </div>
-                    <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-5 w-5 text-text-muted" />
-                        <input
-                            type="password"
-                            placeholder="Password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="h-11 w-full rounded-lg border border-border-light bg-white pl-10 pr-4 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 dark:border-border-dark dark:bg-background-dark dark:text-text-dark"
-                            required
-                        />
+                    <div className="flex items-center gap-2">
+                        <ShieldCheck className="h-4 w-4 text-primary" /> Tenant Isolated
                     </div>
-
-                    <button type="submit" className="btn-primary w-full gap-2">
-                        {isLogin ? 'Sign In' : 'Create Account'}
-                        <ArrowRight className="h-4 w-4" />
-                    </button>
-                </form>
-
-                <div className="mt-8 pt-6 border-t border-border-light text-center dark:border-border-dark">
-                    <button
-                        className="text-sm font-semibold text-text-secondary hover:text-primary dark:text-muted"
-                        onClick={() => setIsLogin(!isLogin)}
-                    >
-                        {isLogin ? "Don't have an account? Sign up" : "Already have an account? Login"}
-                    </button>
                 </div>
             </div>
         </div>
     );
 }
-

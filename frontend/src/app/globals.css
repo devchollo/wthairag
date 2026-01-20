@@ -1,31 +1,36 @@
 @import "tailwindcss";
 
 @theme {
-  /* Core Colors */
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
+  /* Core Colors - High Contrast */
+  --color-primary: #1e40af;
+  /* Deeper Blue */
+  --color-primary-hover: #1e3a8a;
 
   /* Backgrounds */
-  --color-background-light: #ffffff;
-  --color-background-dark: #0f1115;
+  --color-background-light: #fdfdfd;
+  --color-background-dark: #090a0c;
 
   /* Surfaces */
-  --color-surface-light: #f6f7f9;
-  --color-surface-dark: #181b21;
+  --color-surface-light: #ffffff;
+  --color-surface-dark: #121418;
 
-  /* Borders */
-  --color-border-light: #e4e6eb;
-  --color-border-dark: #2a2e37;
+  /* Borders - More visible */
+  --color-border-light: #dfe1e5;
+  --color-border-dark: #2d3139;
 
-  /* Text */
-  --color-text-primary: #111827;
-  --color-text-secondary: #6b7280;
-  --color-text-muted: #9ca3af;
-  --color-text-dark: #e5e7eb;
+  /* Text - High Contrast */
+  --color-text-primary: #0a0b0d;
+  /* Near Black */
+  --color-text-secondary: #334155;
+  /* Slate 700 */
+  --color-text-muted: #64748b;
+  /* Slate 500 */
+  --color-text-dark: #f8fafc;
+  /* Near White */
 
-  /* Legacy Shortcut Names (for backward compatibility during migration) */
-  --color-muted: #9ca3af;
-  --color-secondary: #6b7280;
+  /* Legacy Shortcut Names */
+  --color-muted: #64748b;
+  --color-secondary: #3341 slate;
 
   /* Spacing */
   --spacing-8: 8px;
@@ -35,46 +40,61 @@
   --radius-2xl: 16px;
 }
 
-/* Base resets & custom variables for dynamic switching if needed */
+/* Base resets & custom variables */
 :root {
-  --background: #ffffff;
-  --foreground: #111827;
+  --background: #fdfdfd;
+  --foreground: #0a0b0d;
+  --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
 [data-theme='dark'] {
-  --background: #0f1115;
-  --foreground: #e5e7eb;
+  --background: #090a0c;
+  --foreground: #f8fafc;
+  --card-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.5);
 }
 
 @layer base {
   body {
-    /* Use the generated classes - these should now be visible to the compiler */
     @apply bg-background-light text-text-primary antialiased;
     color: var(--foreground);
     background: var(--background);
+    line-height: 1.6;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-bold tracking-tight text-text-primary;
   }
 }
 
 /* Custom Utilities for the Calm Design System */
 @layer components {
   .btn-primary {
-    @apply h-[44px] px-6 rounded-[8px] bg-primary text-white font-semibold transition-all hover:bg-primary-hover active:scale-[0.98] focus:ring-4 focus:ring-primary/30 outline-none flex items-center justify-center;
+    @apply h-[46px] px-8 rounded-[8px] bg-primary text-white font-bold transition-all hover:bg-primary-hover active:scale-[0.98] focus:ring-4 focus:ring-primary/20 outline-none flex items-center justify-center shadow-sm;
   }
 
   .btn-secondary {
-    @apply h-[44px] px-6 rounded-[8px] bg-surface-light border border-border-light text-text-primary font-semibold transition-all hover:bg-border-light active:scale-[0.98] outline-none flex items-center justify-center;
+    @apply h-[46px] px-8 rounded-[8px] bg-white border-2 border-border-light text-text-primary font-bold transition-all hover:border-text-secondary active:scale-[0.98] outline-none flex items-center justify-center;
   }
 
   .card {
-    @apply bg-surface-light border border-border-light rounded-xl p-6 transition-all;
+    @apply bg-surface-light border border-border-light rounded-2xl p-8 transition-all;
+    box-shadow: var(--card-shadow);
   }
 
   [data-theme='dark'] .btn-secondary {
-    @apply bg-surface-dark border-border-dark text-text-dark hover:bg-border-dark;
+    @apply bg-surface-dark border-border-dark text-text-dark hover:border-text-muted;
   }
 
   [data-theme='dark'] .card {
     @apply bg-surface-dark border-border-dark;
   }
+}
+
+/* Smooth transitions */
+* {
+  @apply transition-colors duration-200;
 }
