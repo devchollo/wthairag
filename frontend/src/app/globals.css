@@ -80,7 +80,7 @@
   }
 
   .card:hover {
-    @apply shadow-2xl shadow-black/10 border-primary/20 -translate-y-1 scale-[1.01];
+    @apply shadow-xl shadow-black/5 border-primary/40;
   }
 
   /* Animation Primitives */

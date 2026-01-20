@@ -233,3 +233,177 @@ export const getSSLReport = async (req: Request, res: Response) => {
         return sendError(res, `Failed to audit SSL: ${error.message}`, 500);
     }
 };
+
+// WHOIS Lookup
+export const whoisLookup = async (req: Request, res: Response) => {
+    try {
+        const { domain } = req.body;
+        if (!domain) return sendError(res, 'Domain is required', 400);
+
+        const whois = require('whois-json');
+        const startTime = Date.now();
+
+        const result = await whois(domain);
+        const queryTime = Date.now() - startTime;
+
+        // Normalize the response (whois-json returns varying formats)
+        const normalized = {
+            domain: result.domainName || domain,
+            registrar: result.registrar || result.registrarName || 'Unknown',
+            registrarUrl: result.registrarUrl || null,
+            creationDate: result.creationDate || result.createdDate || null,
+            expirationDate: result.registrarRegistrationExpirationDate || result.registryExpiryDate || result.expirationDate || null,
+            updatedDate: result.updatedDate || result.lastUpdated || null,
+            nameServers: result.nameServer || result.nameServers || [],
+            status: result.domainStatus || result.status || [],
+            dnssec: result.dnssec || 'unsigned',
+            abuseContact: result.registrarAbuseContactEmail || null,
+            abusePhone: result.registrarAbuseContactPhone || null
+        };
+
+        // Convert nameServers to array if string
+        if (typeof normalized.nameServers === 'string') {
+            normalized.nameServers = normalized.nameServers.split('\n').filter(Boolean);
+        }
+
+        // Convert status to array if string
+        if (typeof normalized.status === 'string') {
+            normalized.status = [normalized.status];
+        }
+
+        return sendSuccess(res, {
+            ...normalized,
+            queryTime,
+            raw: result
+        }, 'WHOIS lookup successful');
+    } catch (error: any) {
+        return sendError(res, `WHOIS lookup failed: ${error.message}`, 500);
+    }
+};
+
+// WhoIsHostingThis - Hosting provider detection
+export const whoIsHostingThis = async (req: Request, res: Response) => {
+    try {
+        const { domain } = req.body;
+        if (!domain) return sendError(res, 'Domain is required', 400);
+
+        const startTime = Date.now();
+        const results: any = {
+            domain,
+            ip: null,
+            hosting: {
+                provider: 'Unknown',
+                org: null,
+                asn: null,
+                asnName: null
+            },
+            cdn: {
+                detected: false,
+                provider: null
+            },
+            location: {
+                country: null,
+                region: null,
+                city: null
+            }
+        };
+
+        // Resolve A record to get IP
+        try {
+            const ips = await resolveA(domain);
+            if (ips && ips.length > 0) {
+                results.ip = ips[0];
+
+                // Use ipinfo.io for ASN and location data (free tier: 50k/month)
+                const axios = require('axios');
+                const ipInfo = await axios.get(`https://ipinfo.io/${results.ip}/json`);
+
+                if (ipInfo.data) {
+                    const data = ipInfo.data;
+                    results.hosting.org = data.org || null;
+                    results.location.country = data.country || null;
+                    results.location.region = data.region || null;
+                    results.location.city = data.city || null;
+
+                    // Parse ASN from org field (format: "AS13335 Cloudflare, Inc.")
+                    if (data.org) {
+                        const asnMatch = data.org.match(/^(AS\d+)\s+(.+)$/);
+                        if (asnMatch) {
+                            results.hosting.asn = asnMatch[1];
+                            results.hosting.asnName = asnMatch[2];
+                        }
+                    }
+
+                    // Infer hosting provider from common patterns
+                    const orgLower = (data.org || '').toLowerCase();
+                    if (orgLower.includes('amazon') || orgLower.includes('aws')) {
+                        results.hosting.provider = 'Amazon Web Services (AWS)';
+                    } else if (orgLower.includes('google')) {
+                        results.hosting.provider = 'Google Cloud Platform';
+                    } else if (orgLower.includes('microsoft') || orgLower.includes('azure')) {
+                        results.hosting.provider = 'Microsoft Azure';
+                    } else if (orgLower.includes('cloudflare')) {
+                        results.hosting.provider = 'Cloudflare';
+                        results.cdn.detected = true;
+                        results.cdn.provider = 'Cloudflare';
+                    } else if (orgLower.includes('digitalocean')) {
+                        results.hosting.provider = 'DigitalOcean';
+                    } else if (orgLower.includes('linode') || orgLower.includes('akamai')) {
+                        results.hosting.provider = 'Akamai/Linode';
+                    } else if (orgLower.includes('ovh')) {
+                        results.hosting.provider = 'OVH';
+                    } else if (orgLower.includes('hetzner')) {
+                        results.hosting.provider = 'Hetzner';
+                    } else if (orgLower.includes('vultr')) {
+                        results.hosting.provider = 'Vultr';
+                    } else if (orgLower.includes('vercel')) {
+                        results.hosting.provider = 'Vercel';
+                    } else if (orgLower.includes('netlify')) {
+                        results.hosting.provider = 'Netlify';
+                    } else if (orgLower.includes('render')) {
+                        results.hosting.provider = 'Render';
+                    } else if (orgLower.includes('heroku') || orgLower.includes('salesforce')) {
+                        results.hosting.provider = 'Heroku';
+                    } else if (orgLower.includes('fastly')) {
+                        results.hosting.provider = 'Fastly';
+                        results.cdn.detected = true;
+                        results.cdn.provider = 'Fastly';
+                    } else if (data.org) {
+                        results.hosting.provider = data.org;
+                    }
+                }
+            }
+        } catch (e) {
+            // IP lookup failed
+        }
+
+        // Check for CDN via CNAME
+        try {
+            const cnames = await resolveCname(domain);
+            if (cnames && cnames.length > 0) {
+                const cname = cnames[0].toLowerCase();
+                if (cname.includes('cloudflare')) {
+                    results.cdn.detected = true;
+                    results.cdn.provider = 'Cloudflare';
+                } else if (cname.includes('cloudfront')) {
+                    results.cdn.detected = true;
+                    results.cdn.provider = 'Amazon CloudFront';
+                } else if (cname.includes('fastly')) {
+                    results.cdn.detected = true;
+                    results.cdn.provider = 'Fastly';
+                } else if (cname.includes('akamai')) {
+                    results.cdn.detected = true;
+                    results.cdn.provider = 'Akamai';
+                }
+            }
+        } catch (e) {
+            // No CNAME
+        }
+
+        results.queryTime = Date.now() - startTime;
+
+        return sendSuccess(res, results, 'Hosting lookup successful');
+    } catch (error: any) {
+        return sendError(res, `Hosting lookup failed: ${error.message}`, 500);
+    }
+};

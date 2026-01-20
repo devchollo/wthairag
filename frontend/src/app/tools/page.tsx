@@ -1,18 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { Shield, Server, Search, Settings, Lock, ArrowRight, Zap, Globe, Terminal, MessageSquare, Database, Key, QrCode } from 'lucide-react';
+import {
+    Shield, Globe, Key, QrCode, Search, MessageSquare, Sparkles, Cpu,
+    Server, Files, Image as ImageIcon, FileText, Settings, Database, ArrowRight, Terminal, Zap, RefreshCw
+} from 'lucide-react';
 
 const tools = [
-    {
-        id: 'ssl',
-        name: 'TLS Chain Audit',
-        desc: 'Chain-of-trust verification and cryptographic security audits for domain integrity.',
-        icon: Shield,
-        category: 'Security',
-        color: 'text-emerald-600',
-        bg: 'bg-emerald-50'
-    },
+    // Infrastructure
     {
         id: 'dns',
         name: 'DNS Debugger',
@@ -22,6 +17,73 @@ const tools = [
         color: 'text-blue-600',
         bg: 'bg-blue-50'
     },
+    {
+        id: 'whois',
+        name: 'WHOIS Lookup',
+        desc: 'Query registration data, dates, and abuse contacts for any domain name.',
+        icon: Search,
+        category: 'Infrastructure',
+        color: 'text-zinc-600',
+        bg: 'bg-zinc-100'
+    },
+    {
+        id: 'hosting',
+        name: 'Hosting Provider',
+        desc: 'Detect origin IP, hosting provider, ASN, and physical server location.',
+        icon: Server,
+        category: 'Infrastructure',
+        color: 'text-cyan-600',
+        bg: 'bg-cyan-50'
+    },
+    {
+        id: 'ssl',
+        name: 'TLS Chain Audit',
+        desc: 'Chain-of-trust verification and cryptographic security audits for domain integrity.',
+        icon: Shield,
+        category: 'Security',
+        color: 'text-emerald-600',
+        bg: 'bg-emerald-50'
+    },
+
+    // SEO / AI Analysis
+    {
+        id: 'seo',
+        name: 'SEO Analysis',
+        desc: 'Technical SEO audit including meta tags, headers, and structured data validation.',
+        icon: Search,
+        category: 'Optimization',
+        color: 'text-purple-600',
+        bg: 'bg-purple-50'
+    },
+    {
+        id: 'aeo',
+        name: 'AEO Checker',
+        desc: 'Answer Engine Optimization analysis for featured snippets and voice search.',
+        icon: MessageSquare,
+        category: 'AI / Search',
+        color: 'text-pink-600',
+        bg: 'bg-pink-50'
+    },
+    {
+        id: 'geo',
+        name: 'GEO Checker',
+        desc: 'Generative Engine Optimization to maximize visibility in AI responses.',
+        icon: Sparkles,
+        category: 'AI / Search',
+        color: 'text-fuchsia-600',
+        bg: 'bg-fuchsia-50'
+    },
+    {
+        id: 'aio',
+        name: 'AIO Checker',
+        desc: 'Assess content chunkability and retrieval readiness for LLM ingestion.',
+        icon: Cpu,
+        category: 'AI / Search',
+        color: 'text-violet-600',
+        bg: 'bg-violet-50'
+    },
+
+    // Utilities
     {
         id: 'password',
         name: 'Entropy Generator',
@@ -39,6 +101,35 @@ const tools = [
         category: 'Encoding',
         color: 'text-indigo-600',
         bg: 'bg-indigo-50'
+    },
+    {
+        id: 'alt-text',
+        name: 'AI Alt Text',
+        desc: 'Generate accessibility-compliant and SEO-friendly image descriptions with computer vision.',
+        icon: ImageIcon,
+        category: 'AI / Accessibility',
+        color: 'text-teal-600',
+        bg: 'bg-teal-50'
+    },
+
+    // File Processing
+    {
+        id: 'pdf-combine',
+        name: 'PDF Combiner',
+        desc: 'Merge multiple PDF documents into a single file with secure temporary processing.',
+        icon: Files,
+        category: 'Files',
+        color: 'text-red-600',
+        bg: 'bg-red-50'
+    },
+    {
+        id: 'converter',
+        name: 'File Converter',
+        desc: 'Transform images between formats (PNG, JPG, WebP) with zero quality loss.',
+        icon: RefreshCw,
+        category: 'Files',
+        color: 'text-orange-600',
+        bg: 'bg-orange-50'
     }
 ];
 
@@ -61,11 +152,11 @@ export default function ToolsPage() {
                 {/* AI RAG Featured in Tools - Premium Card */}
                 <Link
                     href="/workspace/chat"
-                    className="card md:col-span-2 bg-blue-600 text-white border-none p-8 flex flex-col justify-between hover:scale-[1.01] transition-transform shadow-2xl shadow-blue-600/20 relative overflow-hidden group"
+                    className="card md:col-span-2 bg-blue-600 text-white border-none p-8 flex flex-col justify-between shadow-2xl shadow-blue-600/20 relative overflow-hidden group hover:shadow-blue-600/40 transition-all"
                 >
                     <div className="relative z-10">
                         <div className="flex items-center gap-4 mb-12">
-                            <div className="h-12 w-12 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/5">
+                            <div className="h-12 w-12 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/5 group-hover:bg-white/20 transition-colors">
                                 <Database className="h-6 w-6" />
                             </div>
                             <div>
@@ -90,7 +181,7 @@ export default function ToolsPage() {
                         className="card flex flex-col justify-between p-7 border-2 hover:border-blue-600/30 group transition-all"
                     >
                         <div>
-                            <div className={`mb-6 flex h-12 w-12 items-center justify-center rounded-xl ${tool.bg} ${tool.color} border border-transparent group-hover:scale-110 transition-transform`}>
+                            <div className={`mb-6 flex h-12 w-12 items-center justify-center rounded-xl ${tool.bg} ${tool.color} border border-transparent group-hover:border-${tool.color.split('-')[1]}-200 transition-all`}>
                                 <tool.icon className="h-6 w-6" />
                             </div>
                             <div className="mb-2 text-[10px] font-black uppercase tracking-widest text-text-muted">

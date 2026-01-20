@@ -30,12 +30,14 @@ import toolsRoutes from './routes/tools';
 import workspaceRoutes from './routes/workspace';
 import workspaceDataRoutes from './routes/workspaceData';
 import alertRoutes from './routes/alerts';
+import filesRoutes from './routes/files';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/tools', toolsRoutes);
 app.use('/api/workspace', workspaceRoutes);
 app.use('/api/workspace-data', workspaceDataRoutes);
 app.use('/api/alerts', alertRoutes);
+app.use('/api/files', filesRoutes);
 
 // Initialize Keep-Alive & Cleanup Workers
 import { initCleanupWorker } from './cleanupWorker';

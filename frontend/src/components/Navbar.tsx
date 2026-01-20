@@ -2,23 +2,34 @@
 
 import { useState, useRef } from 'react';
 import Link from 'next/link';
-import { ChevronDown, Shield, Server, Search, Settings, Lock, Menu, X, Database, Terminal, Globe, Key, QrCode, ArrowRight } from 'lucide-react';
+import { ChevronDown, Shield, Server, Search, Settings, Lock, Menu, X, Database, Terminal, Globe, Key, QrCode, ArrowRight, MessageSquare } from 'lucide-react';
 
 const toolSections = [
     {
-        category: "AI & Knowledge",
+        category: "Infrastructure",
         items: [
-            { name: "RAG Console", desc: "Private AI document retrieval", icon: Database, href: "/workspace/chat" },
-            { name: "Knowledge Vault", desc: "Technical debt indexing", icon: Server, href: "/workspace/knowledge" }
+            { name: "DNS Debugger", desc: "Global resolution logs", icon: Globe, href: "/tools/dns" },
+            { name: "WHOIS Lookup", desc: "Domain registration data", icon: Search, href: "/tools/whois" },
+            { name: "Hosting Provider", desc: "Origin IP & ASN", icon: Server, href: "/tools/hosting" },
+            { name: "TLS Chain Audit", desc: "SSL integrity checks", icon: Shield, href: "/tools/ssl" }
         ]
     },
     {
-        category: "Web Primitives",
+        category: "AI & SEO",
         items: [
-            { name: "DNS Debugger", desc: "Global resolution logs", icon: Globe, href: "/tools/dns" },
-            { name: "TLS Chain Audit", desc: "SSL integrity checks", icon: Shield, href: "/tools/ssl" },
+            { name: "SEO Analysis", desc: "Technical site audit", icon: Search, href: "/tools/seo" },
+            { name: "AEO Checker", desc: "Answer engine optimization", icon: MessageSquare, href: "/tools/aeo" },
+            { name: "GEO Checker", desc: "AI visibility signals", icon: Globe, href: "/tools/geo" },
+            { name: "AIO Checker", desc: "LLM readiness scores", icon: Database, href: "/tools/aio" }
+        ]
+    },
+    {
+        category: "Utilities & Files",
+        items: [
             { name: "Entropy Generator", desc: "Secure key generation", icon: Key, href: "/tools/password" },
-            { name: "Payload Encoder", desc: "High-density QR encoding", icon: QrCode, href: "/tools/qr" }
+            { name: "Payload Encoder", desc: "High-density QR encoding", icon: QrCode, href: "/tools/qr" },
+            { name: "AI Alt Text", desc: "Smart image descriptions", icon: Search, href: "/tools/alt-text" },
+            { name: "File Tools", desc: "PDF & Image tools", icon: QrCode, href: "/tools" }
         ]
     }
 ];
@@ -62,9 +73,9 @@ export default function Navbar() {
 
                             {/* Mega Dropdown */}
                             {isToolsOpen && (
-                                <div className="absolute left-[-20px] top-[100%] w-[540px] animate-in fade-in slide-in-from-top-1 duration-200">
+                                <div className="absolute left-[-50px] top-[100%] w-[900px] animate-in fade-in slide-in-from-top-1 duration-200">
                                     <div className="mt-1 rounded-xl border border-border-light bg-white p-6 shadow-2xl shadow-black/10">
-                                        <div className="grid grid-cols-2 gap-8">
+                                        <div className="grid grid-cols-3 gap-8">
                                             {toolSections.map((section) => (
                                                 <div key={section.category}>
                                                     <h4 className="mb-4 text-[10px] font-bold uppercase tracking-widest text-text-muted">
