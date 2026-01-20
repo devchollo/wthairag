@@ -13,7 +13,7 @@ export default function LoginPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const mockData = {
-            user: { name: 'Demo User', email },
+            user: { _id: 'mock-user-id', name: 'Demo User', email },
             token: 'mock-token',
             memberships: [{ workspaceId: { name: 'Engineering Core', slug: 'engineering-core' } }]
         };
