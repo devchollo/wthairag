@@ -1,7 +1,10 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useState } from 'react';
-import { Globe, Calendar, Server, Shield, AlertCircle, CheckCircle, Activity, Copy, ExternalLink } from 'lucide-react';
+import { Globe, Calendar, Server, Shield, AlertCircle, CheckCircle, Activity, Copy, ExternalLink, ArrowLeft } from 'lucide-react';
+import FAQ from '@/components/FAQ';
 
 interface WhoisResults {
     domain: string;
@@ -41,7 +44,7 @@ export default function WhoisLookup() {
             const response = await fetch(`${apiUrl}/api/tools/whois`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ domain })
+                body: JSON.stringify({ domain: target })
             });
 
             const data = await response.json();
@@ -75,6 +78,10 @@ export default function WhoisLookup() {
 
     return (
         <div className="mx-auto max-w-[1100px] px-6 py-12">
+            <Link href="/tools" className="inline-flex items-center gap-2 text-sm font-bold text-text-muted hover:text-blue-600 transition-colors mb-8 group">
+                <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                Back to Tools
+            </Link>
             <div className="mb-10">
                 <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
                     <Globe className="h-3.5 w-3.5" /> WorkToolsHub / WHOIS Lookup
@@ -190,6 +197,27 @@ export default function WhoisLookup() {
                     </div>
                 )}
             </div>
+
+            <FAQ
+                items={[
+                    {
+                        question: "What is WHOIS data?",
+                        answer: "WHOIS is a public database that stores information about who owns a domain name, how to contact them, and when the domain expires. It is maintained by registrars and registries under ICANN regulations."
+                    },
+                    {
+                        question: "Why is the owner's name hidden?",
+                        answer: "Due to privacy regulations like GDPR, many domain owners use 'WHOIS Privacy' or 'Redacted for Privacy' services to hide their personal contact details from spammers and scammers while still complying with registration requirements."
+                    },
+                    {
+                        question: "What is an Abuse Contact?",
+                        answer: "The abuse contact is a specific email or phone number designated by the registrar for reporting illegal activity, spam, or phishing associated with a domain. This is the primary point of contact for taking down malicious sites."
+                    },
+                    {
+                        question: "What does 'ClientTransferProhibited' mean?",
+                        answer: "This is a common domain status code that prevents the domain from being transferred to another registrar without the owner's explicit permission. It is a security feature to prevent domain hijacking."
+                    }
+                ]}
+            />
         </div>
     );
 }

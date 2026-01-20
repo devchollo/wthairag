@@ -1,7 +1,10 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useState } from 'react';
-import { Search, Globe, FileText, Image, Link2, AlertCircle, CheckCircle, Activity, ExternalLink, Hash, Code } from 'lucide-react';
+import { Search, Globe, FileText, Image, Link2, AlertCircle, CheckCircle, Activity, ExternalLink, Hash, Code, ArrowLeft } from 'lucide-react';
+import FAQ from '@/components/FAQ';
 
 interface SEOResults {
     url: string;
@@ -69,7 +72,7 @@ export default function SEOChecker() {
             const response = await fetch(`${apiUrl}/api/tools/seo`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url })
+                body: JSON.stringify({ url: target })
             });
 
             const data = await response.json();
@@ -90,6 +93,10 @@ export default function SEOChecker() {
 
     return (
         <div className="mx-auto max-w-[1100px] px-6 py-12">
+            <Link href="/tools" className="inline-flex items-center gap-2 text-sm font-bold text-text-muted hover:text-blue-600 transition-colors mb-8 group">
+                <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                Back to Tools
+            </Link>
             <div className="mb-10">
                 <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
                     <Search className="h-3.5 w-3.5" /> WorkToolsHub / SEO Checker
@@ -209,6 +216,27 @@ export default function SEOChecker() {
                     </div>
                 )}
             </div>
+
+            <FAQ
+                items={[
+                    {
+                        question: "What is a good SEO score?",
+                        answer: "A score above 80 is generally considered good, indicating that your page follows most technical best practices. However, content quality, backlinks, and user engagement are also critical factors that this tool cannot measure."
+                    },
+                    {
+                        question: "Why are my meta tags important?",
+                        answer: "Meta tags (title and description) are the first things users see in search results. A compelling title and description improve your Click-Through Rate (CTR), which is a key ranking signal for search engines."
+                    },
+                    {
+                        question: "What is Structured Data (JSON-LD)?",
+                        answer: "Structured data is a standardized format for providing information about a page and classifying the page content. It helps search engines understand your content and can lead to rich snippets (stars, prices, FAQs) in search results."
+                    },
+                    {
+                        question: "Why should I use only one H1 tag?",
+                        answer: "The H1 tag is the main heading of the page and helps search engines understand the primary topic. Using multiple H1 tags can confuse search engines about the page's structure and focus."
+                    }
+                ]}
+            />
         </div>
     );
 }

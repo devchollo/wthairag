@@ -1,7 +1,10 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useState } from 'react';
-import { Shield, Calendar, Landmark, CheckCircle, Lock, Terminal, Activity, FileText, AlertCircle, XCircle, Key, Server, Globe } from 'lucide-react';
+import { Shield, Calendar, Landmark, CheckCircle, Lock, Terminal, Activity, FileText, AlertCircle, XCircle, Key, Server, Globe, ArrowLeft } from 'lucide-react';
+import FAQ from '@/components/FAQ';
 
 interface SSLResults {
     domain: string;
@@ -59,7 +62,7 @@ export default function SSLAnalyzer() {
             const response = await fetch(`${apiUrl}/api/tools/ssl`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ domain })
+                body: JSON.stringify({ domain: target })
             });
 
             const data = await response.json();
@@ -82,6 +85,10 @@ export default function SSLAnalyzer() {
 
     return (
         <div className="mx-auto max-w-[1100px] px-6 py-12">
+            <Link href="/tools" className="inline-flex items-center gap-2 text-sm font-bold text-text-muted hover:text-blue-600 transition-colors mb-8 group">
+                <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                Back to Tools
+            </Link>
             <div className="mb-10">
                 <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
                     <Terminal className="h-3.5 w-3.5" /> WorkToolsHub / TLS Audit Console
@@ -238,6 +245,27 @@ export default function SSLAnalyzer() {
                     </div>
                 )}
             </div>
+
+            <FAQ
+                items={[
+                    {
+                        question: "What is a Certificate Authority (CA)?",
+                        answer: "A Certificate Authority is a trusted entity that issues SSL certificates. They verify the ownership of a domain before issuing the certificate, establishing a chain of trust that browsers rely on to secure connections."
+                    },
+                    {
+                        question: "Why is my SSL certificate invalid?",
+                        answer: "Common reasons include expiration (the date has passed), name mismatch (the domain doesn't match the certificate), or an untrusted issuer (self-signed or not in the browser's trust store). Intermediate chain issues can also cause errors on some devices."
+                    },
+                    {
+                        question: "What is the difference between DV, OV, and EV certificates?",
+                        answer: "DV (Domain Validation) only verifies domain ownership. OV (Organization Validation) verifies the business identity. EV (Extended Validation) requires rigorous background checks and often displays the company name prominently in browsers."
+                    },
+                    {
+                        question: "What is a Cipher Suite?",
+                        answer: "A cipher suite is a set of algorithms that help secure a network connection. It includes algorithms for key exchange, authentication, encryption, and message authentication code (MAC). Using outdated cipher suites can leave your server vulnerable."
+                    }
+                ]}
+            />
         </div>
     );
 }

@@ -1,7 +1,10 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useState } from 'react';
-import { Cpu, Layers, Hash, FileText, AlertCircle, CheckCircle, Activity, Sparkles } from 'lucide-react';
+import { Cpu, Layers, Hash, FileText, AlertCircle, CheckCircle, Activity, Sparkles, ArrowLeft } from 'lucide-react';
+import FAQ from '@/components/FAQ';
 
 interface AIOResults {
     url: string;
@@ -48,7 +51,7 @@ export default function AIOChecker() {
             const response = await fetch(`${apiUrl}/api/tools/aio`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url })
+                body: JSON.stringify({ url: target })
             });
 
             const data = await response.json();
@@ -75,6 +78,10 @@ export default function AIOChecker() {
 
     return (
         <div className="mx-auto max-w-[1100px] px-6 py-12">
+            <Link href="/tools" className="inline-flex items-center gap-2 text-sm font-bold text-text-muted hover:text-blue-600 transition-colors mb-8 group">
+                <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                Back to Tools
+            </Link>
             <div className="mb-10">
                 <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
                     <Cpu className="h-3.5 w-3.5" /> WorkToolsHub / AIO Checker
@@ -209,6 +216,27 @@ export default function AIOChecker() {
                     </div>
                 )}
             </div>
+
+            <FAQ
+                items={[
+                    {
+                        question: "What is AI Optimization (AIO)?",
+                        answer: "AIO involves structuring your content so it is easily digestible by Large Language Models (LLMs) and RAG (Retrieval-Augmented Generation) systems. This ensures your content is retrieved accurately when users ask AI questions about your topic."
+                    },
+                    {
+                        question: "What is 'Chunkability'?",
+                        answer: "Chunking is the process of breaking text into smaller, meaningful units. LLMs process text in chunks. If your paragraphs are too long (dense) or too short (sparse), the AI might lose context or fail to retrieve the specific nugget of information needed."
+                    },
+                    {
+                        question: "Why are definitions important?",
+                        answer: "Explicitly defining terms (e.g., 'A neural network is...') helps LLMs establish ground truth. Structured definitions act as anchors that increase the likelihood of your content being used as a reference for those terms."
+                    },
+                    {
+                        question: "How does heading structure help AI?",
+                        answer: "Headings (H1, H2, H3) create a hierarchical map of your content. This helps vector databases index your content more effectively, ensuring that specific sections can be retrieved independently to answer specific user queries."
+                    }
+                ]}
+            />
         </div>
     );
 }

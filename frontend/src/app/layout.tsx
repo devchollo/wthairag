@@ -114,8 +114,13 @@ export default function RootLayout({
               </div>
 
               <div className="pt-8 border-t border-border-light flex flex-col md:flex-row justify-between items-center gap-6">
-                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted">
-                  © 2026 WORKTOOLSHUB. ENGINEERED FOR HIGH-FIDELITY WORKFLOWS.
+                <div className="flex flex-col gap-1.5 md:items-start items-center">
+                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted text-center md:text-left">
+                    © 2026 WORKTOOLSHUB. ENGINEERED FOR HIGH-FIDELITY WORKFLOWS.
+                  </div>
+                  <div className="text-[10px] font-bold text-text-muted">
+                    Crafted by <a href="https://ksevillejo.com" target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 transition-colors">Kent Sevillejo</a>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-text-muted">
                   <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></div>

@@ -1,7 +1,10 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useState } from 'react';
-import { Server, CheckCircle, Terminal, Activity, Globe, Search, AlertCircle, Shield, Mail, XCircle, FileText } from 'lucide-react';
+import { Server, CheckCircle, Terminal, Activity, Globe, Search, AlertCircle, Shield, Mail, XCircle, FileText, ArrowLeft } from 'lucide-react';
+import FAQ from '@/components/FAQ';
 
 interface DNSResults {
     domain: string;
@@ -57,7 +60,7 @@ export default function DNSChecker() {
             const response = await fetch(`${apiUrl}/api/tools/dns`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ domain })
+                body: JSON.stringify({ domain: target })
             });
 
             const data = await response.json();
@@ -80,6 +83,10 @@ export default function DNSChecker() {
 
     return (
         <div className="mx-auto max-w-[1100px] px-6 py-12">
+            <Link href="/tools" className="inline-flex items-center gap-2 text-sm font-bold text-text-muted hover:text-blue-600 transition-colors mb-8 group">
+                <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                Back to Tools
+            </Link>
             <div className="mb-10">
                 <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
                     <Terminal className="h-3.5 w-3.5" /> WorkToolsHub / DNS Debugger
@@ -258,6 +265,27 @@ export default function DNSChecker() {
                     </div>
                 )}
             </div>
+
+            <FAQ
+                items={[
+                    {
+                        question: "What is DNS Propagation?",
+                        answer: "DNS propagation is the time it takes for DNS changes to be updated across the internet's network of distributed servers. It typically takes 24 to 48 hours for global propagation to complete, although modern nameservers often update much faster."
+                    },
+                    {
+                        question: "Why are my DNS records not showing up?",
+                        answer: "If you recently updated your records, they might still be propagating. Other reasons include caching issues on your local machine or ISP, typos in the record name, or incorrect nameserver configurations at your registrar."
+                    },
+                    {
+                        question: "What are SPF, DKIM, and DMARC?",
+                        answer: "These are email authentication methods. SPF (Sender Policy Framework) specifies who can send email for your domain. DKIM (DomainKeys Identified Mail) cryptographically signs emails. DMARC (Domain-based Message Authentication, Reporting, and Conformance) uses both to provide instructions on how to handle unauthenticated mail."
+                    },
+                    {
+                        question: "How do I clear my local DNS cache?",
+                        answer: "On Windows, run 'ipconfig /flushdns' in the command prompt. On macOS, run 'sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder' in the terminal. On Linux, it depends on your distribution, but often involves restarting the nscd service."
+                    }
+                ]}
+            />
         </div>
     );
 }

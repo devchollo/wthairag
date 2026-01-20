@@ -1,7 +1,10 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useState } from 'react';
-import { MessageSquare, HelpCircle, List, FileText, AlertCircle, CheckCircle, Activity, Sparkles } from 'lucide-react';
+import { MessageSquare, HelpCircle, List, FileText, AlertCircle, CheckCircle, Activity, Sparkles, ArrowLeft } from 'lucide-react';
+import FAQ from '@/components/FAQ';
 
 interface AEOResults {
     url: string;
@@ -48,7 +51,7 @@ export default function AEOChecker() {
             const response = await fetch(`${apiUrl}/api/tools/aeo`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url })
+                body: JSON.stringify({ url: target })
             });
 
             const data = await response.json();
@@ -69,6 +72,10 @@ export default function AEOChecker() {
 
     return (
         <div className="mx-auto max-w-[1100px] px-6 py-12">
+            <Link href="/tools" className="inline-flex items-center gap-2 text-sm font-bold text-text-muted hover:text-blue-600 transition-colors mb-8 group">
+                <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                Back to Tools
+            </Link>
             <div className="mb-10">
                 <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
                     <MessageSquare className="h-3.5 w-3.5" /> WorkToolsHub / AEO Checker
@@ -163,6 +170,27 @@ export default function AEOChecker() {
                     </div>
                 )}
             </div>
+
+            <FAQ
+                items={[
+                    {
+                        question: "What is Answer Engine Optimization (AEO)?",
+                        answer: "AEO focuses on optimizing content to be chosen as the direct answer (featured snippet) in search results and voice assistants. It prioritizes concise, direct answers to specific questions."
+                    },
+                    {
+                        question: "How do I rank for Featured Snippets?",
+                        answer: "Structure your content with clear H2/H3 questions, followed immediately by a concise (40-60 words) direct answer. Use lists and tables where appropriate, as search engines love structured formats."
+                    },
+                    {
+                        question: "What is FAQ Schema?",
+                        answer: "FAQPage schema is a type of structured data that explicitly tells search engines 'this is a list of questions and answers'. This can help your questions appear directly in Google search results, increasing visibility."
+                    },
+                    {
+                        question: "Why are direct answers important?",
+                        answer: "With the rise of AI search (like ChatGPT Search and Google SGE) and voice assistants, users increasingly want direct answers without clicking through to a website. Being the source of that answer builds immense brand authority."
+                    }
+                ]}
+            />
         </div>
     );
 }

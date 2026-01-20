@@ -1,7 +1,10 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useState } from 'react';
-import { Sparkles, User, Calendar, Link2, AlertCircle, CheckCircle, Activity, Zap } from 'lucide-react';
+import { Sparkles, User, Calendar, Link2, AlertCircle, CheckCircle, Activity, Zap, ArrowLeft } from 'lucide-react';
+import FAQ from '@/components/FAQ';
 
 interface GEOResults {
     url: string;
@@ -47,7 +50,7 @@ export default function GEOChecker() {
             const response = await fetch(`${apiUrl}/api/tools/geo`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url })
+                body: JSON.stringify({ url: target })
             });
 
             const data = await response.json();
@@ -68,6 +71,10 @@ export default function GEOChecker() {
 
     return (
         <div className="mx-auto max-w-[1100px] px-6 py-12">
+            <Link href="/tools" className="inline-flex items-center gap-2 text-sm font-bold text-text-muted hover:text-blue-600 transition-colors mb-8 group">
+                <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                Back to Tools
+            </Link>
             <div className="mb-10">
                 <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
                     <Sparkles className="h-3.5 w-3.5" /> WorkToolsHub / GEO Checker
@@ -176,6 +183,27 @@ export default function GEOChecker() {
                     </div>
                 )}
             </div>
+
+            <FAQ
+                items={[
+                    {
+                        question: "What is Generative Engine Optimization (GEO)?",
+                        answer: "GEO is the practice of optimizing content for visibility in AI-generated responses (like ChatGPT, Perplexity, and Google SGE). Unlike traditional SEO which ranks links, GEO aims to be cited as a source in the AI's synthesized answer."
+                    },
+                    {
+                        question: "What is E-E-A-T?",
+                        answer: "Experience, Expertise, Authoritativeness, and Trustworthiness. It's a framework Google uses to assess content quality. AI models also rely on these signals (like author bios and citations) to verify if info is reliable enough to include."
+                    },
+                    {
+                        question: "Why do citations matter for AI?",
+                        answer: "AI models hallucinate less when they can ground their answers in authoritative sources. By linking to trusted sources (like government sites, academic journals, or major news outlets), you signal that your content is fact-based."
+                    },
+                    {
+                        question: "How can I improve my Entity Density?",
+                        answer: "Focus on using specific nouns, names, dates, and locations rather than vague language. Instead of saying 'the company released a product', say 'Apple released the iPhone 15 Pro on September 22, 2023'."
+                    }
+                ]}
+            />
         </div>
     );
 }

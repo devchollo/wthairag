@@ -1,7 +1,10 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useState, useRef } from 'react';
-import { FileText, Upload, Download, Trash2, AlertCircle, CheckCircle, Activity, Files } from 'lucide-react';
+import { FileText, Upload, Download, Trash2, AlertCircle, CheckCircle, Activity, Files, ArrowLeft } from 'lucide-react';
+import FAQ from '@/components/FAQ';
 
 interface CombineResult {
     filename: string;
@@ -71,6 +74,10 @@ export default function PDFCombiner() {
 
     return (
         <div className="mx-auto max-w-[1100px] px-6 py-12">
+            <Link href="/tools" className="inline-flex items-center gap-2 text-sm font-bold text-text-muted hover:text-blue-600 transition-colors mb-8 group">
+                <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                Back to Tools
+            </Link>
             <div className="mb-10">
                 <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
                     <Files className="h-3.5 w-3.5" /> WorkToolsHub / PDF Combiner
@@ -167,6 +174,27 @@ export default function PDFCombiner() {
                     </div>
                 )}
             </div>
+
+            <FAQ
+                items={[
+                    {
+                        question: "Is this PDF merger secure?",
+                        answer: "Yes. Your files are transferred over an encrypted connection (SSL/TLS). We process them on our secure servers and automatically delete them permanently after 30 minutes. No one else has access to your documents."
+                    },
+                    {
+                        question: "Can I rearrange the order of files?",
+                        answer: "Currently, files are merged in the order they are uploaded. To change the order, we recommend uploading them one by one in your desired sequence."
+                    },
+                    {
+                        question: "Is there a limit to how many files I can combine?",
+                        answer: "For this free tool, we limit users to 10 files at a time to ensure fast processing for everyone. Each file must be under 10MB."
+                    },
+                    {
+                        question: "Does this affect the quality of my PDF?",
+                        answer: "No. Our tool merges the underlying document streams without re-compressing images or altering fonts, so the quality of your pages remains exactly the same as the originals."
+                    }
+                ]}
+            />
         </div>
     );
 }

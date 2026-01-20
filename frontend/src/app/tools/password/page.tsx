@@ -1,7 +1,10 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useState } from 'react';
-import { Lock, Copy, RefreshCw, CheckCircle, Terminal, ShieldCheck, Key } from 'lucide-react';
+import { Lock, Copy, RefreshCw, CheckCircle, Terminal, ShieldCheck, Key, ArrowLeft } from 'lucide-react';
+import FAQ from '@/components/FAQ';
 
 export default function PasswordGenerator() {
     const [password, setPassword] = useState('');
@@ -45,6 +48,10 @@ export default function PasswordGenerator() {
 
     return (
         <div className="mx-auto max-w-[1000px] px-6 py-12">
+            <Link href="/tools" className="inline-flex items-center gap-2 text-sm font-bold text-text-muted hover:text-blue-600 transition-colors mb-8 group">
+                <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                Back to Tools
+            </Link>
             <div className="mb-10 text-left">
                 <div className="mb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
                     <Terminal className="h-4 w-4" /> WorkToolsHub / System Keys
@@ -142,6 +149,27 @@ export default function PasswordGenerator() {
                     )}
                 </div>
             </div>
+
+            <FAQ
+                items={[
+                    {
+                        question: "Are these passwords really random?",
+                        answer: "Yes. We use the browser's `window.crypto.getRandomValues()` API, which generates cryptographically strong random values. This is far more secure than standard `Math.random()` functions."
+                    },
+                    {
+                        question: "Do you store the generated passwords?",
+                        answer: "No. The passwords are generated entirely on your device (client-side) using JavaScript. They are never sent to our servers, so there is zero risk of interception or logging."
+                    },
+                    {
+                        question: "What is 'Entropy'?",
+                        answer: "Entropy is a measure of the unpredictability or randomness of a password, usually measured in bits. A higher entropy means the password is harder to crack by brute force. We recommend at least 70-80 bits for critical accounts."
+                    },
+                    {
+                        question: "Why should I use symbols and numbers?",
+                        answer: "Adding symbols and numbers increases the character set size, which exponentially increases the number of possible combinations. This makes the password significantly harder to guess without needing to make it excessively long."
+                    }
+                ]}
+            />
         </div>
     );
 }

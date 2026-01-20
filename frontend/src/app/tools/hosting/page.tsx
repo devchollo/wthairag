@@ -1,7 +1,10 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useState } from 'react';
-import { Server, Globe, MapPin, Wifi, Shield, AlertCircle, Activity, Cloud, Database } from 'lucide-react';
+import { Server, Globe, MapPin, Wifi, Shield, AlertCircle, Activity, Cloud, Database, ArrowLeft } from 'lucide-react';
+import FAQ from '@/components/FAQ';
 
 interface HostingResults {
     domain: string;
@@ -47,7 +50,7 @@ export default function WhoIsHostingThis() {
             const response = await fetch(`${apiUrl}/api/tools/hosting`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ domain })
+                body: JSON.stringify({ domain: target })
             });
 
             const data = await response.json();
@@ -78,6 +81,10 @@ export default function WhoIsHostingThis() {
 
     return (
         <div className="mx-auto max-w-[1100px] px-6 py-12">
+            <Link href="/tools" className="inline-flex items-center gap-2 text-sm font-bold text-text-muted hover:text-blue-600 transition-colors mb-8 group">
+                <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                Back to Tools
+            </Link>
             <div className="mb-10">
                 <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
                     <Server className="h-3.5 w-3.5" /> WorkToolsHub / Hosting Lookup
@@ -175,6 +182,27 @@ export default function WhoIsHostingThis() {
                     </div>
                 )}
             </div>
+
+            <FAQ
+                items={[
+                    {
+                        question: "How do you detect who is hosting a website?",
+                        answer: "We analyze the IP address of the domain's A record and look up its Autonomous System Number (ASN). This identifies the network owner, which is usually the hosting provider or a CDN."
+                    },
+                    {
+                        question: "What is a CDN (Content Delivery Network)?",
+                        answer: "A CDN is a geographically distributed group of servers that speeds up the delivery of web content. If a site uses a CDN like Cloudflare, our tool will often see the CDN as the 'host' because the traffic passes through their network first."
+                    },
+                    {
+                        question: "Can I hide my hosting provider?",
+                        answer: "Using a CDN or reverse proxy (like Cloudflare) effectively masks your origin IP address and hosting provider from public view, adding a layer of security and privacy."
+                    },
+                    {
+                        question: "What is an ASN?",
+                        answer: "An Autonomous System Number (ASN) is a unique number assigned to an Autonomous System (AS) by IANA. Large organizations, ISPs, and hosting providers have their own ASNs to route traffic on the internet."
+                    }
+                ]}
+            />
         </div>
     );
 }

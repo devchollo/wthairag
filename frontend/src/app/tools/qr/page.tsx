@@ -1,7 +1,10 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useState } from 'react';
-import { QrCode, Download, RefreshCw, AlertCircle, CheckCircle, ChevronRight, Share2 } from 'lucide-react';
+import { QrCode, Download, RefreshCw, AlertCircle, CheckCircle, ChevronRight, Share2, ArrowLeft } from 'lucide-react';
+import FAQ from '@/components/FAQ';
 
 export default function QRGenerator() {
     const [text, setText] = useState('');
@@ -48,6 +51,10 @@ export default function QRGenerator() {
 
     return (
         <div className="mx-auto max-w-[1000px] px-6 py-12">
+            <Link href="/tools" className="inline-flex items-center gap-2 text-sm font-bold text-text-muted hover:text-blue-600 transition-colors mb-8 group">
+                <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                Back to Tools
+            </Link>
             <div className="mb-10">
                 <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
                     <QrCode className="h-3 w-3" /> System Primitives / Payload Encoder
@@ -167,6 +174,27 @@ export default function QRGenerator() {
                     </div>
                 </div>
             </div>
+
+            <FAQ
+                items={[
+                    {
+                        question: "What is a QR Code?",
+                        answer: "A QR (Quick Response) code is a two-dimensional barcode capable of storing various types of data, such as URLs, text, or contact info, which can be instantly read by smartphone cameras."
+                    },
+                    {
+                        question: "What does 'Error Correction' mean?",
+                        answer: "QR codes have built-in redundancy. A 'High' error correction level allows the code to be scanned even if up to 30% of it is damaged or obscured (e.g., by a logo in the middle)."
+                    },
+                    {
+                        question: "Do these QR codes expire?",
+                        answer: "No. These are static QR codes, meaning the data is encoded directly into the image pattern. They do not rely on any external server or redirect service, so they will work forever."
+                    },
+                    {
+                        question: "Can I use these for commercial print?",
+                        answer: "Yes. Our generator creates high-resolution images suitable for printing on flyers, business cards, and packaging. Always test scan the printed proof before mass production."
+                    }
+                ]}
+            />
         </div>
     );
 }

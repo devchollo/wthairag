@@ -1,7 +1,10 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useState, useRef } from 'react';
-import { Image as ImageIcon, Upload, Bot, Copy, RefreshCw, AlertCircle, CheckCircle, Smartphone, Search, FileText, Activity } from 'lucide-react';
+import { Image as ImageIcon, Upload, Bot, Copy, RefreshCw, AlertCircle, CheckCircle, Smartphone, Search, FileText, Activity, ArrowLeft } from 'lucide-react';
+import FAQ from '@/components/FAQ';
 
 interface AltTextVariant {
     type: string;
@@ -103,6 +106,10 @@ export default function AltTextGenerator() {
 
     return (
         <div className="mx-auto max-w-[1100px] px-6 py-12">
+            <Link href="/tools" className="inline-flex items-center gap-2 text-sm font-bold text-text-muted hover:text-blue-600 transition-colors mb-8 group">
+                <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                Back to Tools
+            </Link>
             <div className="mb-10">
                 <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
                     <Bot className="h-3.5 w-3.5" /> WorkToolsHub / AI Alt Text
@@ -241,6 +248,27 @@ export default function AltTextGenerator() {
                     </div>
                 </div>
             </div>
+
+            <FAQ
+                items={[
+                    {
+                        question: "What is Alt Text?",
+                        answer: "Alt text (alternative text) is a short written description of an image. Screen readers read this text aloud to users who are visually impaired, making the web more accessible."
+                    },
+                    {
+                        question: "How does this AI tool work?",
+                        answer: "We use advanced computer vision models (like ResNet or CLIP) to analyze the visual contents of your image—identifying objects, actions, and context—and then generate a natural language description."
+                    },
+                    {
+                        question: "Why is Alt Text important for SEO?",
+                        answer: "Search engines like Google cannot 'see' images like humans do. They rely on alt text to understand what the image is about. Proper alt text allows your images to appear in Google Images search results."
+                    },
+                    {
+                        question: "What makes good Alt Text?",
+                        answer: "Good alt text is specific, concise, and functional. It should describe the content of the image that is relevant to the page context, without stuffing keywords or saying 'image of'."
+                    }
+                ]}
+            />
         </div>
     );
 }

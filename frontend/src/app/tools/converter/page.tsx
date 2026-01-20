@@ -1,7 +1,10 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useState, useRef } from 'react';
-import { Image as ImageIcon, Upload, Download, ArrowRight, AlertCircle, CheckCircle, Activity } from 'lucide-react';
+import { Image as ImageIcon, Upload, Download, ArrowRight, AlertCircle, CheckCircle, Activity, ArrowLeft } from 'lucide-react';
+import FAQ from '@/components/FAQ';
 
 interface ConvertResult {
     filename: string;
@@ -84,6 +87,10 @@ export default function FileConverter() {
 
     return (
         <div className="mx-auto max-w-[1100px] px-6 py-12">
+            <Link href="/tools" className="inline-flex items-center gap-2 text-sm font-bold text-text-muted hover:text-blue-600 transition-colors mb-8 group">
+                <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                Back to Tools
+            </Link>
             <div className="mb-10">
                 <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
                     <ImageIcon className="h-3.5 w-3.5" /> WorkToolsHub / File Converter
@@ -145,8 +152,8 @@ export default function FileConverter() {
                                         key={format}
                                         onClick={() => setTargetFormat(format)}
                                         className={`p-4 rounded-xl border-2 text-center font-black uppercase transition-all ${targetFormat === format
-                                                ? 'bg-blue-600 border-blue-600 text-white'
-                                                : 'bg-surface-light border-border-light text-text-primary hover:border-blue-600/30'
+                                            ? 'bg-blue-600 border-blue-600 text-white'
+                                            : 'bg-surface-light border-border-light text-text-primary hover:border-blue-600/30'
                                             }`}
                                     >
                                         {format}
@@ -191,6 +198,27 @@ export default function FileConverter() {
                     </div>
                 </div>
             </div>
+
+            <FAQ
+                items={[
+                    {
+                        question: "Is my file uploaded to a server?",
+                        answer: "Yes, for processing, the file is temporarily uploaded to our secure server. However, we automatically delete all original and converted files after 30 minutes to ensure your privacy."
+                    },
+                    {
+                        question: "Why should I convert to WebP?",
+                        answer: "WebP is a modern image format that provides superior lossless and lossy compression for web images. Using WebP can significantly reduce your website's load time compared to PNG or JPEG."
+                    },
+                    {
+                        question: "What is the file size limit?",
+                        answer: "Currently, we support files up to 10MB. This covers most standard web images and screenshots. For larger files, we recommend compressing them first or using desktop software."
+                    },
+                    {
+                        question: "Does converting affect image quality?",
+                        answer: "It depends on the format. Converting to PNG is lossless (no quality loss). Converting to JPG or WebP is typically lossy, meaning some minor detail is discarded to save space, though usually imperceptible to the human eye."
+                    }
+                ]}
+            />
         </div>
     );
 }
