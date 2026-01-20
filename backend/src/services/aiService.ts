@@ -17,11 +17,37 @@ export class AIService {
     private static geminiKey = process.env.GEMINI_API_KEY;
 
     static async generateReport(type: string, data: any) {
+        if (!this.openaiKey) {
+            throw new Error("OpenAI API Key is not configured.");
+        }
+
         const prompt = `Generate an advanced technical report for a ${type} tool. Data: ${JSON.stringify(data)}. Tone: Professional, helpful.`;
 
-        // In a real implementation, call OpenAI or Gemini here
-        // For now, returning a high-quality mock report
-        return `### Advanced ${type} Analysis\n\nBased on the data provided, the configuration is optimal. ${data.domain ? `Domain ${data.domain} is resolving correctly across all major global regions.` : ''}\n\n**Recommendations:**\n- Maintain current security headers.\n- Monitor DNS propagation regularly.`;
+        try {
+            const response = await axios.post(
+                'https://api.openai.com/v1/chat/completions',
+                {
+                    model: 'gpt-3.5-turbo',
+                    messages: [
+                        { role: 'system', content: 'You are a helpful AI assistant.' },
+                        { role: 'user', content: prompt }
+                    ],
+                    temperature: 0.5,
+                    max_tokens: 1000
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${this.openaiKey}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            return response.data.choices[0].message.content;
+        } catch (error: any) {
+            console.error("AI Service Error:", error.response?.data || error.message);
+            return `### Advanced ${type} Analysis\n\nI encountered an error communicating with the AI provider. Please check the system logs.`;
+        }
     }
 
     static async getQueryResponse(query: string, context: string, workspaceId: string, systemPrompt?: string): Promise<AIResponse> {
