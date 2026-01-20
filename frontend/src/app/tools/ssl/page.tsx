@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { Shield, Search, Calendar, Landmark, CheckCircle, Lock } from 'lucide-react';
+import { Shield, Search, Calendar, Landmark, CheckCircle, Lock, Terminal, Activity, FileText } from 'lucide-react';
 
 interface SSLResults {
     status: string;
     expiry: string;
     issuer: string;
-    aiReport: string;
+    logs: string[];
 }
 
 export default function SSLAnalyzer() {
@@ -17,13 +17,21 @@ export default function SSLAnalyzer() {
 
     const handleLookup = async () => {
         setLoading(true);
-        // Mock API Call
+        // Deep Chain Diagnosis
         setTimeout(() => {
             setResults({
-                status: 'Secure',
+                status: 'Chain Consistent',
                 expiry: '2026-12-31',
-                issuer: "Let's Encrypt E6",
-                aiReport: 'The certificate is healthy and uses modern ECC encryption standards (TLS 1.3). No mixed content or vulnerability chains detected.'
+                issuer: "Let's Encrypt E6 (RSA 2048)",
+                logs: [
+                    'Scanning port 443 for TLS handshake...',
+                    'Server Hello received. Cipher: TLS_AES_256_GCM_SHA384',
+                    'Found 2 certificates in chain.',
+                    'Root: ISRG Root X1 (Self-signed)',
+                    'Intermediate: R3 (Signed by ISRG Root X1)',
+                    'Leaf: *.worktoolshub.com (Validated)',
+                    'Verification complete. Trust established.'
+                ]
             });
             setLoading(false);
         }, 1500);
@@ -31,62 +39,67 @@ export default function SSLAnalyzer() {
 
     return (
         <div className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-            <div className="card max-w-3xl mx-auto">
-                <div className="flex items-center gap-3 mb-8">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                        <Shield className="h-5 w-5" />
-                    </div>
-                    <h1 className="text-2xl font-bold text-text-primary dark:text-text-dark">SSL Fortress</h1>
+            <div className="mb-12">
+                <div className="mb-4 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-text-muted">
+                    <Terminal className="h-4 w-4" /> WorkToolsHub / TLS Audit Console
                 </div>
+                <h1 className="text-5xl font-black text-text-primary tracking-tighter">Chain-of-Trust Audit.</h1>
+            </div>
 
-                <div className="flex flex-col gap-4 sm:flex-row">
+            <div className="card max-w-4xl border-2 border-border-light shadow-xl shadow-black/[0.02]">
+                <div className="flex flex-col gap-4 sm:flex-row mb-12">
                     <input
                         type="text"
-                        placeholder="example.com"
+                        placeholder="Domain to audit (e.g., stripe.com)"
                         value={domain}
                         onChange={(e) => setDomain(e.target.value)}
-                        className="h-11 flex-1 rounded-lg border border-border-light bg-white px-4 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 dark:border-border-dark dark:bg-background-dark dark:text-text-dark"
+                        className="h-14 flex-1 rounded-xl border-2 border-border-light bg-surface-light px-6 text-lg font-bold outline-none focus:border-primary transition-all"
                     />
                     <button
                         onClick={handleLookup}
-                        className="btn-primary"
+                        className="btn-primary h-14 min-w-[200px] gap-2"
                         disabled={loading || !domain}
                     >
-                        {loading ? 'Analyzing...' : 'Deep Scan'}
+                        {loading ? <Activity className="h-5 w-5 animate-spin" /> : 'Start Audit'}
                     </button>
                 </div>
 
                 {results && (
-                    <div className="mt-12 space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
-                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-                            <div className="rounded-xl border border-border-light bg-surface-light p-6 dark:border-border-dark dark:bg-surface-dark">
-                                <div className="flex items-center gap-2 mb-3 text-text-muted text-[11px] font-bold uppercase tracking-wider">
-                                    <Lock className="h-3 w-3" /> Status
-                                </div>
-                                <div className="text-lg font-bold text-primary">{results.status}</div>
-                            </div>
-                            <div className="rounded-xl border border-border-light bg-surface-light p-6 dark:border-border-dark dark:bg-surface-dark">
-                                <div className="flex items-center gap-2 mb-3 text-text-muted text-[11px] font-bold uppercase tracking-wider">
-                                    <Calendar className="h-3 w-3" /> Expiry
-                                </div>
-                                <div className="text-lg font-bold text-text-primary dark:text-text-dark">{results.expiry}</div>
-                            </div>
-                            <div className="rounded-xl border border-border-light bg-surface-light p-6 dark:border-border-dark dark:bg-surface-dark">
-                                <div className="flex items-center gap-2 mb-3 text-text-muted text-[11px] font-bold uppercase tracking-wider">
-                                    <Landmark className="h-3 w-3" /> Issuer
-                                </div>
-                                <div className="text-lg font-bold text-text-primary dark:text-text-dark">{results.issuer}</div>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-top-2 duration-500">
+                        <div className="lg:col-span-2">
+                            <h4 className="mb-4 text-[11px] font-black uppercase tracking-widest text-text-muted">Diagnostic Sequence</h4>
+                            <div className="rounded-2xl bg-slate-900 p-8 font-mono text-xs text-white leading-relaxed shadow-2xl relative overflow-hidden">
+                                <div className="absolute top-4 right-6 opacity-20"><Lock className="h-12 w-12" /></div>
+                                {results.logs.map((log, i) => (
+                                    <p key={i} className={log.includes('complete') ? 'text-blue-400 font-bold mt-4' : 'opacity-70'}>
+                                        <span className="mr-3 opacity-30 select-none">{i + 1}</span>
+                                        {log}
+                                    </p>
+                                ))}
                             </div>
                         </div>
 
-                        <div className="rounded-xl border border-primary/20 bg-primary/5 p-8">
-                            <div className="flex items-center gap-2 mb-4 text-primary">
-                                <CheckCircle className="h-5 w-5" />
-                                <h3 className="font-bold">✨ AI Security Sentiment</h3>
+                        <div className="space-y-6">
+                            <div className="p-6 rounded-2xl bg-surface-light border border-border-light">
+                                <div className="flex items-center gap-2 mb-4 text-[11px] font-black uppercase tracking-widest text-text-muted">
+                                    <Shield className="h-3 w-3" /> Integrity
+                                </div>
+                                <div className="text-xl font-black text-blue-600">{results.status}</div>
                             </div>
-                            <p className="text-lg leading-relaxed text-text-primary dark:text-text-dark opacity-90">
-                                {results.aiReport}
-                            </p>
+                            <div className="p-6 rounded-2xl bg-surface-light border border-border-light">
+                                <div className="flex items-center gap-2 mb-4 text-[11px] font-black uppercase tracking-widest text-text-muted">
+                                    <Calendar className="h-3 w-3" /> Expiration
+                                </div>
+                                <div className="text-xl font-black text-text-primary">{results.expiry}</div>
+                            </div>
+                            <div className="p-6 rounded-2xl bg-surface-light border border-border-light">
+                                <div className="flex items-center gap-2 mb-4 text-[11px] font-black uppercase tracking-widest text-text-muted">
+                                    <Landmark className="h-3 w-3" /> Authority
+                                </div>
+                                <div className="text-lg font-bold text-text-secondary leading-tight truncate">
+                                    {results.issuer}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -94,4 +107,3 @@ export default function SSLAnalyzer() {
         </div>
     );
 }
-

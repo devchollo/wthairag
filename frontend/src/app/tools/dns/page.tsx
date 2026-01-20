@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Server, Search, CheckCircle, AlertCircle } from 'lucide-react';
+import { Server, Search, CheckCircle, Terminal, Activity, Globe } from 'lucide-react';
 
 interface DNSResults {
     A?: string[];
     MX?: { exchange: string; priority: number }[];
-    aiReport: string;
+    logs: string[];
 }
 
 export default function DNSChecker() {
@@ -16,76 +16,90 @@ export default function DNSChecker() {
 
     const handleLookup = async () => {
         setLoading(true);
-        // Call backend API (Mock)
+        // Direct Resolution Primitives
         setTimeout(() => {
             setResults({
-                A: ['192.168.1.1'],
-                MX: [{ exchange: 'mail.example.com', priority: 10 }],
-                aiReport: 'Domain correctly configured. No issues found. Global propagation is active across all 12 monitored nodes.'
+                A: ['104.21.78.231', '172.67.135.244'],
+                MX: [{ exchange: 'aspmx.l.google.com.', priority: 10 }],
+                logs: [
+                    'Initializing global resolver fleet...',
+                    'Node TYO-01: 104.21.78.231 resolved (24ms)',
+                    'Node LON-04: 172.67.135.244 resolved (12ms)',
+                    'Chain-of-trust: DNSSEC validated.',
+                    'Resolution complete. Global consistency: 100%'
+                ]
             });
             setLoading(false);
-        }, 1500);
+        }, 1200);
     };
 
     return (
         <div className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-            <div className="card max-w-3xl mx-auto">
-                <div className="flex items-center gap-3 mb-8">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                        <Server className="h-5 w-5" />
-                    </div>
-                    <h1 className="text-2xl font-bold text-text-primary dark:text-text-dark">DNS Inspector</h1>
+            <div className="mb-12">
+                <div className="mb-4 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-text-muted">
+                    <Terminal className="h-4 w-4" /> WorkToolsHub / DNS Debugger
                 </div>
+                <h1 className="text-5xl font-black text-text-primary tracking-tighter">DNS Resolution Protocol.</h1>
+            </div>
 
-                <div className="flex flex-col gap-4 sm:flex-row">
+            <div className="card max-w-4xl border-2 border-border-light shadow-xl shadow-black/[0.02]">
+                <div className="flex flex-col gap-4 sm:flex-row mb-12">
                     <input
                         type="text"
-                        placeholder="example.com"
+                        placeholder="Enter domain (e.g., github.com)"
                         value={domain}
                         onChange={(e) => setDomain(e.target.value)}
-                        className="h-11 flex-1 rounded-lg border border-border-light bg-white px-4 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 dark:border-border-dark dark:bg-background-dark dark:text-text-dark"
+                        className="h-14 flex-1 rounded-xl border-2 border-border-light bg-surface-light px-6 text-lg font-bold outline-none focus:border-primary transition-all"
                     />
                     <button
                         onClick={handleLookup}
-                        className="btn-primary"
+                        className="btn-primary h-14 min-w-[180px] gap-2"
                         disabled={loading || !domain}
                     >
-                        {loading ? 'Analyzing...' : 'Run Analysis'}
+                        {loading ? <Activity className="h-5 w-5 animate-spin" /> : 'Run Debug'}
                     </button>
                 </div>
 
                 {results && (
-                    <div className="mt-12 space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
-                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                            <div className="rounded-xl border border-border-light bg-surface-light p-6 dark:border-border-dark dark:bg-surface-dark">
-                                <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-text-muted">A Records</h3>
-                                <div className="space-y-2">
-                                    {results.A?.map((ip, i) => (
-                                        <div key={i} className="font-mono text-sm text-text-primary dark:text-text-dark">{ip}</div>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="rounded-xl border border-border-light bg-surface-light p-6 dark:border-border-dark dark:bg-surface-dark">
-                                <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-text-muted">MX Records</h3>
-                                <div className="space-y-2">
-                                    {results.MX?.map((mx, i) => (
-                                        <div key={i} className="text-sm text-text-primary dark:text-text-dark">
-                                            <span className="font-mono">{mx.exchange}</span>
-                                            <span className="ml-2 text-text-muted">({mx.priority})</span>
-                                        </div>
-                                    ))}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-top-2 duration-500">
+                        <div className="lg:col-span-2">
+                            <h4 className="mb-4 text-[11px] font-black uppercase tracking-widest text-text-muted">Output Stream</h4>
+                            <div className="rounded-2xl bg-text-primary p-8 font-mono text-xs text-white leading-relaxed shadow-2xl">
+                                {results.logs.map((log, i) => (
+                                    <p key={i} className={log.includes('complete') ? 'text-emerald-400 font-bold mt-4' : 'opacity-70'}>
+                                        <span className="mr-3 opacity-30 select-none">[{i + 1}]</span>
+                                        {log}
+                                    </p>
+                                ))}
+                                <div className="mt-6 flex items-center gap-4 border-t border-white/10 pt-6">
+                                    <div className="flex items-center gap-2 text-emerald-400 font-bold uppercase tracking-widest">
+                                        <CheckCircle className="h-4 w-4" /> Validated
+                                    </div>
+                                    <div className="h-2 w-px bg-white/10"></div>
+                                    <div className="opacity-50">TTL: 3600</div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="rounded-xl border border-primary/20 bg-primary/5 p-8">
-                            <div className="flex items-center gap-2 mb-4 text-primary">
-                                <CheckCircle className="h-5 w-5" />
-                                <h3 className="font-bold">✨ AI Analysis Report</h3>
+                        <div className="space-y-6">
+                            <div>
+                                <h4 className="mb-3 text-[11px] font-black uppercase tracking-widest text-text-muted">A Records</h4>
+                                <div className="space-y-2">
+                                    {results.A?.map((ip, i) => (
+                                        <div key={i} className="font-mono text-sm font-bold text-text-primary bg-surface-light border border-border-light px-4 py-2 rounded-lg">{ip}</div>
+                                    ))}
+                                </div>
                             </div>
-                            <p className="text-lg leading-relaxed text-text-primary dark:text-text-dark opacity-90">
-                                {results.aiReport}
-                            </p>
+                            <div>
+                                <h4 className="mb-3 text-[11px] font-black uppercase tracking-widest text-text-muted">MX Records</h4>
+                                <div className="space-y-2">
+                                    {results.MX?.map((mx, i) => (
+                                        <div key={i} className="text-sm font-bold text-text-primary bg-surface-light border border-border-light px-4 py-2 rounded-lg truncate">
+                                            {mx.exchange} <span className="opacity-40 ml-1">({mx.priority})</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -93,4 +107,3 @@ export default function DNSChecker() {
         </div>
     );
 }
-

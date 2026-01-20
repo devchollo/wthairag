@@ -22,20 +22,20 @@ export default function RootLayout({
         <AuthProvider>
           <Navbar />
           <main>{children}</main>
-          <footer className="border-t border-border-light py-20 dark:border-border-dark bg-surface-light dark:bg-surface-dark">
+          <footer className="border-t border-border-light py-24 bg-white">
             <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
               <div className="flex flex-col items-center justify-between gap-12 sm:flex-row">
-                <div className="text-2xl font-black tracking-tighter text-text-primary dark:text-text-dark">
-                  WorkToolsHub
+                <div className="text-3xl font-black tracking-tighter text-text-primary">
+                  WorkToolsHub.
                 </div>
-                <div className="flex gap-10 text-sm font-bold text-text-secondary dark:text-muted">
-                  <a href="/legal?type=privacy" className="hover:text-primary transition-colors">Privacy</a>
-                  <a href="/legal?type=terms" className="hover:text-primary transition-colors">Terms</a>
-                  <a href="/donate" className="hover:text-primary transition-colors">Donate</a>
+                <div className="flex gap-10 text-[13px] font-black uppercase tracking-widest text-text-secondary">
+                  <a href="/legal?type=privacy" className="hover:text-blue-600 transition-colors">Protocol</a>
+                  <a href="/legal?type=terms" className="hover:text-blue-600 transition-colors">Terms</a>
+                  <a href="/donate" className="hover:text-blue-600 transition-colors">Sponsorship</a>
                 </div>
               </div>
-              <div className="mt-12 text-center text-[13px] font-bold uppercase tracking-widest text-text-muted">
-                © 2026 worktoolshub. tailored for professionals.
+              <div className="mt-16 text-center text-[10px] font-black uppercase tracking-[0.3em] text-text-muted opacity-50">
+                © 2026 WORKTOOLSHUB. ENGINEERED FOR PROFESSIONALS.
               </div>
             </div>
           </footer>

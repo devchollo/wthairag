@@ -1,53 +1,48 @@
 @import "tailwindcss";
 
 @theme {
-  /* Core Colors */
-  --color-primary: #111827;
-  /* Near Black Primary */
-  --color-primary-hover: #1f2937;
-  --color-accent: #3b82f6;
-  /* Blue for call-to-actions */
+  /* Developer Hub Palette - Clean, Airy, and Professional */
+  --color-primary: #2563eb;
+  /* Vibrant Royal Blue */
+  --color-primary-hover: #1d4ed8;
 
-  /* Backgrounds - Pure and Clean */
-  --color-background-light: #ffffff;
-  --color-background-dark: #000000;
+  /* Backgrounds */
+  --color-background-light: #fcfcfd;
+  --color-background-dark: #020617;
 
-  /* Surfaces */
-  --color-surface-light: #f9fafb;
-  --color-surface-dark: #0a0a0a;
+  /* Surfaces - Floating effect */
+  --color-surface-light: #ffffff;
+  --color-surface-dark: #0f172a;
 
-  /* Borders - High Visibility */
-  --color-border-light: #e5e7eb;
-  --color-border-dark: #1f2937;
+  /* Borders - Minimalist */
+  --color-border-light: #f1f5f9;
+  --color-border-dark: #1e293b;
 
-  /* Text - GUARANTEED CONTRAST */
-  --color-text-primary: #111827;
-  /* Slate 900 */
-  --color-text-secondary: #374151;
+  /* Text - High-Fidelity Developer Contrast */
+  --color-text-primary: #020617;
+  /* Charcoal 950 */
+  --color-text-secondary: #334155;
   /* Slate 700 */
-  --color-text-muted: #4b5563;
-  /* Slate 600 */
-  --color-text-dark: #f9fafb;
+  --color-text-muted: #64748b;
+  /* Slate 500 */
+  --color-text-dark: #f8fafc;
   /* Near White */
 
-  /* Spacing */
-  --spacing-8: 8px;
-
-  /* Radius */
+  /* Radius - Modern Softness */
   --radius-xl: 12px;
-  --radius-2xl: 16px;
+  --radius-2xl: 18px;
 }
 
-/* Base resets & custom variables */
 :root {
-  --background: #ffffff;
-  --foreground: #111827;
-  --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --background: #fcfcfd;
+  --foreground: #020617;
+  --card-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --header-blur: saturate(180%) blur(20px);
 }
 
 [data-theme='dark'] {
-  --background: #000000;
-  --foreground: #f9fafb;
+  --background: #020617;
+  --foreground: #f8fafc;
   --card-shadow: 0 0 0 1px rgb(255 255 255 / 0.1);
 }
 
@@ -56,32 +51,39 @@
     @apply bg-background-light text-text-primary antialiased;
     color: var(--foreground);
     background: var(--background);
-    line-height: 1.5;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    letter-spacing: -0.01em;
   }
 
   h1,
   h2,
   h3,
   h4 {
-    @apply font-black tracking-tight text-text-primary;
-    color: var(--foreground) !important;
-    /* Force foreground for contrast */
+    @apply font-black tracking-tighter;
+    color: var(--foreground);
+    line-height: 1.1;
   }
 }
 
-/* Custom Utilities for the Calm Design System */
 @layer components {
+
+  /* Premium Developer Buttons */
   .btn-primary {
-    @apply h-11 px-8 rounded-lg bg-primary text-white font-bold transition-all hover:bg-primary-hover active:scale-[0.98] flex items-center justify-center shadow-sm;
+    @apply h-11 px-6 rounded-xl bg-primary text-white font-bold transition-all hover:bg-primary-hover active:scale-[0.98] flex items-center justify-center shadow-md shadow-primary/10;
   }
 
   .btn-secondary {
-    @apply h-11 px-8 rounded-lg bg-white border border-border-light text-text-primary font-bold transition-all hover:bg-surface-light active:scale-[0.98] flex items-center justify-center;
+    @apply h-11 px-6 rounded-xl bg-white border border-border-light text-text-primary font-bold shadow-sm transition-all hover:bg-surface-light active:scale-[0.98] flex items-center justify-center;
   }
 
+  /* Bento-style Cards */
   .card {
-    @apply bg-surface-light border border-border-light rounded-xl p-8 transition-all;
+    @apply bg-white border border-border-light rounded-2xl p-8 transition-all duration-300;
     box-shadow: var(--card-shadow);
+  }
+
+  .card:hover {
+    @apply shadow-xl shadow-black/[0.02] -translate-y-1;
   }
 
   [data-theme='dark'] .btn-secondary {
@@ -93,7 +95,7 @@
   }
 }
 
-/* Smooth transitions */
+/* Fluid animations */
 * {
-  @apply transition-colors duration-150;
+  @apply transition-all duration-200 ease-out;
 }

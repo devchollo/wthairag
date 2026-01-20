@@ -1,46 +1,49 @@
 import Link from 'next/link';
-import { Shield, Server, Search, Settings, Lock, ArrowRight, Zap, Globe } from 'lucide-react';
+import { Shield, Server, Search, Settings, Lock, ArrowRight, Zap, Globe, Terminal } from 'lucide-react';
 
 const tools = [
     {
         id: 'ssl',
-        name: 'SSL Analyzer',
-        desc: 'Check certificate validity and security with enterprise-grade depth.',
+        name: 'TLS Chain Audit',
+        desc: 'Deep verification of SSL/TLS certificates and chain-of-trust integrity.',
         icon: Shield,
         category: 'Security'
     },
     {
         id: 'dns',
-        name: 'DNS Checker',
-        desc: 'Verify all types of DNS records with sub-second latency.',
+        name: 'DNS Debugger',
+        desc: 'Sub-second propagation logs and global record resolution primitives.',
         icon: Server,
         category: 'Networking'
     },
     {
         id: 'password',
-        name: 'Password Generator',
-        desc: 'Secure, random passwords for modern professionals.',
+        name: 'Entropy Generator',
+        desc: 'Browser-native cryptographic passphrases with high entropy entropy.',
         icon: Lock,
-        category: 'Utilities'
+        category: 'Crypto'
     },
     {
         id: 'qr',
-        name: 'QR Code Generator',
-        desc: 'Create high-resolution PNG/SVG codes for any use case.',
+        name: 'QR Payload Encoder',
+        desc: 'High-density payload encoding for physical-to-digital data transfer.',
         icon: Zap,
-        category: 'Utilities'
+        category: 'Encoding'
     }
 ];
 
 export default function ToolsPage() {
     return (
         <div className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-            <div className="mb-16 text-center">
-                <h1 className="text-4xl font-extrabold tracking-tight text-text-primary sm:text-5xl dark:text-text-dark">
-                    Universal Utilities
+            <div className="mb-16 text-left">
+                <div className="mb-4 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-text-muted">
+                    <Terminal className="h-4 w-4" /> WorkToolsHub / Network Primitives
+                </div>
+                <h1 className="text-5xl font-black tracking-tighter text-text-primary sm:text-6xl">
+                    Development Primitives.
                 </h1>
-                <p className="mt-4 text-xl font-bold text-text-secondary dark:text-muted">
-                    A high-performance suite of stateless tools for modern web professionals.
+                <p className="mt-6 text-xl font-bold text-text-secondary max-w-2xl leading-relaxed">
+                    A high-performance suite of stateless utilities optimized for low-latency network debugging and cryptographic operations.
                 </p>
             </div>
 
@@ -49,22 +52,27 @@ export default function ToolsPage() {
                     <Link
                         key={tool.id}
                         href={`/tools/${tool.id}`}
-                        className="card group hover:border-primary/50 hover:shadow-lg"
+                        className="card group hover:border-primary border-2 border-border-light bg-white p-10 flex flex-col justify-between"
                     >
-                        <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
-                            <tool.icon className="h-6 w-6" />
+                        <div>
+                            <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-light border border-border-light text-primary transition-all group-hover:bg-primary group-hover:text-white">
+                                <tool.icon className="h-7 w-7" />
+                            </div>
+                            <div className="mb-2 text-[11px] font-black uppercase tracking-[0.2em] text-text-muted transition-colors group-hover:text-blue-600">
+                                {tool.category}
+                            </div>
+                            <h3 className="mb-4 text-3xl font-black text-text-primary tracking-tight">
+                                {tool.name}
+                            </h3>
+                            <p className="font-bold text-text-secondary leading-relaxed text-sm">
+                                {tool.desc}
+                            </p>
                         </div>
-                        <div className="mb-2 text-[13px] font-black uppercase tracking-widest text-primary">
-                            {tool.category}
-                        </div>
-                        <h3 className="mb-3 text-2xl font-black text-text-primary dark:text-text-dark">
-                            {tool.name}
-                        </h3>
-                        <p className="font-bold text-text-secondary dark:text-muted leading-relaxed">
-                            {tool.desc}
-                        </p>
-                        <div className="mt-6 flex items-center gap-1 text-sm font-semibold text-primary">
-                            Launch tool <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                        <div className="mt-10 flex items-center justify-between">
+                            <span className="text-xs font-black uppercase tracking-widest text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
+                                Access Console <ArrowRight className="h-3 w-3" />
+                            </span>
+                            <div className="h-2 w-2 rounded-full bg-border-light group-hover:bg-primary transition-colors"></div>
                         </div>
                     </Link>
                 ))}

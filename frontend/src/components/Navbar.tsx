@@ -40,8 +40,8 @@ export default function Navbar() {
     return (
         <nav className="sticky top-0 z-50 w-full border-b border-border-light bg-background-light/80 backdrop-blur-md dark:border-border-dark dark:bg-background-dark/80">
             <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center gap-12">
-                    <Link href="/" className="text-xl font-bold tracking-tight text-text-primary dark:text-text-dark hover:opacity-80 transition-opacity">
+                <div className="flex items-center gap-16">
+                    <Link href="/" className="text-2xl font-black tracking-tighter text-text-primary hover:text-blue-600 transition-colors">
                         WorkToolsHub
                     </Link>
 
@@ -52,7 +52,7 @@ export default function Navbar() {
                             onMouseLeave={handleMouseLeave}
                         >
                             <button
-                                className="flex items-center gap-1 text-[15px] font-bold text-text-secondary transition-colors hover:text-text-primary dark:text-muted dark:hover:text-text-dark"
+                                className="flex items-center gap-2 text-[15px] font-black text-text-primary transition-colors hover:text-blue-600 outline-none"
                                 aria-expanded={isToolsOpen}
                             >
                                 Tools
@@ -101,11 +101,11 @@ export default function Navbar() {
                             )}
                         </div>
 
-                        <Link href="/workspace" className="text-[15px] font-bold text-text-secondary transition-colors hover:text-text-primary dark:text-muted dark:hover:text-text-dark">
-                            Workspace
+                        <Link href="/workspace" className="text-[15px] font-black text-text-primary transition-colors hover:text-blue-600">
+                            Dashboard
                         </Link>
-                        <Link href="/donate" className="text-[15px] font-bold text-text-secondary transition-colors hover:text-text-primary dark:text-muted dark:hover:text-text-dark">
-                            Donate
+                        <Link href="/donate" className="text-[15px] font-black text-text-primary transition-colors hover:text-blue-600">
+                            Sponsorship
                         </Link>
                     </div>
                 </div>
