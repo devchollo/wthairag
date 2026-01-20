@@ -1,7 +1,41 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
+@theme {
+  /* Core Colors */
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+
+  /* Backgrounds */
+  --color-background-light: #ffffff;
+  --color-background-dark: #0f1115;
+
+  /* Surfaces */
+  --color-surface-light: #f6f7f9;
+  --color-surface-dark: #181b21;
+
+  /* Borders */
+  --color-border-light: #e4e6eb;
+  --color-border-dark: #2a2e37;
+
+  /* Text */
+  --color-text-primary: #111827;
+  --color-text-secondary: #6b7280;
+  --color-text-muted: #9ca3af;
+  --color-text-dark: #e5e7eb;
+
+  /* Legacy Shortcut Names (for backward compatibility during migration) */
+  --color-muted: #9ca3af;
+  --color-secondary: #6b7280;
+
+  /* Spacing */
+  --spacing-8: 8px;
+
+  /* Radius */
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+}
+
+/* Base resets & custom variables for dynamic switching if needed */
 :root {
   --background: #ffffff;
   --foreground: #111827;
@@ -12,11 +46,14 @@
   --foreground: #e5e7eb;
 }
 
-body {
-  @apply bg-background-light text-text-primary antialiased;
-  color: var(--foreground);
-  background: var(--background);
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+@layer base {
+  body {
+    /* Use the generated classes - these should now be visible to the compiler */
+    @apply bg-background-light text-text-primary antialiased;
+    color: var(--foreground);
+    background: var(--background);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
 }
 
 /* Custom Utilities for the Calm Design System */
@@ -32,12 +69,12 @@ body {
   .card {
     @apply bg-surface-light border border-border-light rounded-xl p-6 transition-all;
   }
-}
 
-[data-theme='dark'] .btn-secondary {
-  @apply bg-surface-dark border-border-dark text-text-dark hover:bg-border-dark;
-}
+  [data-theme='dark'] .btn-secondary {
+    @apply bg-surface-dark border-border-dark text-text-dark hover:bg-border-dark;
+  }
 
-[data-theme='dark'] .card {
-  @apply bg-surface-dark border-border-dark;
+  [data-theme='dark'] .card {
+    @apply bg-surface-dark border-border-dark;
+  }
 }
