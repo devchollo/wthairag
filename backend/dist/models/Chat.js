@@ -43,6 +43,7 @@ const MessageSchema = new mongoose_1.Schema({
             snippet: { type: String },
         },
     ],
+    tokens: { type: Number, default: 0 },
     createdAt: { type: Date, default: Date.now },
 });
 const ChatSchema = new mongoose_1.Schema({

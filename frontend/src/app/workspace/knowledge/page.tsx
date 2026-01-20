@@ -282,7 +282,7 @@ export default function KnowledgeBase() {
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            {isAdmin && doc.mimeType !== 'text/plain' && (
+                            {doc.mimeType !== 'text/plain' && (
                                 <button
                                     onClick={() => handleDownload(doc._id, doc.title)}
                                     className="h-9 w-9 flex items-center justify-center rounded-lg text-text-muted hover:text-blue-600 hover:bg-blue-50 transition-colors"

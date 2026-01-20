@@ -34,7 +34,7 @@ app.use((0, cors_1.default)({
     origin: true, // Reflect origin to allow multiple domains (wthairag.onrender.com, worktoolshub.com)
     credentials: true, // Allow cookies
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-workspace-id', 'x-workspace-slug']
 }));
 // Cookie parser - MUST come before routes
 app.use((0, cookie_parser_1.default)());
@@ -90,13 +90,18 @@ const workspaceData_1 = __importDefault(require("./routes/workspaceData"));
 const alerts_1 = __importDefault(require("./routes/alerts"));
 const files_1 = __importDefault(require("./routes/files"));
 const testimonials_1 = __importDefault(require("./routes/testimonials"));
+const membership_1 = __importDefault(require("./routes/membership"));
+const analytics_1 = __importDefault(require("./routes/analytics"));
 app.use('/api/auth', auth_1.default);
 app.use('/api/tools', tools_1.default);
 app.use('/api/workspace', workspace_1.default);
+app.use('/api/workspaces', workspace_1.default); // Alias for plural usage
 app.use('/api/workspace-data', workspaceData_1.default);
 app.use('/api/alerts', alerts_1.default);
 app.use('/api/files', files_1.default);
 app.use('/api/testimonials', testimonials_1.default);
+app.use('/api/memberships', membership_1.default);
+app.use('/api/analytics', analytics_1.default);
 // Initialize Keep-Alive & Cleanup Workers
 const cleanupWorker_1 = require("./cleanupWorker");
 const keepAlive_1 = require("./keepAlive");

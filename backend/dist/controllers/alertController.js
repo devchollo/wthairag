@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resolveAlert = exports.listAlerts = exports.createAlert = void 0;
+exports.deleteAlert = exports.updateAlert = exports.resolveAlert = exports.listAlerts = exports.createAlert = void 0;
 const Alert_1 = __importDefault(require("../models/Alert"));
 const response_1 = require("../utils/response");
 const createAlert = async (req, res) => {
@@ -50,3 +50,30 @@ const resolveAlert = async (req, res) => {
     }
 };
 exports.resolveAlert = resolveAlert;
+const updateAlert = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, description, severity } = req.body;
+        const alert = await Alert_1.default.findOneAndUpdate({ _id: id, workspaceId: req.workspace?._id }, { title, description, severity }, { new: true, runValidators: true });
+        if (!alert)
+            return (0, response_1.sendError)(res, 'Alert not found', 404);
+        return (0, response_1.sendSuccess)(res, alert, 'Alert updated');
+    }
+    catch (error) {
+        return (0, response_1.sendError)(res, error.message, 500);
+    }
+};
+exports.updateAlert = updateAlert;
+const deleteAlert = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const alert = await Alert_1.default.findOneAndDelete({ _id: id, workspaceId: req.workspace?._id });
+        if (!alert)
+            return (0, response_1.sendError)(res, 'Alert not found', 404);
+        return (0, response_1.sendSuccess)(res, null, 'Alert deleted');
+    }
+    catch (error) {
+        return (0, response_1.sendError)(res, error.message, 500);
+    }
+};
+exports.deleteAlert = deleteAlert;

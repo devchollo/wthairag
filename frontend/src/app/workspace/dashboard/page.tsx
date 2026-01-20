@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Zap, FileText, Users, TrendingUp, ArrowUpRight, Terminal, Activity, Coins, Calendar, BarChart3, User } from 'lucide-react';
+import { LayoutDashboard, Zap, FileText, Users, TrendingUp, ArrowUpRight, Terminal, Activity, Coins, Calendar, BarChart3, User, PieChart } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { DashboardSkeleton } from '@/components/Skeleton';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 export default function Dashboard() {
     const { currentWorkspace, user, userRole } = useAuth();
@@ -31,7 +32,8 @@ export default function Dashboard() {
                 }
 
                 // If Admin/Owner, Fetch Workspace Stats
-                if (userRole === 'admin' || userRole === 'owner') {
+                const role = userRole || 'member'; // Fallback
+                if (role === 'admin' || role === 'owner') {
                     const wsRes = await fetch(`${apiUrl}/api/analytics/workspace`, { headers, credentials: 'include' });
                     if (wsRes.ok) {
                         const data = await wsRes.json();
@@ -52,6 +54,17 @@ export default function Dashboard() {
         return <DashboardSkeleton />;
     }
 
+    // Format chart data for Recharts
+    const userChartData = userStats?.chartData?.labels?.map((label: string, i: number) => ({
+        name: label,
+        tokens: userStats.chartData.tokens[i]
+    })) || [];
+
+    const wsChartData = workspaceStats?.chartData?.labels?.map((label: string, i: number) => ({
+        name: label,
+        tokens: workspaceStats.chartData.tokens[i]
+    })) || [];
+
     return (
         <div className="space-y-8">
             <div className="flex items-center justify-between">
@@ -64,7 +77,7 @@ export default function Dashboard() {
             </div>
 
             {/* User Stats Section */}
-            <div className="space-y-4">
+            <div className="space-y-6">
                 <h2 className="text-lg font-black tracking-tight text-text-primary flex items-center gap-2">
                     <User className="h-5 w-5 text-blue-600" /> My Performance
                 </h2>
@@ -73,6 +86,23 @@ export default function Dashboard() {
                         <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-1">My Token Usage</div>
                         <div className="text-3xl font-black text-text-primary">{userStats?.totalTokens?.toLocaleString() || 0}</div>
                         <div className="text-[10px] text-text-muted mt-2">Personal usage consumption</div>
+                    </div>
+                    <div className="lg:col-span-3 card p-5 relative min-h-[120px] flex flex-col justify-between">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-1">Usage Trend (30 Days)</div>
+                        <div className="h-[100px] w-full">
+                            {userChartData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={userChartData}>
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                                        />
+                                        <Line type="monotone" dataKey="tokens" stroke="#2563eb" strokeWidth={2} dot={false} />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="flex h-full items-center justify-center text-xs text-text-muted italic">No data available</div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -98,7 +128,7 @@ export default function Dashboard() {
 
             {/* Admin Workspace Stats Section */}
             {(userRole === 'admin' || userRole === 'owner') && workspaceStats && (
-                <div className="space-y-4 pt-8 border-t-2 border-dashed border-border-light">
+                <div className="space-y-6 pt-8 border-t-2 border-dashed border-border-light">
                     <h2 className="text-lg font-black tracking-tight text-text-primary flex items-center gap-2">
                         <LayoutDashboard className="h-5 w-5 text-indigo-600" /> Workspace Overview
                     </h2>
@@ -107,6 +137,24 @@ export default function Dashboard() {
                         <div className="card p-5 border-l-4 border-l-indigo-500">
                             <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-1">Total Workspace Tokens</div>
                             <div className="text-3xl font-black text-text-primary">{workspaceStats?.totalTokens?.toLocaleString() || 0}</div>
+                        </div>
+                        <div className="lg:col-span-3 card p-5 relative min-h-[120px] flex flex-col justify-between">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-1">Workspace Activity</div>
+                            <div className="h-[100px] w-full">
+                                {wsChartData.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={wsChartData}>
+                                            <Tooltip
+                                                cursor={{ fill: '#f1f5f9' }}
+                                                contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                                            />
+                                            <Bar dataKey="tokens" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex h-full items-center justify-center text-xs text-text-muted italic">No data available</div>
+                                )}
+                            </div>
                         </div>
                     </div>
 

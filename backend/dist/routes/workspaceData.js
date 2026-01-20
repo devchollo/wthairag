@@ -17,8 +17,10 @@ router.use(workspace_1.workspaceOverlay);
 // Stats
 router.get('/stats', workspaceDataController_1.getWorkspaceStats);
 // Knowledge
-router.post('/knowledge', (0, workspace_1.authorize)('owner', 'admin', 'member'), upload.single('file'), knowledgeController_1.uploadDocument);
+router.post('/knowledge', (0, workspace_1.authorize)('owner', 'admin'), upload.single('file'), knowledgeController_1.uploadDocument);
+router.post('/knowledge/manual', (0, workspace_1.authorize)('owner', 'admin'), knowledgeController_1.createManualDocument);
 router.get('/knowledge', knowledgeController_1.listDocuments);
+router.get('/knowledge/:id/download', (0, workspace_1.authorize)('owner', 'admin', 'member'), knowledgeController_1.downloadDocument);
 router.delete('/knowledge/:id', (0, workspace_1.authorize)('owner', 'admin'), knowledgeController_1.deleteDocument);
 // Chat
 router.post('/chat', chatController_1.queryChat);

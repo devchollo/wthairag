@@ -17,7 +17,8 @@ const initCleanupWorker = () => {
         console.log('Running cleanup worker for temporary files...');
         const now = new Date();
         const expiredDocs = await Document_1.default.find({
-            expiresAt: { $lte: now }
+            expiresAt: { $lte: now },
+            workspaceId: { $exists: false } // Safeguard: Never cleanup workspace-scoped records
         });
         for (const doc of expiredDocs) {
             try {

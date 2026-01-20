@@ -8,7 +8,7 @@ const router = express.Router();
 router.use(protect);
 router.use(workspaceOverlay);
 
-router.post('/', authorize('owner', 'admin', 'member'), createAlert);
+router.post('/', authorize('owner', 'admin'), createAlert);
 router.get('/', listAlerts);
 router.put('/:id', authorize('owner', 'admin'), updateAlert);
 router.put('/:id/resolve', authorize('owner', 'admin'), resolveAlert);

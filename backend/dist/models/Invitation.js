@@ -34,12 +34,15 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const MembershipSchema = new mongoose_1.Schema({
-    userId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
+const InvitationSchema = new mongoose_1.Schema({
+    email: { type: String, required: true, lowercase: true, trim: true },
     workspaceId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Workspace', required: true },
-    role: { type: String, enum: ['owner', 'admin', 'member', 'viewer'], required: true },
+    role: { type: String, enum: ['admin', 'member', 'viewer'], default: 'member' },
+    token: { type: String, required: true, unique: true },
+    invitedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
+    expiresAt: { type: Date, required: true },
 }, { timestamps: true });
-// Ensure a user can only have one membership per workspace
-MembershipSchema.index({ userId: 1, workspaceId: 1 }, { unique: true });
-MembershipSchema.index({ workspaceId: 1 }); // Optimize listMembers query
-exports.default = mongoose_1.default.model('Membership', MembershipSchema);
+// Expire record after expiresAt
+InvitationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+InvitationSchema.index({ workspaceId: 1, email: 1 }, { unique: true });
+exports.default = mongoose_1.default.model('Invitation', InvitationSchema);

@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getMe = exports.logout = exports.login = exports.completeSignup = exports.verifyEmail = exports.initiateSignup = void 0;
+exports.updatePassword = exports.updateMe = exports.getMe = exports.logout = exports.login = exports.completeSignup = exports.verifyEmail = exports.initiateSignup = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const User_1 = __importDefault(require("../models/User"));
@@ -221,3 +221,50 @@ const getMe = async (req, res) => {
     }
 };
 exports.getMe = getMe;
+const updateMe = async (req, res) => {
+    try {
+        const { name, email } = req.body;
+        // Basic validation
+        if (!name && !email)
+            return (0, response_1.sendError)(res, 'Nothing to update', 400);
+        const updates = {};
+        if (name)
+            updates.name = name;
+        if (email) {
+            // Check if email already taken
+            const existing = await User_1.default.findOne({ email, _id: { $ne: req.user?._id } });
+            if (existing)
+                return (0, response_1.sendError)(res, 'Email already in use', 400);
+            updates.email = email;
+        }
+        const user = await User_1.default.findByIdAndUpdate(req.user?._id, updates, { new: true }).select('-password');
+        return (0, response_1.sendSuccess)(res, user, 'Profile updated');
+    }
+    catch (error) {
+        return (0, response_1.sendError)(res, error.message, 500);
+    }
+};
+exports.updateMe = updateMe;
+const updatePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        if (!currentPassword || !newPassword)
+            return (0, response_1.sendError)(res, 'Passwords required', 400);
+        if (newPassword.length < 8)
+            return (0, response_1.sendError)(res, 'New password must be at least 8 characters', 400);
+        const user = await User_1.default.findById(req.user?._id);
+        if (!user || !user.password)
+            return (0, response_1.sendError)(res, 'User not found', 404);
+        const isMatch = await bcryptjs_1.default.compare(currentPassword, user.password);
+        if (!isMatch)
+            return (0, response_1.sendError)(res, 'Invalid current password', 401);
+        const salt = await bcryptjs_1.default.genSalt(10);
+        user.password = await bcryptjs_1.default.hash(newPassword, salt);
+        await user.save();
+        return (0, response_1.sendSuccess)(res, {}, 'Password updated successfully');
+    }
+    catch (error) {
+        return (0, response_1.sendError)(res, error.message, 500);
+    }
+};
+exports.updatePassword = updatePassword;

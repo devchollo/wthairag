@@ -44,11 +44,29 @@ export const queryChat = async (req: Request, res: Response) => {
         const systemPrompt = `You are an AI assistant for a technical workspace. Use the provided Knowledge Base and Security Alert context to answer questions. 
          IMPORTANT: 
          - Provide complete, detailed technical answers. Do not truncate or summarize too briefly.
+         - Ensure the topic is within the scope of the provided context or general technical support. If it is unsupported 3rd party software not present in the context, kindly inform the user.
          - DO NOT include inline citations like [1] or [Source 1] or "According to document...". 
          - Simply answer the question naturally based on the context. The system will handle tagging sources below your message.`;
 
         // Call AI Service
         const aiResponse = await AIService.getQueryResponse(query, context, workspaceId as any, systemPrompt);
+
+        // Map citations to real internal links FIRST
+        const enhancedCitations = aiResponse.citations.map(cit => {
+            const foundDoc = documents.find(d => d.title.toLowerCase().includes(cit.documentId.toLowerCase()));
+            if (foundDoc) return { ...cit, documentId: foundDoc._id, link: `/workspace/knowledge`, title: foundDoc.title };
+
+            const foundAlert = alerts.find(a => a.title.toLowerCase().includes(cit.documentId.toLowerCase()));
+            if (foundAlert) return { ...cit, documentId: foundAlert._id, link: `/workspace/alerts`, title: foundAlert.title };
+
+            return cit;
+        });
+
+        // Collect titles for UsageLog
+        // We look for titles in enhancedCitations, or fallback to the raw documentId if it looks like a title
+        const citedTitles = enhancedCitations
+            .map(c => (c as any).title || c.documentId)
+            .filter(t => t && t !== 'Recent Knowledge'); // Filter out generic mock IDs if any
 
         // Log Usage
         if (req.user && workspaceId) {
@@ -56,23 +74,14 @@ export const queryChat = async (req: Request, res: Response) => {
                 workspaceId,
                 userId: req.user._id,
                 tokens: aiResponse.tokensUsed || 0,
-                query: query.substring(0, 500), // truncate for safety
+                query: query.substring(0, 500),
+                citedDocuments: citedTitles,
                 aiModel: 'gpt-4o'
             }).catch(err => console.error('Failed to log usage:', err));
         }
 
         const userMessage = { role: 'user', content: query, createdAt: new Date() };
-
-        // Map citations to real internal links
-        const enhancedCitations = aiResponse.citations.map(cit => {
-            const foundDoc = documents.find(d => d.title.toLowerCase().includes(cit.documentId.toLowerCase()));
-            if (foundDoc) return { ...cit, documentId: foundDoc._id, link: `/workspace/knowledge` };
-
-            const foundAlert = alerts.find(a => a.title.toLowerCase().includes(cit.documentId.toLowerCase()));
-            if (foundAlert) return { ...cit, documentId: foundAlert._id, link: `/workspace/alerts` };
-
-            return cit;
-        });
+        // enhancedCitations already calculated above
 
         const assistantMessage = {
             role: 'assistant',

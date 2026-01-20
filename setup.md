@@ -52,10 +52,3 @@ cd backend && npm install && npm run dev
 ```
 
 ---
-
-### ❓ Troubleshooting the 404 Error
-If you still see a 404 after deployment:
-1. **GitHub Sync**: Ensure the deletion of the root `package.json` has been pushed to GitHub.
-2. **Vercel Settings**: Deep check **Override Output Directory**. It should be **DISABLED** (Off). Vercel handles the output automatically for Next.js.
-3. **Invalid Next Version**: I have corrected the `frontend/package.json` to use `next@15.1.4`. The previous version `16.x` was likely causing the build artifacts to be misrouted.
-4. **Clean Redeploy**: Go to Vercel Deployments > [...] > **Redeploy** and ensuring **"Use existing Build Cache"** is checked as **OFF**.

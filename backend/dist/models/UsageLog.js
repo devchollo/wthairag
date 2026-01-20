@@ -34,12 +34,15 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const MembershipSchema = new mongoose_1.Schema({
-    userId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
+const UsageLogSchema = new mongoose_1.Schema({
     workspaceId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Workspace', required: true },
-    role: { type: String, enum: ['owner', 'admin', 'member', 'viewer'], required: true },
+    userId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
+    tokens: { type: Number, required: true },
+    query: { type: String, required: true },
+    citedDocuments: [{ type: String }], // Document Titles
+    aiModel: { type: String, default: 'gpt-4o' },
 }, { timestamps: true });
-// Ensure a user can only have one membership per workspace
-MembershipSchema.index({ userId: 1, workspaceId: 1 }, { unique: true });
-MembershipSchema.index({ workspaceId: 1 }); // Optimize listMembers query
-exports.default = mongoose_1.default.model('Membership', MembershipSchema);
+UsageLogSchema.index({ workspaceId: 1, createdAt: -1 });
+UsageLogSchema.index({ userId: 1, createdAt: -1 });
+UsageLogSchema.index({ citedDocuments: 1 });
+exports.default = mongoose_1.default.model('UsageLog', UsageLogSchema);

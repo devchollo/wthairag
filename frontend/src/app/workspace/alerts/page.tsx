@@ -199,12 +199,14 @@ export default function AlertsPage() {
 
                         <div className="flex items-center gap-3 self-end sm:self-center">
                             {alert.status === 'open' ? (
-                                <button
-                                    className="btn-secondary h-9 px-4 text-[10px] font-black uppercase tracking-widest border-2 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-600"
-                                    onClick={() => handleResolve(alert._id)}
-                                >
-                                    Resolve
-                                </button>
+                                isAdmin && (
+                                    <button
+                                        className="btn-secondary h-9 px-4 text-[10px] font-black uppercase tracking-widest border-2 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-600"
+                                        onClick={() => handleResolve(alert._id)}
+                                    >
+                                        Resolve
+                                    </button>
+                                )
                             ) : (
                                 <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
                                     <CheckCircle className="h-3.5 w-3.5" />

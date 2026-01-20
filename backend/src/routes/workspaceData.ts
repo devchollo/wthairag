@@ -16,10 +16,10 @@ router.use(workspaceOverlay);
 router.get('/stats', getWorkspaceStats);
 
 // Knowledge
-router.post('/knowledge', authorize('owner', 'admin', 'member'), upload.single('file'), uploadDocument);
-router.post('/knowledge/manual', authorize('owner', 'admin', 'member'), createManualDocument);
+router.post('/knowledge', authorize('owner', 'admin'), upload.single('file'), uploadDocument);
+router.post('/knowledge/manual', authorize('owner', 'admin'), createManualDocument);
 router.get('/knowledge', listDocuments);
-router.get('/knowledge/:id/download', authorize('owner', 'admin'), downloadDocument);
+router.get('/knowledge/:id/download', authorize('owner', 'admin', 'member'), downloadDocument);
 router.delete('/knowledge/:id', authorize('owner', 'admin'), deleteDocument);
 
 // Chat

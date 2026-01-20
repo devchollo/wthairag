@@ -35,4 +35,4 @@ WorkToolsHub is a production-ready platform offering advanced public tools and a
 - **Database**: Use **MongoDB Atlas** for managed vector search.
 
 ---
-Built with ❤️ by Antigravity
+
