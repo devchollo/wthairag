@@ -21,5 +21,6 @@ const MembershipSchema: Schema = new Schema(
 
 // Ensure a user can only have one membership per workspace
 MembershipSchema.index({ userId: 1, workspaceId: 1 }, { unique: true });
+MembershipSchema.index({ workspaceId: 1 }); // Optimize listMembers query
 
 export default mongoose.model<IMembership>('Membership', MembershipSchema);

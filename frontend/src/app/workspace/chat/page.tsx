@@ -19,6 +19,7 @@ export default function RAGChat() {
     const [loading, setLoading] = useState(false);
     const [chatId, setChatId] = useState<string | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const hasInitialized = useRef(false);
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -29,7 +30,7 @@ export default function RAGChat() {
 
     useEffect(() => {
         const fetchInitialChat = async () => {
-            if (!currentWorkspace?._id) return;
+            if (!currentWorkspace?._id || hasInitialized.current) return;
             try {
                 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
                 const res = await fetch(`${apiUrl}/api/workspace-data/chat`, {
@@ -46,6 +47,7 @@ export default function RAGChat() {
                 } else {
                     setMessages([{ role: 'assistant', content: 'Protocol Active. Your knowledge base is synchronized. How can I assist with your workflow today?' }]);
                 }
+                hasInitialized.current = true;
             } catch (e) {
                 console.error("Failed to fetch chats", e);
             }

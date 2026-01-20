@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Chat from '../models/Chat';
 import Alert from '../models/Alert';
 import Document from '../models/Document';
+import UsageLog from '../models/UsageLog';
 import { sendSuccess, sendError } from '../utils/response';
 import { AIService } from '../services/aiService';
 
@@ -31,7 +32,8 @@ export const queryChat = async (req: Request, res: Response) => {
 
         let context = "Knowledge Base Information:\n";
         documents.forEach(doc => {
-            context += `- ${doc.title}: ${doc.content.substring(0, 500)}...\n`;
+            const snippet = doc.content ? doc.content.substring(0, 1500) : 'No content';
+            context += `- ${doc.title}: ${snippet}...\n`;
         });
 
         context += "\nSecurity Alerts:\n";
@@ -47,6 +49,17 @@ export const queryChat = async (req: Request, res: Response) => {
 
         // Call AI Service
         const aiResponse = await AIService.getQueryResponse(query, context, workspaceId as any, systemPrompt);
+
+        // Log Usage
+        if (req.user && workspaceId) {
+            await UsageLog.create({
+                workspaceId,
+                userId: req.user._id,
+                tokens: aiResponse.tokensUsed || 0,
+                query: query.substring(0, 500), // truncate for safety
+                aiModel: 'gpt-4o'
+            }).catch(err => console.error('Failed to log usage:', err));
+        }
 
         const userMessage = { role: 'user', content: query, createdAt: new Date() };
 

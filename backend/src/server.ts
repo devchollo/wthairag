@@ -100,15 +100,18 @@ import alertRoutes from './routes/alerts';
 import filesRoutes from './routes/files';
 import testimonialRoutes from './routes/testimonials';
 import membershipRoutes from './routes/membership';
+import analyticsRoutes from './routes/analytics';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/tools', toolsRoutes);
 app.use('/api/workspace', workspaceRoutes);
+app.use('/api/workspaces', workspaceRoutes); // Alias for plural usage
 app.use('/api/workspace-data', workspaceDataRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/files', filesRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/memberships', membershipRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Initialize Keep-Alive & Cleanup Workers
 import { initCleanupWorker } from './cleanupWorker';

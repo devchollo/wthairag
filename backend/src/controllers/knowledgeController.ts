@@ -77,13 +77,33 @@ export const uploadDocument = async (req: Request, res: Response) => {
             return sendError(res, 'File content does not match its extension. Possible spoofing detected.', 400);
         }
 
+        let extractedText = '';
+        try {
+            if (file.mimetype === 'application/pdf') {
+                const pdf = require('pdf-parse');
+                const data = await pdf(file.buffer);
+                extractedText = data.text;
+            } else if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                const mammoth = require('mammoth');
+                const result = await mammoth.extractRawText({ buffer: file.buffer });
+                extractedText = result.value;
+            } else if (file.mimetype === 'text/plain' || file.mimetype === 'text/csv') {
+                extractedText = file.buffer.toString('utf-8');
+            } else {
+                extractedText = 'Content extraction not supported for this file type yet.';
+            }
+        } catch (err) {
+            console.error('Text extraction failed:', err);
+            extractedText = 'Failed to extract text from file.';
+        }
+
         const { title, metadata } = req.body;
         const metadataObj = typeof metadata === 'string' ? JSON.parse(metadata || '{}') : metadata;
 
         const doc = await Document.create({
             workspaceId: (req as any).workspace?._id,
             title: title || file.originalname,
-            content: 'Indexing in progress...',
+            content: extractedText || 'No printable content found.',
             mimeType: file.mimetype,
             fileKey: `workspaces/${(req as any).workspace?._id}/vault/${Date.now()}-${file.originalname}`,
             metadata: metadataObj,
