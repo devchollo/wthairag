@@ -1,19 +1,47 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Shield, Server, Search, Lock, ArrowRight,
   Terminal, Activity, Cpu, Globe, Key,
-  MessageSquare, Database, FileText, Command, Zap, Layers, RefreshCcw, Layout
+  MessageSquare, Database, FileText, Command, Zap, Layers, RefreshCcw, Layout, Star, ChevronLeft, ChevronRight, QrCode
 } from 'lucide-react';
 import ScrollReveal from '@/components/ScrollReveal';
 import TerminalSimulation from '@/components/TerminalSimulation';
 
 export default function Home() {
+  const [latency, setLatency] = useState<number | null>(null);
+  const [testimonialIndex, setTestimonialIndex] = useState(0);
+
+  const testimonials = [
+    { name: 'Alex Chen', role: 'Lead DevOps @ Fintech Startup', text: 'Finally, a DNS tool that doesn\'t cache old records. Saved us hours debugging a migration.', rating: 5 },
+    { name: 'Sarah Kim', role: 'Security Engineer @ Healthcare SaaS', text: 'The SSL audit is incredibly thorough. Protocol version, cipher suites, expiry countdown - all in one place.', rating: 5 },
+    { name: 'Marcus Rodriguez', role: 'Full Stack Developer', text: 'I use the password generator daily. Clean, fast, and actually cryptographically secure.', rating: 4 },
+    { name: 'Emily Tanaka', role: 'CTO @ Logistics Platform', text: 'We migrated our internal docs to the RAG system. Query accuracy is impressive for private data.', rating: 5 },
+  ];
+
+  useEffect(() => {
+    const measureLatency = async () => {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const start = performance.now();
+      try {
+        await fetch(`${apiUrl}/health`);
+        const end = performance.now();
+        setLatency(Math.round(end - start));
+      } catch {
+        setLatency(-1);
+      }
+    };
+    measureLatency();
+  }, []);
+
+  const nextTestimonial = () => setTestimonialIndex((prev) => (prev + 1) % testimonials.length);
+  const prevTestimonial = () => setTestimonialIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+
   return (
     <div className="flex flex-col gap-20 py-12 sm:gap-24 sm:py-20 bg-white overflow-hidden">
-      {/* Hero: Higher Impact, More Detail */}
+      {/* Hero */}
       <section className="mx-auto max-w-[1100px] px-6 text-center">
         <ScrollReveal delay={100}>
           <div className="mx-auto mb-8 inline-flex items-center gap-2 rounded-full border border-border-light bg-surface-light px-5 py-2 text-[11px] font-black uppercase tracking-widest text-text-primary">
@@ -22,35 +50,64 @@ export default function Home() {
         </ScrollReveal>
 
         <ScrollReveal delay={200}>
-          <h1 className="text-6xl font-black tracking-tighter text-text-primary sm:text-8xl lg:text-9xl leading-[0.9]">
+          <h1 className="text-4xl font-black tracking-tighter text-text-primary sm:text-5xl lg:text-6xl leading-[1.1]">
             Your Docs. <span className="text-blue-600">AI Ready.</span> <br />
-            Your Workflow. <span className="text-slate-200">Secured.</span>
+            Your Workflow. <span className="text-slate-300">Secured.</span>
           </h1>
         </ScrollReveal>
 
         <ScrollReveal delay={300}>
-          <p className="mx-auto mt-10 max-w-3xl text-xl font-bold leading-snug text-text-secondary">
-            Analyze technical documentation with private, isolated AI RAG and access essential web primitives in a single, stateless ecosystem. No tracking. No bloat. Pure engineering utility.
+          <p className="mx-auto mt-8 max-w-2xl text-lg font-bold leading-relaxed text-text-secondary">
+            Analyze technical documentation with private, isolated AI RAG and access essential web primitives in a single, stateless ecosystem.
           </p>
         </ScrollReveal>
 
         <ScrollReveal delay={400}>
-          <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link href="/signup" className="btn-primary min-w-[220px] gap-2 h-14 text-lg">
-              Initialize Workspace <ArrowRight className="h-5 w-5" />
+          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Link href="/signup" className="btn-primary min-w-[200px] gap-2 h-12 text-base">
+              Get Started <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link href="/tools" className="btn-secondary min-w-[220px] h-14 text-lg">
-              Access System Primitives
+            <Link href="/tools" className="btn-secondary min-w-[200px] h-12 text-base">
+              Explore Tools
             </Link>
           </div>
         </ScrollReveal>
       </section>
 
-      {/* Bento Feature Grid: Upgraded Designs */}
+      {/* Most Used Tools */}
+      <section className="mx-auto max-w-[1100px] px-6">
+        <ScrollReveal>
+          <div className="text-center mb-12">
+            <div className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-2">Popular</div>
+            <h2 className="text-3xl font-black tracking-tighter text-text-primary">Most Used Tools</h2>
+          </div>
+        </ScrollReveal>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            { icon: Globe, title: 'DNS Debugger', desc: 'Real-time record resolution', href: '/tools/dns', color: 'text-blue-600' },
+            { icon: Shield, title: 'TLS Audit', desc: 'Certificate chain verification', href: '/tools/ssl', color: 'text-emerald-600' },
+            { icon: Key, title: 'Key Generator', desc: 'Cryptographic entropy', href: '/tools/password', color: 'text-amber-500' },
+            { icon: QrCode, title: 'QR Encoder', desc: 'High-density payloads', href: '/tools/qr', color: 'text-indigo-600' },
+          ].map((tool, i) => (
+            <ScrollReveal key={i} delay={i * 100}>
+              <Link href={tool.href} className="card h-full flex flex-col justify-between p-6 border-2 border-border-light hover:border-blue-600/30 group">
+                <tool.icon className={`h-8 w-8 ${tool.color} mb-4 group-hover:scale-110 transition-transform`} />
+                <div>
+                  <h3 className="font-black text-lg tracking-tight text-text-primary">{tool.title}</h3>
+                  <p className="text-[12px] font-bold text-text-muted mt-1">{tool.desc}</p>
+                </div>
+              </Link>
+            </ScrollReveal>
+          ))}
+        </div>
+      </section>
+
+      {/* Bento Feature Grid */}
       <section className="mx-auto max-w-[1240px] px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 auto-rows-[220px]">
 
-          {/* DNS Terminal Card - AS REQUESTED */}
+          {/* DNS Terminal Card */}
           <ScrollReveal className="md:col-span-2 md:row-span-2" delay={100}>
             <div className="card h-full flex flex-col justify-between group overflow-hidden bg-text-primary border-none shadow-2xl relative">
               <div className="p-2 relative z-10">
@@ -70,10 +127,10 @@ export default function Home() {
                 <TerminalSimulation
                   lines={[
                     { text: '# Requesting global resolution...', type: 'comment' },
-                    { text: 'dig +short worktoolshub.com A', type: 'input' },
-                    { text: '104.21.78.231', type: 'output' },
-                    { text: '172.67.135.244', type: 'output' },
-                    { text: 'dig +short worktoolshub.com MX', type: 'input', delay: 1000 },
+                    { text: 'dig +short worktoolshub.info A', type: 'input' },
+                    { text: '76.223.105.230', type: 'output' },
+                    { text: '13.249.44.122', type: 'output' },
+                    { text: 'dig +short worktoolshub.info MX', type: 'input', delay: 1000 },
                     { text: '10 aspmx.l.google.com.', type: 'output' },
                     { text: '20 alt1.aspmx.l.google.com.', type: 'output' },
                   ]}
@@ -95,7 +152,7 @@ export default function Home() {
               <div className="relative z-10">
                 <h2 className="text-3xl font-black tracking-tighter mb-2">Private Knowledge Retrieval.</h2>
                 <p className="font-bold opacity-80 text-sm leading-relaxed max-w-[400px]">
-                  Index your documentation, API specs, or legacy code into an isolated AI context. Query your data without leaking information to public models.
+                  Index your documentation, API specs, or legacy code into an isolated AI context.
                 </p>
               </div>
               <div className="absolute bottom-[-20%] right-[-10%] w-48 h-48 bg-white/5 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-700"></div>
@@ -105,38 +162,78 @@ export default function Home() {
           {/* SSL Audit */}
           <ScrollReveal delay={300}>
             <div className="card h-full bg-surface-light hover:bg-white flex flex-col justify-between border-2 hover:border-blue-600/30">
-              <Shield className="h-8 w-8 text-emerald-600 group-hover:scale-110 transition-transform" />
+              <Shield className="h-8 w-8 text-emerald-600" />
               <div>
                 <h3 className="font-black text-xl tracking-tight">TLS Audit</h3>
-                <p className="text-[12px] font-bold text-text-muted leading-tight">Full chain verification across all browsers.</p>
+                <p className="text-[12px] font-bold text-text-muted leading-tight">Full chain verification.</p>
               </div>
             </div>
           </ScrollReveal>
 
-          {/* Pass Generator */}
+          {/* Latency Benchmark */}
           <ScrollReveal delay={400}>
-            <div className="card h-full bg-surface-light hover:bg-white flex flex-col justify-between border-2 hover:border-blue-600/30">
-              <Key className="h-8 w-8 text-amber-500 group-hover:scale-110 transition-transform" />
-              <div>
-                <h4 className="font-black text-xl tracking-tight">System Keys</h4>
-                <p className="text-[12px] font-bold text-text-muted leading-tight">Cryptographic entropy for core security.</p>
-              </div>
-            </div>
-          </ScrollReveal>
-
-          {/* Security Stats */}
-          <ScrollReveal delay={500}>
             <div className="card h-full bg-surface-light border-2 border-dashed border-border-light flex flex-col items-center justify-center gap-4 group">
-              <div className="text-[40px] font-black text-text-primary tracking-tighter group-hover:scale-110 transition-transform duration-500">0.0<span className="text-blue-600">ms</span></div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-text-muted text-center">Query Latency Benchmark</p>
+              <div className="text-[40px] font-black text-text-primary tracking-tighter group-hover:scale-110 transition-transform duration-500">
+                {latency === null ? (
+                  <span className="text-slate-300 animate-pulse">...</span>
+                ) : latency === -1 ? (
+                  <span className="text-red-500">ERR</span>
+                ) : (
+                  <>{latency}<span className="text-blue-600">ms</span></>
+                )}
+              </div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-text-muted text-center">API Latency (Live)</p>
             </div>
           </ScrollReveal>
         </div>
       </section>
 
-      {/* Advanced Capabilities Section */}
-      <section className="mx-auto max-w-[1100px] px-6 py-20 border-y border-border-light bg-surface-light/30">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
+      {/* Testimonials */}
+      <section className="mx-auto max-w-[900px] px-6">
+        <ScrollReveal>
+          <div className="text-center mb-10">
+            <div className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-2">Community</div>
+            <h2 className="text-3xl font-black tracking-tighter text-text-primary">What Engineers Say</h2>
+          </div>
+        </ScrollReveal>
+
+        <ScrollReveal delay={100}>
+          <div className="relative">
+            <div className="card border-2 border-border-light p-8 md:p-12 text-center min-h-[280px] flex flex-col justify-center">
+              <div className="flex justify-center gap-1 mb-6">
+                {Array.from({ length: testimonials[testimonialIndex].rating }).map((_, i) => (
+                  <Star key={i} className="h-5 w-5 text-amber-400 fill-amber-400" />
+                ))}
+              </div>
+              <p className="text-xl font-bold text-text-primary leading-relaxed mb-8 italic">
+                "{testimonials[testimonialIndex].text}"
+              </p>
+              <div>
+                <div className="font-black text-text-primary">{testimonials[testimonialIndex].name}</div>
+                <div className="text-sm font-bold text-text-muted">{testimonials[testimonialIndex].role}</div>
+              </div>
+            </div>
+
+            <div className="flex justify-center gap-4 mt-6">
+              <button onClick={prevTestimonial} className="h-10 w-10 rounded-full border border-border-light flex items-center justify-center hover:border-blue-600 transition-colors">
+                <ChevronLeft className="h-5 w-5 text-text-muted" />
+              </button>
+              <div className="flex items-center gap-2">
+                {testimonials.map((_, i) => (
+                  <div key={i} className={`h-2 w-2 rounded-full transition-colors ${i === testimonialIndex ? 'bg-blue-600' : 'bg-border-light'}`}></div>
+                ))}
+              </div>
+              <button onClick={nextTestimonial} className="h-10 w-10 rounded-full border border-border-light flex items-center justify-center hover:border-blue-600 transition-colors">
+                <ChevronRight className="h-5 w-5 text-text-muted" />
+              </button>
+            </div>
+          </div>
+        </ScrollReveal>
+      </section>
+
+      {/* Advanced Capabilities */}
+      <section className="mx-auto max-w-[1100px] px-6 py-16 border-y border-border-light bg-surface-light/30">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
           <ScrollReveal delay={100}>
             <div className="space-y-4 group">
               <div className="h-12 w-12 rounded-2xl bg-white shadow-sm flex items-center justify-center border border-border-light group-hover:border-blue-600/30 transition-colors">
@@ -144,7 +241,7 @@ export default function Home() {
               </div>
               <h4 className="text-xl font-black text-text-primary tracking-tight">Multi-Tenant Isolation</h4>
               <p className="text-sm font-bold text-text-secondary leading-relaxed">
-                Each organization operates in its own logical container. Your vector embeddings, query history, and metadata are strictly isolated from other users.
+                Each organization operates in its own logical container. Your data is strictly isolated.
               </p>
             </div>
           </ScrollReveal>
@@ -156,7 +253,7 @@ export default function Home() {
               </div>
               <h4 className="text-xl font-black text-text-primary tracking-tight">Stateless Primitives</h4>
               <p className="text-sm font-bold text-text-secondary leading-relaxed">
-                DNS and SSL tools are stateless. We process. We resolve. We purge. Your debugging sessions leave zero footprint on our servers.
+                DNS and SSL tools are stateless. We process. We resolve. We purge.
               </p>
             </div>
           </ScrollReveal>
@@ -168,45 +265,19 @@ export default function Home() {
               </div>
               <h4 className="text-xl font-black text-text-primary tracking-tight">Persistent Context</h4>
               <p className="text-sm font-bold text-text-secondary leading-relaxed">
-                Connect your GitHub, Drive, or local storage. We maintain a synchronized knowledge graph of your project's technical specifications.
+                Connect your GitHub, Drive, or local storage for a synchronized knowledge graph.
               </p>
             </div>
           </ScrollReveal>
         </div>
       </section>
 
-      {/* Trust & Methodology: Developer Focus */}
-      <section className="mx-auto max-w-[900px] px-6 text-center">
-        <ScrollReveal>
-          <h2 className="text-4xl font-black text-text-primary tracking-tighter mb-6">Tools that respect your intelligence.</h2>
-          <p className="text-lg font-bold text-text-secondary mb-12 max-w-2xl mx-auto italic opacity-70">
-            "We built WorkToolsHub because we were tired of corporate bloat. A tool should do one thing perfectly, without forcing you through a sales funnel."
-          </p>
-        </ScrollReveal>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {[
-            { label: 'Zero', sub: 'Persistence' },
-            { label: '100%', sub: 'Isolated AI' },
-            { label: 'Sub-1s', sub: 'Resolvers' },
-            { label: 'No', sub: 'Tracking' }
-          ].map((stat, i) => (
-            <ScrollReveal key={i} delay={i * 100}>
-              <div className="space-y-1">
-                <div className="text-2xl font-black text-text-primary uppercase tracking-tighter">{stat.label}</div>
-                <div className="text-[10px] font-black uppercase tracking-widest text-text-muted">{stat.sub}</div>
-              </div>
-            </ScrollReveal>
-          ))}
-        </div>
-      </section>
-
-      {/* Tighter Final Call */}
+      {/* Final CTA */}
       <section className="mx-auto max-w-[800px] px-6 text-center pb-20">
         <ScrollReveal direction="none" delay={200}>
           <div className="card bg-blue-600 text-white p-12 border-none overflow-hidden relative group shadow-2xl shadow-blue-600/30">
             <div className="relative z-10">
-              <h2 className="text-5xl font-black tracking-tighter mb-8 leading-tight">
+              <h2 className="text-4xl font-black tracking-tighter mb-8 leading-tight">
                 Ready for a smarter <br /> engineering workflow?
               </h2>
               <Link href="/signup" className="btn-secondary h-14 px-12 text-lg bg-white text-blue-600 hover:bg-white/90 shadow-2xl">

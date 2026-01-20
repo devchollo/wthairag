@@ -1,14 +1,31 @@
 'use client';
 
 import { useState } from 'react';
-import { Server, CheckCircle, Terminal, Activity, Globe, Search, AlertCircle } from 'lucide-react';
+import { Server, CheckCircle, Terminal, Activity, Globe, Search, AlertCircle, Shield, Mail, XCircle, FileText } from 'lucide-react';
 
 interface DNSResults {
-    A?: string[];
-    MX?: { exchange: string; priority: number }[];
-    TXT?: string[][];
-    NS?: string[];
-    CNAME?: string[];
+    domain: string;
+    queryTime: number;
+    records: {
+        A?: string[];
+        MX?: { exchange: string; priority: number }[];
+        TXT?: string[][];
+        NS?: string[];
+        CNAME?: string[];
+        SOA?: { nsname: string; hostmaster: string; serial: number; refresh: number; retry: number; expire: number; minttl: number };
+    };
+    diagnostics: {
+        hasMX: boolean;
+        hasSPF: boolean;
+        hasDMARC: boolean;
+        hasDKIM: boolean;
+        dnssecEnabled: boolean;
+    };
+    report: {
+        summary: string;
+        issues: string[];
+        recommendations: string[];
+    };
 }
 
 export default function DNSChecker() {
@@ -44,8 +61,8 @@ export default function DNSChecker() {
             }
 
             setResults(data.data);
-            addLog(`Node TYO-01: ${domain} resolved.`);
-            addLog(`Chain-of-trust: DNSSEC validated.`);
+            addLog(`Node TYO-01: ${domain} resolved in ${data.data.queryTime}ms.`);
+            addLog(`Mail Security: SPF ${data.data.diagnostics.hasSPF ? '✓' : '✗'} | DMARC ${data.data.diagnostics.hasDMARC ? '✓' : '✗'}`);
             addLog(`Resolution complete. Global consistency: 100%`);
         } catch (err: any) {
             setError(err.message);
@@ -56,12 +73,15 @@ export default function DNSChecker() {
     };
 
     return (
-        <div className="mx-auto max-w-[1000px] px-6 py-12">
+        <div className="mx-auto max-w-[1100px] px-6 py-12">
             <div className="mb-10">
                 <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
                     <Terminal className="h-3.5 w-3.5" /> WorkToolsHub / DNS Debugger
                 </div>
                 <h1 className="text-4xl font-black text-text-primary tracking-tighter">DNS Resolution Protocol.</h1>
+                <p className="mt-3 text-sm font-bold text-text-secondary max-w-2xl">
+                    Query authoritative DNS records, validate mail security configurations (SPF, DKIM, DMARC), and monitor global propagation status.
+                </p>
             </div>
 
             <div className="card border border-border-light bg-white p-6 shadow-sm">
@@ -90,9 +110,65 @@ export default function DNSChecker() {
                     </div>
                 )}
 
-                {(logs.length > 0 || results) && (
-                    <>
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-300">
+                {results && (
+                    <div className="space-y-8 animate-in fade-in duration-300">
+                        {/* Report Summary */}
+                        <div className={`p-6 rounded-xl border-2 ${results.report.issues.length === 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
+                            <div className="flex items-center gap-3 mb-4">
+                                {results.report.issues.length === 0 ? (
+                                    <CheckCircle className="h-6 w-6 text-emerald-600" />
+                                ) : (
+                                    <AlertCircle className="h-6 w-6 text-amber-600" />
+                                )}
+                                <div>
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-text-muted">Diagnostic Summary</div>
+                                    <div className="text-lg font-black text-text-primary">{results.report.summary}</div>
+                                </div>
+                            </div>
+                            {results.report.issues.length > 0 && (
+                                <div className="space-y-2 mt-4">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-amber-700">Issues Detected</div>
+                                    {results.report.issues.map((issue, i) => (
+                                        <div key={i} className="flex items-start gap-2 text-sm font-bold text-amber-800">
+                                            <XCircle className="h-4 w-4 mt-0.5 shrink-0" /> {issue}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            <div className="mt-6 pt-4 border-t border-black/5">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Recommendations</div>
+                                <ul className="space-y-1">
+                                    {results.report.recommendations.map((rec, i) => (
+                                        <li key={i} className="text-xs font-bold text-text-secondary">• {rec}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+
+                        {/* Mail Security Grid */}
+                        <div>
+                            <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
+                                <Mail className="h-3 w-3" /> Mail Security Status
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {[
+                                    { label: 'MX Records', status: results.diagnostics.hasMX },
+                                    { label: 'SPF Record', status: results.diagnostics.hasSPF },
+                                    { label: 'DMARC Policy', status: results.diagnostics.hasDMARC },
+                                    { label: 'DKIM Signature', status: results.diagnostics.hasDKIM },
+                                ].map((item, i) => (
+                                    <div key={i} className={`p-4 rounded-xl border-2 text-center ${item.status ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">{item.label}</div>
+                                        <div className={`text-lg font-black ${item.status ? 'text-emerald-600' : 'text-red-600'}`}>
+                                            {item.status ? 'PRESENT' : 'MISSING'}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Records Grid */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             <div className="lg:col-span-2">
                                 <h4 className="mb-3 text-[10px] font-black uppercase tracking-widest text-text-muted">Output stream</h4>
                                 <div className="rounded-xl bg-text-primary p-6 font-mono text-[11px] text-white leading-relaxed shadow-xl border border-white/5">
@@ -102,34 +178,32 @@ export default function DNSChecker() {
                                             {log}
                                         </p>
                                     ))}
-                                    {results && (
-                                        <div className="mt-4 flex items-center gap-4 border-t border-white/10 pt-4">
-                                            <div className="flex items-center gap-1.5 text-emerald-400 font-bold uppercase tracking-widest text-[10px]">
-                                                <CheckCircle className="h-3.5 w-3.5" /> Resolved
-                                            </div>
-                                            <div className="h-2 w-px bg-white/10"></div>
-                                            <div className="opacity-40 text-[10px]">TTL: Auto</div>
+                                    <div className="mt-4 flex items-center gap-4 border-t border-white/10 pt-4">
+                                        <div className="flex items-center gap-1.5 text-emerald-400 font-bold uppercase tracking-widest text-[10px]">
+                                            <CheckCircle className="h-3.5 w-3.5" /> Resolved
                                         </div>
-                                    )}
+                                        <div className="h-2 w-px bg-white/10"></div>
+                                        <div className="opacity-40 text-[10px]">Query: {results.queryTime}ms</div>
+                                    </div>
                                 </div>
                             </div>
 
                             <div className="space-y-4">
-                                {results?.A && results.A.length > 0 && (
+                                {results.records.A && results.records.A.length > 0 && (
                                     <div>
                                         <h4 className="mb-2 text-[10px] font-black uppercase tracking-widest text-text-muted">A Records</h4>
                                         <div className="space-y-1.5">
-                                            {results.A.map((ip, i) => (
+                                            {results.records.A.map((ip, i) => (
                                                 <div key={i} className="font-mono text-[11px] font-bold text-text-primary bg-surface-light border border-border-light px-3 py-2 rounded-lg">{ip}</div>
                                             ))}
                                         </div>
                                     </div>
                                 )}
-                                {results?.MX && results.MX.length > 0 && (
+                                {results.records.MX && results.records.MX.length > 0 && (
                                     <div>
                                         <h4 className="mb-2 text-[10px] font-black uppercase tracking-widest text-text-muted">MX Records</h4>
                                         <div className="space-y-1.5">
-                                            {results.MX.map((mx, i) => (
+                                            {results.records.MX.map((mx, i) => (
                                                 <div key={i} className="text-[11px] font-bold text-text-primary bg-surface-light border border-border-light px-3 py-2 rounded-lg truncate">
                                                     {mx.exchange} <span className="opacity-40 ml-1">[{mx.priority}]</span>
                                                 </div>
@@ -137,14 +211,12 @@ export default function DNSChecker() {
                                         </div>
                                     </div>
                                 )}
-                                {results?.TXT && results.TXT.length > 0 && (
+                                {results.records.NS && results.records.NS.length > 0 && (
                                     <div>
-                                        <h4 className="mb-2 text-[10px] font-black uppercase tracking-widest text-text-muted">TXT Records</h4>
+                                        <h4 className="mb-2 text-[10px] font-black uppercase tracking-widest text-text-muted">NS Records</h4>
                                         <div className="space-y-1.5">
-                                            {results.TXT.map((txt, i) => (
-                                                <div key={i} className="text-[10px] font-bold text-text-primary bg-surface-light border border-border-light px-3 py-2 rounded-lg break-all">
-                                                    {txt.join(' ')}
-                                                </div>
+                                            {results.records.NS.map((ns, i) => (
+                                                <div key={i} className="text-[11px] font-bold text-text-primary bg-surface-light border border-border-light px-3 py-2 rounded-lg truncate">{ns}</div>
                                             ))}
                                         </div>
                                     </div>
@@ -153,7 +225,7 @@ export default function DNSChecker() {
                         </div>
 
                         {/* Propagation Visualization */}
-                        <div className="mt-10 border-t border-border-light/50 pt-8">
+                        <div className="border-t border-border-light/50 pt-8">
                             <div className="flex items-center gap-2 mb-6 text-[10px] font-black uppercase tracking-widest text-text-muted">
                                 <Globe className="h-3 w-3" /> Global Propagation Status
                             </div>
@@ -170,14 +242,14 @@ export default function DNSChecker() {
                                         <div className="text-[9px] font-black text-text-muted uppercase mb-1">{node.region}</div>
                                         <div className="text-xs font-bold text-text-primary mb-2">{node.city}</div>
                                         <div className="flex items-center justify-center gap-1.5">
-                                            <div className={`h-1.5 w-1.5 rounded-full ${results ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-300'}`}></div>
-                                            <span className="text-[10px] font-mono opacity-50">{results ? node.latency : '--'}</span>
+                                            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                                            <span className="text-[10px] font-mono opacity-50">{node.latency}</span>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                    </>
+                    </div>
                 )}
             </div>
         </div>
