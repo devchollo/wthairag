@@ -1,36 +1,34 @@
 @import "tailwindcss";
 
 @theme {
-  /* Core Colors - High Contrast */
-  --color-primary: #1e40af;
-  /* Deeper Blue */
-  --color-primary-hover: #1e3a8a;
+  /* Core Colors */
+  --color-primary: #111827;
+  /* Near Black Primary */
+  --color-primary-hover: #1f2937;
+  --color-accent: #3b82f6;
+  /* Blue for call-to-actions */
 
-  /* Backgrounds */
-  --color-background-light: #fdfdfd;
-  --color-background-dark: #090a0c;
+  /* Backgrounds - Pure and Clean */
+  --color-background-light: #ffffff;
+  --color-background-dark: #000000;
 
   /* Surfaces */
-  --color-surface-light: #ffffff;
-  --color-surface-dark: #121418;
+  --color-surface-light: #f9fafb;
+  --color-surface-dark: #0a0a0a;
 
-  /* Borders - More visible */
-  --color-border-light: #dfe1e5;
-  --color-border-dark: #2d3139;
+  /* Borders - High Visibility */
+  --color-border-light: #e5e7eb;
+  --color-border-dark: #1f2937;
 
-  /* Text - High Contrast */
-  --color-text-primary: #0a0b0d;
-  /* Near Black */
-  --color-text-secondary: #334155;
+  /* Text - GUARANTEED CONTRAST */
+  --color-text-primary: #111827;
+  /* Slate 900 */
+  --color-text-secondary: #374151;
   /* Slate 700 */
-  --color-text-muted: #64748b;
-  /* Slate 500 */
-  --color-text-dark: #f8fafc;
+  --color-text-muted: #4b5563;
+  /* Slate 600 */
+  --color-text-dark: #f9fafb;
   /* Near White */
-
-  /* Legacy Shortcut Names */
-  --color-muted: #64748b;
-  --color-secondary: #3341 slate;
 
   /* Spacing */
   --spacing-8: 8px;
@@ -42,15 +40,15 @@
 
 /* Base resets & custom variables */
 :root {
-  --background: #fdfdfd;
-  --foreground: #0a0b0d;
-  --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --background: #ffffff;
+  --foreground: #111827;
+  --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 }
 
 [data-theme='dark'] {
-  --background: #090a0c;
-  --foreground: #f8fafc;
-  --card-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.5);
+  --background: #000000;
+  --foreground: #f9fafb;
+  --card-shadow: 0 0 0 1px rgb(255 255 255 / 0.1);
 }
 
 @layer base {
@@ -58,35 +56,36 @@
     @apply bg-background-light text-text-primary antialiased;
     color: var(--foreground);
     background: var(--background);
-    line-height: 1.6;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    line-height: 1.5;
   }
 
   h1,
   h2,
   h3,
   h4 {
-    @apply font-bold tracking-tight text-text-primary;
+    @apply font-black tracking-tight text-text-primary;
+    color: var(--foreground) !important;
+    /* Force foreground for contrast */
   }
 }
 
 /* Custom Utilities for the Calm Design System */
 @layer components {
   .btn-primary {
-    @apply h-[46px] px-8 rounded-[8px] bg-primary text-white font-bold transition-all hover:bg-primary-hover active:scale-[0.98] focus:ring-4 focus:ring-primary/20 outline-none flex items-center justify-center shadow-sm;
+    @apply h-11 px-8 rounded-lg bg-primary text-white font-bold transition-all hover:bg-primary-hover active:scale-[0.98] flex items-center justify-center shadow-sm;
   }
 
   .btn-secondary {
-    @apply h-[46px] px-8 rounded-[8px] bg-white border-2 border-border-light text-text-primary font-bold transition-all hover:border-text-secondary active:scale-[0.98] outline-none flex items-center justify-center;
+    @apply h-11 px-8 rounded-lg bg-white border border-border-light text-text-primary font-bold transition-all hover:bg-surface-light active:scale-[0.98] flex items-center justify-center;
   }
 
   .card {
-    @apply bg-surface-light border border-border-light rounded-2xl p-8 transition-all;
+    @apply bg-surface-light border border-border-light rounded-xl p-8 transition-all;
     box-shadow: var(--card-shadow);
   }
 
   [data-theme='dark'] .btn-secondary {
-    @apply bg-surface-dark border-border-dark text-text-dark hover:border-text-muted;
+    @apply bg-surface-dark border-border-dark text-text-dark hover:bg-background-dark;
   }
 
   [data-theme='dark'] .card {
@@ -96,5 +95,5 @@
 
 /* Smooth transitions */
 * {
-  @apply transition-colors duration-200;
+  @apply transition-colors duration-150;
 }

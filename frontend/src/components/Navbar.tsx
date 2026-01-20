@@ -145,7 +145,7 @@ export default function Navbar() {
                         <Link href="/donate" className="block font-medium text-text-primary dark:text-text-dark">Donate</Link>
                         <div className="flex flex-col gap-3 pt-4">
                             <Link href="/login" className="btn-secondary w-full">Sign In</Link>
-                            <Link href="/login" className="btn-primary w-full">Get Started</Link>
+                            <Link href="/signup" className="btn-primary w-full">Get Started</Link>
                         </div>
                     </div>
                 </div>
