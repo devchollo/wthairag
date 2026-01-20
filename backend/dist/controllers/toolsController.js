@@ -372,83 +372,102 @@ const whoIsHostingThis = async (req, res) => {
                             results.hosting.asnName = asnMatch[2];
                         }
                     }
-                    // Infer hosting provider from common patterns
-                    const orgLower = (data.org || '').toLowerCase();
-                    if (orgLower.includes('amazon') || orgLower.includes('aws')) {
+                    // Detection logic (reused below)
+                    const detect = (orgStr) => {
+                        const low = orgStr.toLowerCase();
+                        if (low.includes('amazon') || low.includes('aws'))
+                            return 'Amazon Web Services (AWS)';
+                        if (low.includes('google'))
+                            return 'Google Cloud Platform';
+                        if (low.includes('microsoft') || low.includes('azure'))
+                            return 'Microsoft Azure';
+                        if (low.includes('cloudflare')) {
+                            results.cdn.detected = true;
+                            results.cdn.provider = 'Cloudflare';
+                            return 'Cloudflare';
+                        }
+                        if (low.includes('digitalocean'))
+                            return 'DigitalOcean';
+                        if (low.includes('linode') || low.includes('akamai'))
+                            return 'Akamai/Linode';
+                        if (low.includes('ovh'))
+                            return 'OVH';
+                        if (low.includes('hetzner'))
+                            return 'Hetzner';
+                        if (low.includes('vultr'))
+                            return 'Vultr';
+                        if (low.includes('vercel'))
+                            return 'Vercel';
+                        if (low.includes('netlify'))
+                            return 'Netlify';
+                        if (low.includes('render'))
+                            return 'Render';
+                        if (low.includes('github') || low.includes('fastly')) {
+                            if (low.includes('fastly')) {
+                                results.cdn.detected = true;
+                                results.cdn.provider = 'Fastly';
+                            }
+                            return (low.includes('github')) ? 'GitHub Pages' : 'Fastly';
+                        }
+                        if (low.includes('heroku') || low.includes('salesforce'))
+                            return 'Heroku';
+                        if (low.includes('namecheap'))
+                            return 'Namecheap';
+                        if (low.includes('godaddy'))
+                            return 'GoDaddy';
+                        if (low.includes('bluehost'))
+                            return 'Bluehost';
+                        if (low.includes('hostgator'))
+                            return 'HostGator';
+                        if (low.includes('siteground'))
+                            return 'SiteGround';
+                        if (low.includes('hostinger'))
+                            return 'Hostinger';
+                        return orgStr;
+                    };
+                    if (data.org)
+                        results.hosting.provider = detect(data.org);
+                }
+            }
+        }
+        catch (apiErr) {
+            console.error('IPInfo API Error (Hosting):', apiErr.message);
+            // Fallback to ip-api.com
+            try {
+                const fallbackRes = await axios_1.default.get(`http://ip-api.com/json/${results.ip}`);
+                if (fallbackRes.data && fallbackRes.data.status === 'success') {
+                    const d = fallbackRes.data;
+                    results.hosting.org = d.isp;
+                    results.location.country = d.countryCode;
+                    results.location.region = d.regionName;
+                    results.location.city = d.city;
+                    results.hosting.asn = d.as?.split(' ')[0];
+                    results.hosting.asnName = d.as?.split(' ').slice(1).join(' ');
+                    const low = (d.isp || d.org || d.as || '').toLowerCase();
+                    if (low.includes('amazon') || low.includes('aws'))
                         results.hosting.provider = 'Amazon Web Services (AWS)';
-                    }
-                    else if (orgLower.includes('google')) {
+                    else if (low.includes('google'))
                         results.hosting.provider = 'Google Cloud Platform';
-                    }
-                    else if (orgLower.includes('microsoft') || orgLower.includes('azure')) {
+                    else if (low.includes('microsoft') || low.includes('azure'))
                         results.hosting.provider = 'Microsoft Azure';
-                    }
-                    else if (orgLower.includes('cloudflare')) {
+                    else if (low.includes('cloudflare')) {
                         results.hosting.provider = 'Cloudflare';
                         results.cdn.detected = true;
                         results.cdn.provider = 'Cloudflare';
                     }
-                    else if (orgLower.includes('digitalocean')) {
-                        results.hosting.provider = 'DigitalOcean';
-                    }
-                    else if (orgLower.includes('linode') || orgLower.includes('akamai')) {
-                        results.hosting.provider = 'Akamai/Linode';
-                    }
-                    else if (orgLower.includes('ovh')) {
-                        results.hosting.provider = 'OVH';
-                    }
-                    else if (orgLower.includes('hetzner')) {
-                        results.hosting.provider = 'Hetzner';
-                    }
-                    else if (orgLower.includes('vultr')) {
-                        results.hosting.provider = 'Vultr';
-                    }
-                    else if (orgLower.includes('vercel')) {
-                        results.hosting.provider = 'Vercel';
-                    }
-                    else if (orgLower.includes('netlify')) {
-                        results.hosting.provider = 'Netlify';
-                    }
-                    else if (orgLower.includes('render')) {
+                    else if (low.includes('render'))
                         results.hosting.provider = 'Render';
-                    }
-                    else if (orgLower.includes('github') || orgLower.includes('fastly')) {
-                        results.hosting.provider = (orgLower.includes('github')) ? 'GitHub Pages' : 'Fastly';
-                    }
-                    else if (orgLower.includes('heroku') || orgLower.includes('salesforce')) {
-                        results.hosting.provider = 'Heroku';
-                    }
-                    else if (orgLower.includes('fastly')) {
-                        results.hosting.provider = 'Fastly';
-                        results.cdn.detected = true;
-                        results.cdn.provider = 'Fastly';
-                    }
-                    else if (orgLower.includes('namecheap')) {
-                        results.hosting.provider = 'Namecheap';
-                    }
-                    else if (orgLower.includes('godaddy')) {
-                        results.hosting.provider = 'GoDaddy';
-                    }
-                    else if (orgLower.includes('bluehost')) {
-                        results.hosting.provider = 'Bluehost';
-                    }
-                    else if (orgLower.includes('hostgator')) {
-                        results.hosting.provider = 'HostGator';
-                    }
-                    else if (orgLower.includes('siteground')) {
-                        results.hosting.provider = 'SiteGround';
-                    }
-                    else if (orgLower.includes('hostinger')) {
-                        results.hosting.provider = 'Hostinger';
-                    }
-                    else if (data.org) {
-                        results.hosting.provider = data.org;
-                    }
+                    else if (low.includes('vercel'))
+                        results.hosting.provider = 'Vercel';
+                    else if (low.includes('digitalocean'))
+                        results.hosting.provider = 'DigitalOcean';
+                    else
+                        results.hosting.provider = d.isp || 'Unknown';
                 }
             }
-        }
-        catch (e) {
-            // IP lookup failed
+            catch (fallbackErr) {
+                console.error('Fallback API Error (Hosting):', fallbackErr.message);
+            }
         }
         // Check for CDN via CNAME
         try {

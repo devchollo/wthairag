@@ -32,16 +32,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
 
     useEffect(() => {
-        const savedUser = localStorage.getItem('user');
-        if (savedUser) {
+        const verifySession = async () => {
             try {
-                const parsedUser = JSON.parse(savedUser);
-                setUser(parsedUser);
-                // Also load workspaces if we had them or let the app refetch
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+                const res = await fetch(`${apiUrl}/api/auth/me`, {
+                    credentials: 'include'
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    setUser(data.data.user);
+                    setWorkspaces(data.data.memberships.map((m: any) => m.workspaceId));
+                    localStorage.setItem('user', JSON.stringify(data.data.user));
+                } else {
+                    // Token invalid or expired
+                    localStorage.removeItem('user');
+                    setUser(null);
+                }
             } catch (e) {
-                console.error("Failed to parse saved user", e);
+                console.error("Session verification failed", e);
             }
-        }
+        };
+
+        verifySession();
     }, []);
 
     const login = (data: { user: User; memberships: { workspaceId: Workspace }[] }) => {

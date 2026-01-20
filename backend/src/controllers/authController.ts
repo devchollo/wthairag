@@ -150,6 +150,7 @@ export const completeSignup = async (req: Request, res: Response) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
+            path: '/', // Ensure cookie is available site-wide
             maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
         });
 
@@ -199,6 +200,7 @@ export const login = async (req: Request, res: Response) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
+            path: '/', // Ensure cookie is available site-wide
             maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
         });
 
