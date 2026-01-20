@@ -1,67 +1,65 @@
 :root {
-  /* ksevillejo.com Inspired Palette */
+  /* Palette: "Graphite & Silver" */
   --background: #ffffff;
-  --apple-black: #1d1d1f;
-  --apple-blue: #0071e3;
-  --secondary-text: #86868b;
-  --bg-neutral: #f5f5f7;
+  --foreground: #0a0a0b;
+  --accent: #0071e3;
+  --secondary: #6e6e73;
+  --surface: #f5f5f7;
+  --border: rgba(0, 0, 0, 0.08);
 
-  --radius-extreme: 48px;
+  /* Depth & Blur */
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-blur: 30px;
+
+  /* Radius Hierarchy */
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 32px;
+  --radius-xl: 48px;
   --radius-pill: 100px;
 
-  /* Font Stacks */
-  --font-apple: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
-
-  --ease-apple-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-  --shadow-premium: 0 4px 24px rgba(0, 0, 0, 0.04);
+  /* Motion: The "Magnetic" Ease */
+  --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 200ms;
+  --duration-normal: 400ms;
 }
 
 [data-theme='dark'] {
   --background: #000000;
-  --apple-black: #f5f5f7;
-  --apple-blue: #0a84ff;
-  --secondary-text: #98989d;
-  --bg-neutral: #1c1c1e;
+  --foreground: #f5f5f7;
+  --secondary: #86868b;
+  --surface: #1d1d1f;
+  --border: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(0, 0, 0, 0.72);
 }
 
 * {
   box-sizing: border-box;
-  padding: 0;
   margin: 0;
+  padding: 0;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-html,
 body {
-  width: 100%;
-  height: 100%;
-  font-family: var(--font-apple);
-  background-color: var(--background);
-  color: var(--apple-black);
-  overflow-x: hidden;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
   line-height: 1.5;
-  scroll-behavior: smooth;
+  letter-spacing: -0.011em;
+  overflow-x: hidden;
 }
 
-/* Typography Overhaul - Tight & Bold */
+/* Typography Scale */
 h1,
 h2,
 h3,
 h4 {
-  font-weight: 600;
-  letter-spacing: -0.05em;
-  /* Tight editorial look from ksevillejo.com */
-  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
 }
 
-p {
-  font-size: 16px;
-  color: var(--secondary-text);
-  letter-spacing: -0.01em;
-}
-
-/* Section Containers */
+/* Premium Layout Primitives */
 .container {
   max-width: 1200px;
   margin: 0 auto;
@@ -69,72 +67,42 @@ p {
 }
 
 .section-padding {
-  padding: 120px 0;
+  padding: 140px 0;
 }
 
-/* Glassmorphism Refinement */
+/* Float & Glass Surfaces */
 .glass {
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(210, 210, 215, 0.5);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
 }
 
-[data-theme='dark'] .glass {
-  background: rgba(28, 28, 30, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.card {
+  background: var(--background);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  transition: all var(--duration-normal) var(--ease-premium);
 }
 
-/* Button & Link Overhaul */
-.btn-primary {
-  background-color: var(--apple-blue);
-  color: #ffffff;
-  padding: 12px 28px;
-  border-radius: var(--radius-pill);
-  font-weight: 500;
-  font-size: 17px;
-  transition: transform 0.3s var(--ease-apple-smooth), opacity 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
+.card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+  border-color: var(--accent);
 }
 
-.btn-primary:hover {
-  transform: scale(1.05);
-}
-
-.btn-primary:active {
-  transform: scale(0.95);
-}
-
-.btn-secondary {
-  background-color: var(--bg-neutral);
-  color: var(--apple-black);
-  padding: 12px 28px;
-  border-radius: var(--radius-pill);
-  font-weight: 500;
-  font-size: 17px;
-  transition: transform 0.3s var(--ease-apple-smooth), background-color 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-}
-
-.btn-secondary:hover {
-  transform: scale(1.05);
-  background-color: #e8e8ed;
-}
-
-/* Navigation - Centered & Clean */
+/* Navigation - Floating Tablet */
 .sticky-nav {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 52px;
-  z-index: 9999;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 80px);
+  max-width: 1000px;
+  height: 64px;
+  z-index: 1000;
+  border-radius: var(--radius-pill);
 }
 
 .nav-content {
@@ -142,12 +110,15 @@ p {
   height: 100%;
   align-items: center;
   justify-content: space-between;
+  padding: 0 32px;
 }
 
 .logo {
-  font-weight: 600;
-  font-size: 18px;
-  letter-spacing: -0.04em;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  text-decoration: none;
+  color: var(--foreground);
 }
 
 .nav-links {
@@ -156,22 +127,71 @@ p {
 }
 
 .nav-links a {
-  font-size: 12px;
-  /* Small, modern nav from ksevillejo.com */
-  font-weight: 400;
-  color: var(--apple-black);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--foreground);
   text-decoration: none;
-  opacity: 0.7;
-  transition: opacity 0.2s;
+  opacity: 0.6;
+  transition: opacity var(--duration-fast) var(--ease-premium);
 }
 
 .nav-links a:hover {
   opacity: 1;
 }
 
-.nav-actions .btn-login {
-  font-size: 12px;
+/* Buttons: The "Squishy" Feel */
+.btn-primary,
+.btn-secondary {
+  height: 48px;
+  padding: 0 28px;
+  border-radius: var(--radius-pill);
+  font-size: 16px;
   font-weight: 600;
-  color: var(--apple-blue);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-premium);
   text-decoration: none;
+}
+
+.btn-primary {
+  background: var(--foreground);
+  color: var(--background);
+}
+
+.btn-primary:hover {
+  transform: scale(1.04);
+  filter: brightness(1.1);
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--foreground);
+}
+
+.btn-secondary:hover {
+  transform: scale(1.04);
+  background: #e8e8ed;
+}
+
+.btn-primary:active,
+.btn-secondary:active {
+  transform: scale(0.96);
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 24px;
+  }
+
+  .sticky-nav {
+    width: calc(100% - 40px);
+    top: 20px;
+  }
+
+  .nav-links {
+    display: none;
+  }
 }

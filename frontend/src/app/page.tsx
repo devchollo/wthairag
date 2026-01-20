@@ -6,10 +6,10 @@ export default function Home() {
     <div className={styles.page}>
       <section className={styles.hero}>
         <div className={styles.heroContent}>
-          <h1 className={styles.headline}>The Ultimate Swiss Army Knife for the Modern Web.</h1>
+          <h1 className={styles.headline}>Stateless tools.<br />Absolute privacy.</h1>
           <p className={styles.subheadline}>
-            A unified suite of high-performance public tools and a private AI RAG workspace.
-            Designed for speed, absolute privacy, and seamless performance.
+            A world-class suite of universal utilities and a private AI RAG workspace,
+            engineered for the next generation of web professionals.
           </p>
           <div className={styles.ctas}>
             <Link href="/tools" className="btn-primary">
@@ -23,37 +23,39 @@ export default function Home() {
       </section>
 
       <section className="container">
-        <h2 className={styles.sectionTitle}>Engineered for Professionals.</h2>
+        <h2 className={styles.sectionTitle}>Built for the modern edge.</h2>
         <div className={styles.grid}>
-          <div className={`${styles.card} glass`}>
+          <div className={styles.card}>
             <h3>DNS Inspector</h3>
-            <p>Precise propagation tracking with global record verification. No logs, just raw performance.</p>
-            <span className={styles.badge}>Next-Gen Engine</span>
+            <p>Verification at the speed of thought. Global record tracking with zero persistent logs.</p>
+            <span className={styles.badge}>Stateless Engine</span>
           </div>
-          <div className={`${styles.card} glass`}>
-            <h3>SSL Fortress</h3>
-            <p>Deep-layer security audits with instant vulnerability reports and automated renewal alerts.</p>
+          <div className={styles.card}>
+            <h3>SSL Shield</h3>
+            <p>Deep-layer security audits with instant transparency reports and automated threat detection.</p>
             <span className={styles.badge}>Live Inspection</span>
           </div>
-          <div className={`${styles.card} glass`}>
+          <div className={styles.card}>
             <h3>Private Vault</h3>
-            <p>A multi-tenant fortress for your knowledge base. Your data stays yours, guaranteed.</p>
-            <span className={styles.badge}>Secured with RAG</span>
+            <p>A multi-tenant RAG fortress for your knowledge. Your data is isolated, encrypted, and yours.</p>
+            <span className={styles.badge}>Vault Protected</span>
           </div>
         </div>
       </section>
 
       <section className={styles.privacySection}>
-        <div className={styles.privacyCard}>
-          <h2>Privacy is not a feature. It's a right.</h2>
-          <p>We believe in absolute data sovereignty.</p>
-          <p>Your uploads are never used for training. <strong>Ever.</strong></p>
-          <p>Temporary storage is purged automatically after 30 minutes of inactivity.</p>
+        <div className={styles.privacyPane}>
+          <h2>privacy isn't a feature.<br />it's the foundation.</h2>
+          <p>We provide absolute data sovereignty by design.</p>
+          <p>Your data is never used for training. <strong>Ever.</strong></p>
+          <p>Purged automatically after 30 minutes of inactivity.</p>
         </div>
       </section>
     </div>
   );
 }
+
+
 
 
 
