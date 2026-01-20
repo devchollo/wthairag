@@ -37,9 +37,12 @@ app.use('/api/workspace', workspaceRoutes);
 app.use('/api/workspace-data', workspaceDataRoutes);
 app.use('/api/alerts', alertRoutes);
 
-// Initialize Cleanup Worker
+// Initialize Keep-Alive & Cleanup Workers
 import { initCleanupWorker } from './cleanupWorker';
+import { initKeepAlive } from './keepAlive';
+
 initCleanupWorker();
+initKeepAlive();
 
 // Error Handling
 app.use((req, res) => {
