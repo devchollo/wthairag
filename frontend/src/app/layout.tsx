@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
-import Link from "next/link";
+import Navbar from "@/components/Navbar";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "WorkToolsHub — Universal Utilities & AI Workspace",
-  description: "A world-class suite of high-performance public tools and a private AI RAG workspace.",
+  title: "WorkToolsHub — Modern AI & Public Utilities",
+  description: "A calm, professional workspace for modern web professionals.",
 };
 
 export default function RootLayout({
@@ -14,30 +17,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="antialiased">
+    <html lang="en" className={inter.className}>
+      <body className="min-h-screen bg-background-light transition-colors duration-200 dark:bg-background-dark">
         <AuthProvider>
-          <nav className="sticky-nav glass">
-            <div className="nav-content">
-              <Link href="/" className="logo">WorkToolsHub</Link>
-              <div className="nav-links">
-                <Link href="/tools">tools</Link>
-                <Link href="/workspace">workspace</Link>
-                <Link href="/donate">donate</Link>
+          <Navbar />
+          <main>{children}</main>
+          <footer className="border-t border-border-light py-16 dark:border-border-dark">
+            <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
+              <div className="flex flex-col items-center justify-between gap-8 sm:flex-row">
+                <div className="text-xl font-bold tracking-tight text-text-primary dark:text-text-dark">
+                  WorkToolsHub
+                </div>
+                <div className="flex gap-8 text-sm text-text-secondary dark:text-muted">
+                  <a href="/legal?type=privacy" className="hover:text-text-primary dark:hover:text-text-dark">Privacy</a>
+                  <a href="/legal?type=terms" className="hover:text-text-primary dark:hover:text-text-dark">Terms</a>
+                  <a href="/donate" className="hover:text-text-primary dark:hover:text-text-dark">Donate</a>
+                </div>
               </div>
-              <div>
-                <Link href="/login" className="btn-primary" style={{ height: '40px', padding: '0 20px', fontSize: '14px' }}>
-                  Sign In
-                </Link>
+              <div className="mt-8 text-center text-[13px] text-text-muted">
+                © 2026 worktoolshub. tailored for professionals.
               </div>
-            </div>
-          </nav>
-          <main style={{ minHeight: '100vh' }}>{children}</main>
-          <footer className="section-padding">
-            <div className="container">
-              <p style={{ textAlign: 'center', fontSize: '14px', opacity: 0.4, fontWeight: 500 }}>
-                © 2026 worktoolshub. engineered for privacy.
-              </p>
             </div>
           </footer>
         </AuthProvider>
@@ -45,6 +44,7 @@ export default function RootLayout({
     </html>
   );
 }
+
 
 
 
