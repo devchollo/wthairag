@@ -9,21 +9,25 @@ import CookieBanner from "@/components/CookieBanner";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://worktoolshub.com"),
   title: "WorkToolsHub — Modern AI & Public Utilities",
   description: "A professional workspace for modern engineers. Features AI RAG, DNS Debugging, SSL Audits, and high-performance developer utilities.",
   keywords: ["developer tools", "dns lookup", "ssl checker", "seo analysis", "ai rag", "engineering workspace"],
   authors: [{ name: "WorkToolsHub Engineering" }],
   creator: "WorkToolsHub",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://worktoolshub.com",
+    url: "/",
     title: "WorkToolsHub — The Modern Engineering Workspace",
     description: "Stateless, privacy-focused utilities for developers. DNS, SSL, AI, and more.",
     siteName: "WorkToolsHub",
     images: [
       {
-        url: "https://worktoolshub.com/og-image.png",
+        url: "/og-image.png",
         width: 1200,
         height: 630,
         alt: "WorkToolsHub Dashboard Interface",
@@ -34,7 +38,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "WorkToolsHub — Developer Utilities & AI",
     description: "Engineering-grade tools for the modern web. Perform DNS lookups, SSL checks, and AI analysis in seconds.",
-    images: ["https://worktoolshub.com/og-image.png"],
+    images: ["/og-image.png"],
     creator: "@worktoolshub",
   },
   robots: {
