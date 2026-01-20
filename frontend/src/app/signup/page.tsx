@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { User, Mail, Building, ArrowRight, ShieldCheck, Lock, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -8,7 +8,13 @@ import { useRouter } from 'next/navigation';
 
 export default function SignupPage() {
     const router = useRouter();
-    const { login } = useAuth();
+    const { login, user } = useAuth();
+
+    useEffect(() => {
+        if (user) {
+            router.push('/workspace/dashboard');
+        }
+    }, [user, router]);
 
     // Steps: 0 = Email, 1 = Verify, 2 = Details
     const [step, setStep] = useState(0);

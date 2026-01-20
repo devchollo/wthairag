@@ -1,22 +1,91 @@
 'use client';
 
-import { useState } from 'react';
-import { FileText, Trash2, Upload, Terminal, BookOpen, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { FileText, Trash2, Upload, Terminal, BookOpen, Clock, Activity } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 interface Document {
-    id: string;
+    _id: string;
     title: string;
-    type: string;
-    date: string;
-    size: string;
+    mimeType: string;
+    createdAt: string;
+    size?: string;
 }
 
 export default function KnowledgeBase() {
-    const [documents] = useState<Document[]>([
-        { id: '1', title: 'Product_Handover_v2.pdf', type: 'PDF', date: '2026-01-19', size: '2.4 MB' },
-        { id: '2', title: 'Backend_Architecture.md', type: 'Markdown', date: '2026-01-18', size: '12 KB' },
-        { id: '3', title: 'User_Personas.json', type: 'JSON', date: '2026-01-17', size: '45 KB' },
-    ]);
+    const { currentWorkspace } = useAuth();
+    const [documents, setDocuments] = useState<Document[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [uploading, setUploading] = useState(false);
+
+    const fetchDocuments = async () => {
+        if (!currentWorkspace?._id) return;
+        setLoading(true);
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${apiUrl}/api/workspace-data/knowledge`, {
+                headers: { 'x-workspace-id': currentWorkspace._id },
+                credentials: 'include'
+            });
+            const data = await res.json();
+            if (res.ok) setDocuments(data.data);
+        } catch (e) {
+            console.error("Failed to fetch documents", e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchDocuments();
+    }, [currentWorkspace?._id]);
+
+    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !currentWorkspace?._id) return;
+
+        setUploading(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${apiUrl}/api/workspace-data/knowledge`, {
+                method: 'POST',
+                headers: { 'x-workspace-id': currentWorkspace._id },
+                body: formData,
+                credentials: 'include'
+            });
+            if (res.ok) fetchDocuments();
+        } catch (e) {
+            console.error("Upload failed", e);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!currentWorkspace?._id) return;
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${apiUrl}/api/workspace-data/knowledge/${id}`, {
+                method: 'DELETE',
+                headers: { 'x-workspace-id': currentWorkspace._id },
+                credentials: 'include'
+            });
+            if (res.ok) fetchDocuments();
+        } catch (e) {
+            console.error("Delete failed", e);
+        }
+    };
+
+    if (loading && documents.length === 0) {
+        return (
+            <div className="flex h-[400px] items-center justify-center">
+                <Activity className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col gap-8">
@@ -27,14 +96,16 @@ export default function KnowledgeBase() {
                     </div>
                     <h1 className="text-3xl font-black tracking-tighter text-text-primary">Knowledge Vault.</h1>
                 </div>
-                <button className="btn-primary gap-2 h-10 px-4">
-                    <Upload className="h-4 w-4" /> Upload Context
-                </button>
+                <label className="btn-primary gap-2 h-10 px-4 cursor-pointer">
+                    <Upload className="h-4 w-4" />
+                    {uploading ? 'Uploading...' : 'Upload Context'}
+                    <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
+                </label>
             </div>
 
             <div className="grid grid-cols-1 gap-4">
                 {documents.map((doc) => (
-                    <div key={doc.id} className="card flex items-center justify-between hover:border-primary/30 transition-all p-5">
+                    <div key={doc._id} className="card flex items-center justify-between hover:border-primary/30 transition-all p-5">
                         <div className="flex items-center gap-4">
                             <div className="h-10 w-10 shrink-0 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
                                 <FileText className="h-5 w-5" />
@@ -42,26 +113,29 @@ export default function KnowledgeBase() {
                             <div>
                                 <h3 className="text-sm font-black text-text-primary mb-0.5">{doc.title}</h3>
                                 <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-text-muted">
-                                    <span className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> {doc.date}</span>
+                                    <span className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> {new Date(doc.createdAt).toLocaleDateString()}</span>
                                     <span className="h-1 w-1 rounded-full bg-border-light"></span>
-                                    <span>{doc.size}</span>
-                                    <span className="h-1 w-1 rounded-full bg-border-light"></span>
-                                    <span className="text-blue-600">{doc.type}</span>
+                                    <span className="text-blue-600">{doc.mimeType.split('/')[1]?.toUpperCase() || 'FILE'}</span>
                                 </div>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button className="h-9 w-9 flex items-center justify-center rounded-lg text-text-muted hover:text-red-500 hover:bg-red-50 transition-colors">
-                                <Trash2 className="h-4 w-4" />
+                            <button
+                                onClick={() => handleDelete(doc._id)}
+                                className="h-9 w-9 flex items-center justify-center rounded-lg text-text-muted hover:text-red-500 hover:bg-red-50 transition-colors"
+                            >
+                                < Trash2 className="h-4 w-4" />
                             </button>
                         </div>
                     </div>
                 ))}
             </div>
 
-            <div className="mt-4 p-6 bg-surface-light rounded-xl border border-dashed border-border-light text-center">
-                <p className="text-xs font-bold text-text-secondary">Drag and drop technical specifications to index them into your private AI context.</p>
-            </div>
+            {documents.length === 0 && (
+                <div className="mt-4 p-12 bg-surface-light rounded-xl border border-dashed border-border-light text-center">
+                    <p className="text-xs font-bold text-text-secondary">Vault is empty. Index your documentation to begin.</p>
+                </div>
+            )}
         </div>
     );
 }

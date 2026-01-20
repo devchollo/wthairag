@@ -1,12 +1,46 @@
 'use client';
 
-import { LayoutDashboard, Zap, FileText, Users, TrendingUp, ArrowUpRight, Terminal } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { LayoutDashboard, Zap, FileText, Users, TrendingUp, ArrowUpRight, Terminal, Activity } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Dashboard() {
-    const stats = [
-        { label: 'RAG Context Usage', value: '12.4k', trend: '+14%', icon: Zap },
-        { label: 'Active Specs', value: '3', trend: '+1', icon: FileText },
-        { label: 'System Uptime', value: '99.9%', trend: 'Stable', icon: Terminal },
+    const { currentWorkspace } = useAuth();
+    const [stats, setStats] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+                const res = await fetch(`${apiUrl}/api/workspace-data/stats`, {
+                    headers: { 'x-workspace-slug': currentWorkspace?.slug || '' },
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (res.ok) setStats(data.data);
+            } catch (e) {
+                console.error("Failed to fetch stats", e);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (currentWorkspace) fetchStats();
+    }, [currentWorkspace]);
+
+    if (loading) {
+        return (
+            <div className="flex h-[400px] items-center justify-center">
+                <Activity className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+        );
+    }
+
+    const statCards = [
+        { label: 'Knowledge Base', value: stats?.counts?.documents || '0', trend: 'Docs', icon: FileText },
+        { label: 'RAG Interactions', value: stats?.counts?.chats || '0', trend: 'Signals', icon: Zap },
+        { label: 'System Uptime', value: stats?.uptime || '99.9%', trend: 'Stable', icon: Terminal },
     ];
 
     return (
@@ -21,14 +55,14 @@ export default function Dashboard() {
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                {stats.map((stat) => (
+                {statCards.map((stat) => (
                     <div key={stat.label} className="card p-5">
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
                                 <stat.icon className="h-5 w-5" />
                             </div>
-                            <div className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-widest ${stat.trend.startsWith('+') ? 'text-emerald-600' : 'text-text-muted'}`}>
-                                {stat.trend} <ArrowUpRight className="h-3 w-3" />
+                            <div className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-text-muted uppercase`}>
+                                {stat.trend}
                             </div>
                         </div>
                         <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-1">

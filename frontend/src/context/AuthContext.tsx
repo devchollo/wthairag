@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface Workspace {
+    _id: string;
     name: string;
     slug: string;
 }
@@ -39,18 +40,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     credentials: 'include'
                 });
 
+                if (res.status === 401 || res.status === 403) {
+                    // Silent fail for non-authenticated public users
+                    localStorage.removeItem('user');
+                    setUser(null);
+                    return;
+                }
+
                 if (res.ok) {
                     const data = await res.json();
                     setUser(data.data.user);
                     setWorkspaces(data.data.memberships.map((m: any) => m.workspaceId));
                     localStorage.setItem('user', JSON.stringify(data.data.user));
                 } else {
-                    // Token invalid or expired
                     localStorage.removeItem('user');
                     setUser(null);
                 }
             } catch (e) {
-                console.error("Session verification failed", e);
+                // Silent fail to avoid polluting console for public users
             }
         };
 

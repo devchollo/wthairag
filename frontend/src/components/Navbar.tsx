@@ -2,7 +2,8 @@
 
 import { useState, useRef } from 'react';
 import Link from 'next/link';
-import { ChevronDown, Shield, Server, Search, Settings, Lock, Menu, X, Database, Terminal, Globe, Key, QrCode, ArrowRight, MessageSquare, Network, Send } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { ChevronDown, Shield, Server, Search, Settings, Lock, Menu, X, Database, Terminal, Globe, Key, QrCode, ArrowRight, MessageSquare, Network, Send, LogOut } from 'lucide-react';
 
 const toolSections = [
     {
@@ -36,6 +37,7 @@ const toolSections = [
 ];
 
 export default function Navbar() {
+    const { user, logout } = useAuth();
     const [isToolsOpen, setIsToolsOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -129,12 +131,24 @@ export default function Navbar() {
                 </div>
 
                 <div className="hidden items-center gap-3 lg:flex">
-                    <Link href="/login" className="btn-secondary h-9 px-4 text-[12px]">
-                        Sign In
-                    </Link>
-                    <Link href="/signup" className="btn-primary h-9 px-4 text-[12px]">
-                        Get Started
-                    </Link>
+                    {!user ? (
+                        <>
+                            <Link href="/login" className="btn-secondary h-9 px-4 text-[12px]">
+                                Sign In
+                            </Link>
+                            <Link href="/signup" className="btn-primary h-9 px-4 text-[12px]">
+                                Get Started
+                            </Link>
+                        </>
+                    ) : (
+                        <button
+                            onClick={() => logout()}
+                            className="btn-secondary h-9 px-4 text-[12px] flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+                        >
+                            <LogOut className="h-3.5 w-3.5" />
+                            Sign Out
+                        </button>
+                    )}
                 </div>
 
                 {/* Mobile Toggle */}
@@ -173,8 +187,23 @@ export default function Navbar() {
                             <Link href="/donate" onClick={() => setIsMobileMenuOpen(false)} className="block text-sm font-black text-text-primary">Sponsorship</Link>
                         </div>
                         <div className="flex flex-col gap-2 pt-4">
-                            <Link href="/login" className="btn-secondary w-full">Sign In</Link>
-                            <Link href="/signup" className="btn-primary w-full">Get Started</Link>
+                            {!user ? (
+                                <>
+                                    <Link href="/login" onClick={() => setIsMobileMenuOpen(false)} className="btn-secondary w-full">Sign In</Link>
+                                    <Link href="/signup" onClick={() => setIsMobileMenuOpen(false)} className="btn-primary w-full">Get Started</Link>
+                                </>
+                            ) : (
+                                <button
+                                    onClick={() => {
+                                        logout();
+                                        setIsMobileMenuOpen(false);
+                                    }}
+                                    className="btn-secondary w-full flex items-center justify-center gap-2 text-red-600 border-red-100"
+                                >
+                                    <LogOut className="h-4 w-4" />
+                                    Sign Out
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

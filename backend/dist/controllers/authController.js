@@ -131,8 +131,8 @@ const completeSignup = async (req, res) => {
         const token = generateToken(user._id.toString());
         res.cookie('token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            secure: true,
+            sameSite: 'none',
             path: '/', // Ensure cookie is available site-wide
             maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
         });
@@ -177,8 +177,8 @@ const login = async (req, res) => {
         const token = generateToken(user._id.toString());
         res.cookie('token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            secure: true,
+            sameSite: 'none',
             path: '/', // Ensure cookie is available site-wide
             maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
         });

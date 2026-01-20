@@ -10,8 +10,10 @@ import {
 import ScrollReveal from '@/components/ScrollReveal';
 import TerminalSimulation from '@/components/TerminalSimulation';
 import ReviewModal from '@/components/ReviewModal';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Home() {
+  const { user } = useAuth();
   const [latency, setLatency] = useState<number | null>(null);
   const [testimonialIndex, setTestimonialIndex] = useState(0);
 
@@ -65,8 +67,8 @@ export default function Home() {
 
         <ScrollReveal delay={400}>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link href="/signup" className="btn-primary min-w-[200px] gap-2 h-12 text-base">
-              Get Started <ArrowRight className="h-4 w-4" />
+            <Link href={user ? "/workspace/dashboard" : "/signup"} className="btn-primary min-w-[200px] gap-2 h-12 text-base">
+              {user ? "View Dashboard" : "Get Started"} <ArrowRight className="h-4 w-4" />
             </Link>
             <Link href="/tools" className="btn-secondary min-w-[200px] h-12 text-base">
               Explore Tools
@@ -301,8 +303,8 @@ export default function Home() {
               <h2 className="text-4xl font-bold tracking-tighter mb-8 leading-tight">
                 Ready for a smarter <br /> engineering workflow?
               </h2>
-              <Link href="/signup" className="btn-secondary h-14 px-12 text-lg bg-white text-blue-600 hover:bg-white/90 shadow-2xl">
-                Get Started Securely
+              <Link href={user ? "/workspace/dashboard" : "/signup"} className="btn-secondary h-14 px-12 text-lg bg-white text-blue-600 hover:bg-white/90 shadow-2xl">
+                {user ? "Resume Workflow" : "Get Started Securely"}
               </Link>
             </div>
             <div className="absolute top-[-50%] right-[-10%] w-[300px] h-[300px] bg-white/5 rounded-full blur-3xl transition-transform duration-1000"></div>
