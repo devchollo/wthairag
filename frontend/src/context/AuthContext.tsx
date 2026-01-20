@@ -16,23 +16,33 @@ interface User {
     isAdmin?: boolean;
 }
 
+interface Membership {
+    workspaceId: Workspace;
+    role: 'owner' | 'admin' | 'member' | 'viewer';
+}
+
 interface AuthContextType {
     user: User | null;
     workspaces: Workspace[];
-    login: (data: { user: User; memberships: { workspaceId: Workspace }[] }) => void;
+    memberships: Membership[];
+    login: (data: { user: User; memberships: Membership[] }) => void;
     logout: () => void;
     loading: boolean;
     currentWorkspace: Workspace | null;
     setCurrentWorkspace: (workspace: Workspace | null) => void;
+    userRole: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
-    const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+    const [memberships, setMemberships] = useState<Membership[]>([]);
     const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
     const [loading, setLoading] = useState(true);
+
+    const userRole = currentWorkspace ? memberships.find(m => m.workspaceId._id === currentWorkspace._id)?.role || null : null;
+    const workspaces = memberships.map(m => m.workspaceId);
 
     useEffect(() => {
         const verifySession = async () => {
@@ -51,13 +61,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (res.ok) {
                     const data = await res.json();
                     setUser(data.data.user);
-                    const fetchedWorkspaces = data.data.memberships.map((m: any) => m.workspaceId);
-                    setWorkspaces(fetchedWorkspaces);
-                    if (fetchedWorkspaces.length > 0) {
-                        setCurrentWorkspace(fetchedWorkspaces[0]);
+                    setMemberships(data.data.memberships);
+                    if (data.data.memberships.length > 0) {
+                        setCurrentWorkspace(data.data.memberships[0].workspaceId);
                     }
                 } else {
                     setUser(null);
+                    setMemberships([]);
                 }
             } catch (e) {
                 // Silent fail
@@ -69,10 +79,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         verifySession();
     }, []);
 
-    const login = (data: { user: User; memberships: { workspaceId: Workspace }[] }) => {
+    const login = (data: { user: User; memberships: Membership[] }) => {
         setUser(data.user);
-        setWorkspaces(data.memberships.map((m) => m.workspaceId));
-        // Cookie is handled by browser automatically
+        setMemberships(data.memberships);
+        if (data.memberships.length > 0) {
+            setCurrentWorkspace(data.memberships[0].workspaceId);
+        }
     };
 
     const logout = async () => {
@@ -87,12 +99,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         setUser(null);
-        setWorkspaces([]);
+        setMemberships([]);
         setCurrentWorkspace(null);
     };
 
     return (
-        <AuthContext.Provider value={{ user, workspaces, login, logout, loading, currentWorkspace, setCurrentWorkspace }}>
+        <AuthContext.Provider value={{ user, workspaces, memberships, login, logout, loading, currentWorkspace, setCurrentWorkspace, userRole }}>
             {children}
         </AuthContext.Provider>
     );

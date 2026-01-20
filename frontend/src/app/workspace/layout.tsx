@@ -7,23 +7,32 @@ import { LayoutDashboard, BookOpen, MessageSquare, Bell, Settings, LogOut, Termi
 import { usePathname, useRouter } from 'next/navigation';
 
 const navItems = [
-    { name: 'Dashboard', href: '/workspace/dashboard', icon: LayoutDashboard },
-    { name: 'Knowledge Vault', href: '/workspace/knowledge', icon: BookOpen },
-    { name: 'AI RAG Console', href: '/workspace/chat', icon: MessageSquare },
-    { name: 'Activity Log', href: '/workspace/alerts', icon: Bell },
-    { name: 'Settings', href: '/workspace/settings', icon: Settings },
+    { name: 'Dashboard', href: '/workspace/dashboard', icon: LayoutDashboard, adminOnly: true },
+    { name: 'Knowledge Base', href: '/workspace/knowledge', icon: BookOpen, adminOnly: false },
+    { name: 'AI RAG Console', href: '/workspace/chat', icon: MessageSquare, adminOnly: false },
+    { name: 'Alerts', href: '/workspace/alerts', icon: Bell, adminOnly: true },
+    { name: 'Settings', href: '/workspace/settings', icon: Settings, adminOnly: false },
 ];
 
 export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
-    const { user, currentWorkspace, workspaces, setCurrentWorkspace, logout, loading } = useAuth();
+    const { user, currentWorkspace, workspaces, setCurrentWorkspace, logout, loading, userRole } = useAuth();
     const pathname = usePathname();
     const router = useRouter();
+
+    const isAdmin = userRole === 'owner' || userRole === 'admin';
+    const filteredNav = navItems.filter(item => !item.adminOnly || isAdmin);
 
     useEffect(() => {
         if (!loading && !user) {
             router.push('/login');
         }
-    }, [user, loading, router]);
+
+        // Redirect if on restricted page
+        const currentItem = navItems.find(item => item.href === pathname);
+        if (!loading && currentItem?.adminOnly && !isAdmin) {
+            router.push('/workspace/chat');
+        }
+    }, [user, loading, router, pathname, isAdmin]);
 
     if (loading) {
         return (
@@ -56,7 +65,7 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
                 </div>
 
                 <nav className="space-y-1">
-                    {navItems.map((item) => {
+                    {filteredNav.map((item) => {
                         const isActive = pathname === item.href;
                         return (
                             <Link

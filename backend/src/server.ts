@@ -33,7 +33,7 @@ app.use(cors({
     origin: true, // Reflect origin to allow multiple domains (wthairag.onrender.com, worktoolshub.com)
     credentials: true, // Allow cookies
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-workspace-id', 'x-workspace-slug']
 }));
 
 // Cookie parser - MUST come before routes
@@ -99,6 +99,7 @@ import workspaceDataRoutes from './routes/workspaceData';
 import alertRoutes from './routes/alerts';
 import filesRoutes from './routes/files';
 import testimonialRoutes from './routes/testimonials';
+import membershipRoutes from './routes/membership';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/tools', toolsRoutes);
@@ -107,6 +108,7 @@ app.use('/api/workspace-data', workspaceDataRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/files', filesRoutes);
 app.use('/api/testimonials', testimonialRoutes);
+app.use('/api/memberships', membershipRoutes);
 
 // Initialize Keep-Alive & Cleanup Workers
 import { initCleanupWorker } from './cleanupWorker';

@@ -7,6 +7,7 @@ export interface IMessage {
         documentId: string;
         snippet: string;
     }>;
+    tokens?: number;
     createdAt: Date;
 }
 
@@ -28,6 +29,7 @@ const MessageSchema: Schema = new Schema({
             snippet: { type: String },
         },
     ],
+    tokens: { type: Number, default: 0 },
     createdAt: { type: Date, default: Date.now },
 });
 

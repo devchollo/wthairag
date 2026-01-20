@@ -4,10 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import { Send, User, Bot, BookOpen, Terminal, Activity, Plus } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
+import Link from 'next/link';
+
 interface Message {
     role: 'user' | 'assistant' | 'system';
     content: string;
-    citations?: Array<{ documentId: string; snippet: string }>;
+    citations?: Array<{ documentId: string; snippet: string; link?: string }>;
 }
 
 export default function RAGChat() {
@@ -31,7 +33,10 @@ export default function RAGChat() {
             try {
                 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
                 const res = await fetch(`${apiUrl}/api/workspace-data/chat`, {
-                    headers: { 'x-workspace-id': currentWorkspace._id },
+                    headers: {
+                        'x-workspace-id': currentWorkspace._id,
+                        'x-workspace-slug': currentWorkspace.slug || ''
+                    },
                     credentials: 'include'
                 });
                 const data = await res.json();
@@ -39,7 +44,7 @@ export default function RAGChat() {
                     setChatId(data.data[0]._id);
                     setMessages(data.data[0].messages);
                 } else {
-                    setMessages([{ role: 'assistant', content: 'Protocol Active. Your knowledge vault is synchronized. How can I assist with your workflow today?' }]);
+                    setMessages([{ role: 'assistant', content: 'Protocol Active. Your knowledge base is synchronized. How can I assist with your workflow today?' }]);
                 }
             } catch (e) {
                 console.error("Failed to fetch chats", e);
@@ -64,7 +69,8 @@ export default function RAGChat() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-workspace-id': currentWorkspace._id
+                    'x-workspace-id': currentWorkspace._id,
+                    'x-workspace-slug': currentWorkspace.slug || ''
                 },
                 body: JSON.stringify({ chatId, query: userQuery }),
                 credentials: 'include'
@@ -84,7 +90,7 @@ export default function RAGChat() {
 
     const startNewChat = () => {
         setChatId(null);
-        setMessages([{ role: 'assistant', content: 'Protocol Active. Your knowledge vault is synchronized. How can I assist with your workflow today?' }]);
+        setMessages([{ role: 'assistant', content: 'Protocol Active. Your knowledge base is synchronized. How can I assist with your workflow today?' }]);
     };
 
     return (
@@ -116,13 +122,17 @@ export default function RAGChat() {
                                 {m.citations && m.citations.length > 0 && (
                                     <div className="mt-3 flex flex-wrap gap-2 border-t border-border-light pt-3">
                                         {m.citations.map((cite, i) => (
-                                            <div key={i} className="group relative flex items-center gap-1.5 rounded bg-surface-light px-2 py-1 text-[10px] font-black uppercase tracking-wider text-blue-600 border border-border-light cursor-help">
+                                            <Link
+                                                key={i}
+                                                href={cite.link || '#'}
+                                                className="group relative flex items-center gap-1.5 rounded bg-surface-light px-2 py-1 text-[10px] font-black uppercase tracking-wider text-blue-600 border border-border-light hover:border-blue-300 transition-colors"
+                                            >
                                                 <BookOpen className="h-3 w-3" />
                                                 Source {i + 1}
                                                 <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block w-48 p-2 bg-text-primary text-white text-[10px] rounded-lg shadow-xl z-10 normal-case">
                                                     {cite.snippet}
                                                 </div>
-                                            </div>
+                                            </Link>
                                         ))}
                                     </div>
                                 )}

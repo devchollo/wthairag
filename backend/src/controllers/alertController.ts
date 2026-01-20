@@ -48,3 +48,31 @@ export const resolveAlert = async (req: Request, res: Response) => {
         return sendError(res, error.message, 500);
     }
 };
+
+export const updateAlert = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { title, description, severity } = req.body;
+        const alert = await Alert.findOneAndUpdate(
+            { _id: id, workspaceId: req.workspace?._id },
+            { title, description, severity },
+            { new: true, runValidators: true }
+        );
+
+        if (!alert) return sendError(res, 'Alert not found', 404);
+        return sendSuccess(res, alert, 'Alert updated');
+    } catch (error: any) {
+        return sendError(res, error.message, 500);
+    }
+};
+
+export const deleteAlert = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const alert = await Alert.findOneAndDelete({ _id: id, workspaceId: req.workspace?._id });
+        if (!alert) return sendError(res, 'Alert not found', 404);
+        return sendSuccess(res, null, 'Alert deleted');
+    } catch (error: any) {
+        return sendError(res, error.message, 500);
+    }
+};

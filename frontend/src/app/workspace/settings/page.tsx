@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Settings, Shield, User, Palette, Globe, Save, Trash2, AlertTriangle, Terminal, Lock, Mail, Loader2 } from 'lucide-react';
+import { Settings, Shield, User, Palette, Globe, Save, Trash2, AlertTriangle, Terminal, Lock, Mail, Loader2, Users, Crown, ShieldCheck, UserCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 export default function SettingsPage() {
-    const { currentWorkspace, user, login } = useAuth();
-    const [activeTab, setActiveTab] = useState<'workspace' | 'account'>('workspace');
+    const { currentWorkspace, user, login, userRole } = useAuth();
+    const [activeTab, setActiveTab] = useState<'workspace' | 'account' | 'members'>('workspace');
 
     // Workspace State
     const [wsName, setWsName] = useState(currentWorkspace?.name || '');
@@ -22,7 +22,13 @@ export default function SettingsPage() {
     const [newPassword, setNewPassword] = useState('');
     const [passLoading, setPassLoading] = useState(false);
 
+    // Members State
+    const [members, setMembers] = useState<any[]>([]);
+    const [membersLoading, setMembersLoading] = useState(false);
+
     const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+
+    const isAdmin = userRole === 'owner' || userRole === 'admin';
 
     useEffect(() => {
         if (currentWorkspace) setWsName(currentWorkspace.name);
@@ -31,6 +37,67 @@ export default function SettingsPage() {
             setUserEmail(user.email);
         }
     }, [currentWorkspace, user]);
+
+    const fetchMembers = async () => {
+        if (!isAdmin || !currentWorkspace?._id) return;
+        setMembersLoading(true);
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${apiUrl}/api/memberships`, {
+                headers: { 'x-workspace-id': currentWorkspace._id },
+                credentials: 'include'
+            });
+            const data = await res.json();
+            if (res.ok) setMembers(data.data);
+        } catch (e) {
+            console.error("Failed to fetch members", e);
+        } finally {
+            setMembersLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === 'members') fetchMembers();
+    }, [activeTab, currentWorkspace?._id]);
+
+    const handleUpdateRole = async (membershipId: string, role: string) => {
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${apiUrl}/api/memberships/${membershipId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-workspace-id': currentWorkspace?._id || ''
+                },
+                body: JSON.stringify({ role }),
+                credentials: 'include'
+            });
+            if (res.ok) {
+                showMessage('Member role adjusted.');
+                fetchMembers();
+            }
+        } catch (e) {
+            showMessage('Failed to update role', 'error');
+        }
+    };
+
+    const handleRemoveMember = async (membershipId: string) => {
+        if (!confirm('Are you sure you want to remove this member?')) return;
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${apiUrl}/api/memberships/${membershipId}`, {
+                method: 'DELETE',
+                headers: { 'x-workspace-id': currentWorkspace?._id || '' },
+                credentials: 'include'
+            });
+            if (res.ok) {
+                showMessage('Member evicted from workspace.');
+                fetchMembers();
+            }
+        } catch (e) {
+            showMessage('Failed to remove member', 'error');
+        }
+    };
 
     const showMessage = (text: string, type: 'success' | 'error' = 'success') => {
         setMessage({ text, type });
@@ -145,6 +212,15 @@ export default function SettingsPage() {
                     Account Security
                     {activeTab === 'account' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full"></div>}
                 </button>
+                {isAdmin && (
+                    <button
+                        onClick={() => setActiveTab('members')}
+                        className={`pb-4 px-2 text-[11px] font-black uppercase tracking-widest transition-all relative ${activeTab === 'members' ? 'text-blue-600' : 'text-text-muted hover:text-text-primary'}`}
+                    >
+                        Members
+                        {activeTab === 'members' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full"></div>}
+                    </button>
+                )}
             </div>
 
             {message && (
@@ -154,7 +230,7 @@ export default function SettingsPage() {
                 </div>
             )}
 
-            {activeTab === 'workspace' ? (
+            {activeTab === 'workspace' && (
                 <div className="space-y-6 animate-in fade-in duration-400">
                     <div className="card p-8 border-2 border-border-light">
                         <div className="flex items-center gap-3 mb-8">
@@ -173,8 +249,8 @@ export default function SettingsPage() {
                             </div>
                             <button
                                 onClick={handleSaveWorkspace}
-                                disabled={wsLoading}
-                                className="btn-primary h-11 px-6 gap-2 w-full sm:w-auto"
+                                disabled={wsLoading || !isAdmin}
+                                className="btn-primary h-11 px-6 gap-2 w-full sm:w-auto disabled:opacity-50"
                             >
                                 {wsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                                 Update Identity
@@ -196,17 +272,21 @@ export default function SettingsPage() {
                         </div>
                     </div>
 
-                    <div className="card border-2 border-red-100 bg-red-50/30 p-8">
-                        <div className="flex items-center gap-3 mb-8 text-red-600">
-                            <AlertTriangle className="h-5 w-5" />
-                            <h3 className="font-black text-lg tracking-tight">Destructive Protocol</h3>
+                    {userRole === 'owner' && (
+                        <div className="card border-2 border-red-100 bg-red-50/30 p-8">
+                            <div className="flex items-center gap-3 mb-8 text-red-600">
+                                <AlertTriangle className="h-5 w-5" />
+                                <h3 className="font-black text-lg tracking-tight">Destructive Protocol</h3>
+                            </div>
+                            <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-red-600 hover:bg-red-600 hover:text-white px-5 py-2.5 rounded-lg border-2 border-red-600 transition-all">
+                                Terminate Workspace
+                            </button>
                         </div>
-                        <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-red-600 hover:bg-red-600 hover:text-white px-5 py-2.5 rounded-lg border-2 border-red-600 transition-all">
-                            Terminate Workspace
-                        </button>
-                    </div>
+                    )}
                 </div>
-            ) : (
+            )}
+
+            {activeTab === 'account' && (
                 <div className="space-y-6 animate-in fade-in duration-400">
                     <div className="card p-8 border-2 border-border-light">
                         <div className="flex items-center gap-3 mb-8">
@@ -282,6 +362,70 @@ export default function SettingsPage() {
                                 Rotate Access Key
                             </button>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'members' && (
+                <div className="space-y-6 animate-in fade-in duration-400">
+                    <div className="card p-0 border-2 border-border-light overflow-hidden">
+                        <div className="p-8 border-b border-border-light flex items-center justify-between bg-surface-light/50">
+                            <div className="flex items-center gap-3">
+                                <Users className="h-5 w-5 text-blue-600" />
+                                <h3 className="font-black text-lg tracking-tight">Workspace Members</h3>
+                            </div>
+                            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted">{members.length} Controlled Identities</div>
+                        </div>
+                        <div className="divide-y divide-border-light">
+                            {membersLoading ? (
+                                <div className="p-12 text-center">
+                                    <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+                                    <p className="text-xs font-black uppercase tracking-widest text-text-muted">Fetching membership records...</p>
+                                </div>
+                            ) : members.map((member) => (
+                                <div key={member._id} className="p-6 flex items-center justify-between hover:bg-surface-light/30 transition-all">
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 border-2 border-blue-100 font-black">
+                                            {member.userId?.name?.charAt(0) || 'U'}
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <h4 className="text-sm font-black text-text-primary">{member.userId?.name}</h4>
+                                                {member.role === 'owner' && <Crown className="h-3 w-3 text-amber-500" />}
+                                                {member.userId?._id === user?._id && <span className="text-[9px] bg-blue-600 text-white px-1.5 py-0.5 rounded font-black uppercase tracking-tighter">You</span>}
+                                            </div>
+                                            <p className="text-[10px] font-bold text-text-muted font-mono">{member.userId?.email}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-6">
+                                        <div className="flex flex-col items-end gap-1">
+                                            <label className="text-[8px] font-black uppercase tracking-widest text-text-muted">Access Level</label>
+                                            <select
+                                                value={member.role}
+                                                disabled={member.role === 'owner' || member.userId?._id === user?._id}
+                                                onChange={(e) => handleUpdateRole(member._id, e.target.value)}
+                                                className="bg-transparent text-[10px] font-black uppercase tracking-widest text-blue-600 outline-none cursor-pointer disabled:opacity-50"
+                                            >
+                                                <option value="owner" disabled>Owner</option>
+                                                <option value="admin">Administrator</option>
+                                                <option value="member">Member</option>
+                                                <option value="viewer">Viewer</option>
+                                            </select>
+                                        </div>
+
+                                        {member.role !== 'owner' && member.userId?._id !== user?._id && (
+                                            <button
+                                                onClick={() => handleRemoveMember(member._id)}
+                                                className="h-8 w-8 flex items-center justify-center rounded-lg text-text-muted hover:text-red-600 hover:bg-red-50 transition-all"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}
