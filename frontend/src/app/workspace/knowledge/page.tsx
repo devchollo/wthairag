@@ -19,7 +19,10 @@ export default function KnowledgeBase() {
     const [uploading, setUploading] = useState(false);
 
     const fetchDocuments = async () => {
-        if (!currentWorkspace?._id) return;
+        if (!currentWorkspace?._id) {
+            setLoading(false);
+            return;
+        }
         setLoading(true);
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';

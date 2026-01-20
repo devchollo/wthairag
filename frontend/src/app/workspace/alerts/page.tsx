@@ -18,7 +18,10 @@ export default function AlertsPage() {
     const [loading, setLoading] = useState(true);
 
     const fetchAlerts = async () => {
-        if (!currentWorkspace?._id) return;
+        if (!currentWorkspace?._id) {
+            setLoading(false);
+            return;
+        }
         setLoading(true);
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';

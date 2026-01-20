@@ -8,18 +8,26 @@ import { useRouter } from 'next/navigation';
 
 export default function SignupPage() {
     const router = useRouter();
-    const { login, user } = useAuth();
+    const { login, user, loading: authLoading } = useAuth();
 
     useEffect(() => {
-        if (user) {
+        if (!authLoading && user) {
             router.push('/workspace/dashboard');
         }
-    }, [user, router]);
+    }, [user, authLoading, router]);
 
     // Steps: 0 = Email, 1 = Verify, 2 = Details
     const [step, setStep] = useState(0);
-    const [loading, setLoading] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    if (authLoading) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-white">
+                <ShieldCheck className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+        );
+    }
 
     // Form Data
     const [email, setEmail] = useState('');
@@ -33,7 +41,7 @@ export default function SignupPage() {
     // Step 0: Initiate Signup
     const handleInitiate = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
+        setIsSubmitting(true);
         setError(null);
 
         try {
@@ -51,14 +59,14 @@ export default function SignupPage() {
         } catch (err: any) {
             setError(err.message);
         } finally {
-            setLoading(false);
+            setIsSubmitting(false);
         }
     };
 
     // Step 1: Verify Code
     const handleVerify = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
+        setIsSubmitting(true);
         setError(null);
 
         try {
@@ -77,14 +85,14 @@ export default function SignupPage() {
         } catch (err: any) {
             setError(err.message);
         } finally {
-            setLoading(false);
+            setIsSubmitting(false);
         }
     };
 
     // Step 2: Complete Signup
     const handleComplete = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
+        setIsSubmitting(true);
         setError(null);
 
         try {
@@ -123,7 +131,7 @@ export default function SignupPage() {
         } catch (err: any) {
             setError(err.message);
         } finally {
-            setLoading(false);
+            setIsSubmitting(false);
         }
     };
 
@@ -162,8 +170,8 @@ export default function SignupPage() {
                                 autoComplete="email"
                             />
                         </div>
-                        <button type="submit" disabled={loading} className="btn-primary w-full gap-2">
-                            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Continue <ArrowRight className="h-4 w-4" /></>}
+                        <button type="submit" disabled={isSubmitting} className="btn-primary w-full gap-2">
+                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Continue <ArrowRight className="h-4 w-4" /></>}
                         </button>
                     </form>
                 )}
@@ -184,8 +192,8 @@ export default function SignupPage() {
                                 maxLength={6}
                             />
                         </div>
-                        <button type="submit" disabled={loading || code.length < 6} className="btn-primary w-full gap-2">
-                            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Verify Code <ArrowRight className="h-4 w-4" /></>}
+                        <button type="submit" disabled={isSubmitting || code.length < 6} className="btn-primary w-full gap-2">
+                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Verify Code <ArrowRight className="h-4 w-4" /></>}
                         </button>
                         <div className="text-center">
                             <button type="button" onClick={() => setStep(0)} className="text-xs font-bold text-text-muted hover:text-blue-600">Change email</button>
@@ -231,8 +239,8 @@ export default function SignupPage() {
                             />
                         </div>
 
-                        <button type="submit" disabled={loading} className="btn-primary w-full gap-2 mt-4">
-                            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Complete Setup <CheckCircle className="h-4 w-4" /></>}
+                        <button type="submit" disabled={isSubmitting} className="btn-primary w-full gap-2 mt-4">
+                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Complete Setup <CheckCircle className="h-4 w-4" /></>}
                         </button>
                     </form>
                 )}

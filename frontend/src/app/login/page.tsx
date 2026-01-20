@@ -10,20 +10,28 @@ export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
-    const { login, user } = useAuth();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { login, user, loading } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
-        if (user) {
+        if (!loading && user) {
             router.push('/workspace/dashboard');
         }
-    }, [user, router]);
+    }, [user, loading, router]);
+
+    if (loading) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-white">
+                <Terminal className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+        );
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-        setLoading(true);
+        setIsSubmitting(true);
 
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -58,7 +66,7 @@ export default function LoginPage() {
             router.push('/workspace/dashboard');
         } catch (err: any) {
             setError(err.message || 'Invalid email or password. Please try again.');
-            setLoading(false);
+            setIsSubmitting(false);
         }
     };
 
@@ -115,9 +123,9 @@ export default function LoginPage() {
                     <button
                         type="submit"
                         className="btn-primary w-full gap-2 mt-4 disabled:opacity-60 disabled:cursor-not-allowed"
-                        disabled={loading}
+                        disabled={isSubmitting}
                     >
-                        {loading ? (
+                        {isSubmitting ? (
                             <>
                                 <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                                 Authenticating...

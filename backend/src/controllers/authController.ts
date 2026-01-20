@@ -240,3 +240,49 @@ export const getMe = async (req: Request, res: Response) => {
         return sendError(res, error.message, 500);
     }
 };
+
+export const updateMe = async (req: Request, res: Response) => {
+    try {
+        const { name, email } = req.body;
+
+        // Basic validation
+        if (!name && !email) return sendError(res, 'Nothing to update', 400);
+
+        const updates: any = {};
+        if (name) updates.name = name;
+        if (email) {
+            // Check if email already taken
+            const existing = await User.findOne({ email, _id: { $ne: req.user?._id } });
+            if (existing) return sendError(res, 'Email already in use', 400);
+            updates.email = email;
+        }
+
+        const user = await User.findByIdAndUpdate(req.user?._id, updates, { new: true }).select('-password');
+        return sendSuccess(res, user, 'Profile updated');
+    } catch (error: any) {
+        return sendError(res, error.message, 500);
+    }
+};
+
+export const updatePassword = async (req: Request, res: Response) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) return sendError(res, 'Passwords required', 400);
+        if (newPassword.length < 8) return sendError(res, 'New password must be at least 8 characters', 400);
+
+        const user = await User.findById(req.user?._id);
+        if (!user || !user.password) return sendError(res, 'User not found', 404);
+
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) return sendError(res, 'Invalid current password', 401);
+
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+        await user.save();
+
+        return sendSuccess(res, {}, 'Password updated successfully');
+    } catch (error: any) {
+        return sendError(res, error.message, 500);
+    }
+};

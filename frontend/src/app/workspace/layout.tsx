@@ -15,15 +15,23 @@ const navItems = [
 ];
 
 export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
-    const { user, currentWorkspace, workspaces, setCurrentWorkspace, logout } = useAuth();
+    const { user, currentWorkspace, workspaces, setCurrentWorkspace, logout, loading } = useAuth();
     const pathname = usePathname();
     const router = useRouter();
 
     useEffect(() => {
-        if (!user) {
+        if (!loading && !user) {
             router.push('/login');
         }
-    }, [user, router]);
+    }, [user, loading, router]);
+
+    if (loading) {
+        return (
+            <div className="flex h-screen w-screen items-center justify-center bg-white">
+                <Terminal className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+        );
+    }
 
     if (!user) {
         return null;

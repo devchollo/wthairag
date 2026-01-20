@@ -11,6 +11,10 @@ export default function Dashboard() {
 
     useEffect(() => {
         const fetchStats = async () => {
+            if (!currentWorkspace) {
+                setLoading(false);
+                return;
+            }
             try {
                 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
                 const res = await fetch(`${apiUrl}/api/workspace-data/stats`, {
@@ -26,7 +30,7 @@ export default function Dashboard() {
             }
         };
 
-        if (currentWorkspace) fetchStats();
+        fetchStats();
     }, [currentWorkspace]);
 
     if (loading) {

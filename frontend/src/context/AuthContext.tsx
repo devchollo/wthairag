@@ -21,6 +21,7 @@ interface AuthContextType {
     workspaces: Workspace[];
     login: (data: { user: User; memberships: { workspaceId: Workspace }[] }) => void;
     logout: () => void;
+    loading: boolean;
     currentWorkspace: Workspace | null;
     setCurrentWorkspace: (workspace: Workspace | null) => void;
 }
@@ -31,6 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [user, setUser] = useState<User | null>(null);
     const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
     const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const verifySession = async () => {
@@ -42,7 +44,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                 if (res.status === 401 || res.status === 403) {
                     // Silent fail for non-authenticated public users
-                    localStorage.removeItem('user');
                     setUser(null);
                     return;
                 }
@@ -50,14 +51,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (res.ok) {
                     const data = await res.json();
                     setUser(data.data.user);
-                    setWorkspaces(data.data.memberships.map((m: any) => m.workspaceId));
-                    localStorage.setItem('user', JSON.stringify(data.data.user));
+                    const fetchedWorkspaces = data.data.memberships.map((m: any) => m.workspaceId);
+                    setWorkspaces(fetchedWorkspaces);
+                    if (fetchedWorkspaces.length > 0) {
+                        setCurrentWorkspace(fetchedWorkspaces[0]);
+                    }
                 } else {
-                    localStorage.removeItem('user');
                     setUser(null);
                 }
             } catch (e) {
-                // Silent fail to avoid polluting console for public users
+                // Silent fail
+            } finally {
+                setLoading(false);
             }
         };
 
@@ -67,7 +72,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const login = (data: { user: User; memberships: { workspaceId: Workspace }[] }) => {
         setUser(data.user);
         setWorkspaces(data.memberships.map((m) => m.workspaceId));
-        localStorage.setItem('user', JSON.stringify(data.user));
         // Cookie is handled by browser automatically
     };
 
@@ -85,11 +89,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
         setWorkspaces([]);
         setCurrentWorkspace(null);
-        localStorage.removeItem('user');
     };
 
     return (
-        <AuthContext.Provider value={{ user, workspaces, login, logout, currentWorkspace, setCurrentWorkspace }}>
+        <AuthContext.Provider value={{ user, workspaces, login, logout, loading, currentWorkspace, setCurrentWorkspace }}>
             {children}
         </AuthContext.Provider>
     );
