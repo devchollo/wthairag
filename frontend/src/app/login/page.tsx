@@ -79,7 +79,7 @@ export default function LoginPage() {
                             placeholder="Professional Email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="h-10 w-full rounded_lg border border_border_light bg_surface_light pl_10 pr_4 text_sm font_bold outline_none focus:border_blue_600"
+                            className="h-10 w-full rounded-lg border border-border-light bg-surface-light pl-10 pr-4 text-sm font-bold outline-none focus:border-blue-600"
                             required
                             disabled={loading}
                             autoComplete="username"
@@ -92,7 +92,7 @@ export default function LoginPage() {
                             placeholder="Security Key"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="h-10 w-full rounded_lg border border_border_light bg_surface_light pl_10 pr_4 text_sm font_bold outline_none focus:border_blue_600"
+                            className="h-10 w-full rounded-lg border border-border-light bg-surface-light pl-10 pr-4 text-sm font-bold outline-none focus:border-blue-600"
                             required
                             disabled={loading}
                             autoComplete="current-password"
