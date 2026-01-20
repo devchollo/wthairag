@@ -31,6 +31,7 @@ interface AuthContextType {
     currentWorkspace: Workspace | null;
     setCurrentWorkspace: (workspace: Workspace | null) => void;
     userRole: string | null;
+    verifySession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,38 +45,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const userRole = currentWorkspace ? memberships.find(m => m.workspaceId._id === currentWorkspace._id)?.role || null : null;
     const workspaces = memberships.map(m => m.workspaceId);
 
-    useEffect(() => {
-        const verifySession = async () => {
-            try {
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-                const res = await fetch(`${apiUrl}/api/auth/me`, {
-                    credentials: 'include'
-                });
+    const verifySession = async () => {
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${apiUrl}/api/auth/me`, {
+                credentials: 'include'
+            });
 
-                if (res.status === 401 || res.status === 403) {
-                    // Silent fail for non-authenticated public users
-                    setUser(null);
-                    return;
-                }
-
-                if (res.ok) {
-                    const data = await res.json();
-                    setUser(data.data.user);
-                    setMemberships(data.data.memberships);
-                    if (data.data.memberships.length > 0) {
-                        setCurrentWorkspace(data.data.memberships[0].workspaceId);
-                    }
-                } else {
-                    setUser(null);
-                    setMemberships([]);
-                }
-            } catch (e) {
-                // Silent fail
-            } finally {
-                setLoading(false);
+            if (res.status === 401 || res.status === 403) {
+                // Silent fail for non-authenticated public users
+                setUser(null);
+                setMemberships([]);
+                return;
             }
-        };
 
+            if (res.ok) {
+                const data = await res.json();
+                setUser(data.data.user);
+                setMemberships(data.data.memberships);
+                if (data.data.memberships.length > 0 && !currentWorkspace) {
+                    setCurrentWorkspace(data.data.memberships[0].workspaceId);
+                }
+            } else {
+                setUser(null);
+                setMemberships([]);
+            }
+        } catch (e) {
+            // Silent fail
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         verifySession();
     }, []);
 
@@ -104,7 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <AuthContext.Provider value={{ user, workspaces, memberships, login, logout, loading, currentWorkspace, setCurrentWorkspace, userRole }}>
+        <AuthContext.Provider value={{ user, workspaces, memberships, login, logout, loading, currentWorkspace, setCurrentWorkspace, userRole, verifySession }}>
             {children}
         </AuthContext.Provider>
     );
