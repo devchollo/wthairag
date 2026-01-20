@@ -39,8 +39,14 @@ export const queryChat = async (req: Request, res: Response) => {
             context += `- ${alert.title} [${alert.severity}]: ${alert.description || 'No description'} (Status: ${alert.status})\n`;
         });
 
+        const systemPrompt = `You are an AI assistant for a technical workspace. Use the provided Knowledge Base and Security Alert context to answer questions. 
+         IMPORTANT: 
+         - Provide complete, detailed technical answers. Do not truncate or summarize too briefly.
+         - DO NOT include inline citations like [1] or [Source 1] or "According to document...". 
+         - Simply answer the question naturally based on the context. The system will handle tagging sources below your message.`;
+
         // Call AI Service
-        const aiResponse = await AIService.getQueryResponse(query, context, workspaceId as any);
+        const aiResponse = await AIService.getQueryResponse(query, context, workspaceId as any, systemPrompt);
 
         const userMessage = { role: 'user', content: query, createdAt: new Date() };
 

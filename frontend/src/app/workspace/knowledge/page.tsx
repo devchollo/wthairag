@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FileText, Trash2, Upload, Terminal, BookOpen, Clock, Activity, Search, Filter } from 'lucide-react';
+import { FileText, Trash2, Upload, Terminal, BookOpen, Clock, Activity, Search, Filter, Download } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 import { KnowledgeSkeleton } from '@/components/Skeleton';
@@ -21,6 +21,9 @@ export default function KnowledgeBase() {
     const [uploading, setUploading] = useState(false);
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState('all');
+    const [showManualForm, setShowManualForm] = useState(false);
+    const [manualTitle, setManualTitle] = useState('');
+    const [manualContent, setManualContent] = useState('');
 
     const isAdmin = userRole === 'owner' || userRole === 'admin';
 
@@ -56,6 +59,11 @@ export default function KnowledgeBase() {
         const file = e.target.files?.[0];
         if (!file || !currentWorkspace?._id || !isAdmin) return;
 
+        if (file.size > 10 * 1024 * 1024) {
+            alert('File size exceeds 10MB limit');
+            return;
+        }
+
         setUploading(true);
         const formData = new FormData();
         formData.append('file', file);
@@ -72,10 +80,70 @@ export default function KnowledgeBase() {
                 credentials: 'include'
             });
             if (res.ok) fetchDocuments();
+            else {
+                const data = await res.json();
+                alert(data.message || 'Upload failed');
+            }
         } catch (e) {
             console.error("Upload failed", e);
         } finally {
             setUploading(false);
+        }
+    };
+
+    const handleManualSubmit = async () => {
+        if (!manualTitle || !manualContent || !currentWorkspace?._id || !isAdmin) return;
+
+        setUploading(true);
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${apiUrl}/api/workspace-data/knowledge/manual`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-workspace-id': currentWorkspace._id,
+                    'x-workspace-slug': currentWorkspace.slug || ''
+                },
+                body: JSON.stringify({ title: manualTitle, content: manualContent }),
+                credentials: 'include'
+            });
+            if (res.ok) {
+                fetchDocuments();
+                setManualTitle('');
+                setManualContent('');
+                setShowManualForm(false);
+            }
+        } catch (e) {
+            console.error("Manual creation failed", e);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleDownload = async (id: string, title: string) => {
+        if (!currentWorkspace?._id || !isAdmin) return;
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${apiUrl}/api/workspace-data/knowledge/${id}/download`, {
+                headers: {
+                    'x-workspace-id': currentWorkspace._id,
+                    'x-workspace-slug': currentWorkspace.slug || ''
+                },
+                credentials: 'include'
+            });
+            const data = await res.json();
+            if (res.ok && data.data.url) {
+                const link = document.createElement('a');
+                link.href = data.data.url;
+                link.setAttribute('download', title);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+            } else {
+                alert(data.message || 'Download failed');
+            }
+        } catch (e) {
+            console.error("Download failed", e);
         }
     };
 
@@ -114,16 +182,62 @@ export default function KnowledgeBase() {
                     <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">
                         <Terminal className="h-3.5 w-3.5" /> Workspace / Data Storage
                     </div>
-                    <h1 className="text-3xl font-black tracking-tighter text-text-primary">Knowledge Vault.</h1>
+                    <h1 className="text-3xl font-black tracking-tighter text-text-primary">Knowledge Base.</h1>
                 </div>
                 {isAdmin && (
-                    <label className="btn-primary gap-2 h-10 px-4 cursor-pointer">
-                        <Upload className="h-4 w-4" />
-                        {uploading ? 'Uploading...' : 'Upload Context'}
-                        <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
-                    </label>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setShowManualForm(!showManualForm)}
+                            className="bg-surface-light text-text-primary border-2 border-border-light rounded-xl h-10 px-4 font-mono text-[10px] font-black uppercase tracking-widest hover:border-blue-600/30 transition-all"
+                        >
+                            {showManualForm ? 'Cancel Entry' : 'Manual Entry'}
+                        </button>
+                        <label className="btn-primary gap-2 h-10 px-4 cursor-pointer">
+                            <Upload className="h-4 w-4" />
+                            {uploading ? 'Processing...' : 'Upload Data'}
+                            <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
+                        </label>
+                    </div>
                 )}
             </div>
+
+            {isAdmin && (
+                <div className="text-[10px] font-black uppercase tracking-widest text-text-muted bg-blue-50/50 border border-blue-100 p-3 rounded-lg flex items-center justify-between">
+                    <span>Accepted Formats: PDF, TXT, DOCX, CSV</span>
+                    <span>Max Size: 10MB</span>
+                </div>
+            )}
+
+            {showManualForm && isAdmin && (
+                <div className="card p-6 bg-white border-2 border-blue-600/20">
+                    <h3 className="text-sm font-black text-text-primary mb-4 flex items-center gap-2 uppercase tracking-tight">
+                        <Activity className="h-4 w-4 text-blue-600" /> New Knowledge Record
+                    </h3>
+                    <div className="space-y-4">
+                        <input
+                            type="text"
+                            placeholder="Record Title (e.g. Infrastructure Handbook)"
+                            value={manualTitle}
+                            onChange={(e) => setManualTitle(e.target.value)}
+                            className="w-full h-11 bg-surface-light border-2 border-border-light rounded-xl px-4 text-xs font-bold outline-none focus:border-blue-600 transition-all"
+                        />
+                        <textarea
+                            placeholder="Enter the full text content here for AI indexing..."
+                            value={manualContent}
+                            onChange={(e) => setManualContent(e.target.value)}
+                            rows={8}
+                            className="w-full bg-surface-light border-2 border-border-light rounded-xl p-4 text-xs font-bold outline-none focus:border-blue-600 transition-all resize-none"
+                        />
+                        <button
+                            onClick={handleManualSubmit}
+                            disabled={!manualTitle || !manualContent || uploading}
+                            className="btn-primary w-full h-11"
+                        >
+                            {uploading ? 'Vaulting...' : 'Vault Record'}
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <div className="flex flex-col md:flex-row gap-4">
                 <div className="relative flex-1">
@@ -168,10 +282,20 @@ export default function KnowledgeBase() {
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
+                            {isAdmin && doc.mimeType !== 'text/plain' && (
+                                <button
+                                    onClick={() => handleDownload(doc._id, doc.title)}
+                                    className="h-9 w-9 flex items-center justify-center rounded-lg text-text-muted hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                    title="Download File"
+                                >
+                                    <Download className="h-4 w-4" />
+                                </button>
+                            )}
                             {isAdmin && (
                                 <button
                                     onClick={() => handleDelete(doc._id)}
                                     className="h-9 w-9 flex items-center justify-center rounded-lg text-text-muted hover:text-red-500 hover:bg-red-50 transition-colors"
+                                    title="Delete Record"
                                 >
                                     < Trash2 className="h-4 w-4" />
                                 </button>

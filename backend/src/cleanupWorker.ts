@@ -13,7 +13,8 @@ export const initCleanupWorker = () => {
 
         const now = new Date();
         const expiredDocs = await Document.find({
-            expiresAt: { $lte: now }
+            expiresAt: { $lte: now },
+            workspaceId: { $exists: false } // Safeguard: Never cleanup workspace-scoped records
         });
 
         for (const doc of expiredDocs) {

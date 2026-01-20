@@ -25,10 +25,43 @@ export default function SettingsPage() {
     // Members State
     const [members, setMembers] = useState<any[]>([]);
     const [membersLoading, setMembersLoading] = useState(false);
+    const [showInviteModal, setShowInviteModal] = useState(false);
+    const [inviteEmail, setInviteEmail] = useState('');
+    const [inviteRole, setInviteRole] = useState<'admin' | 'member' | 'viewer'>('member');
+    const [inviteLoading, setInviteLoading] = useState(false);
 
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteConfirmSlug, setDeleteConfirmSlug] = useState('');
     const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
 
     const isAdmin = userRole === 'owner' || userRole === 'admin';
+
+    const handleTerminateWorkspace = async () => {
+        if (deleteConfirmSlug !== currentWorkspace?.slug) {
+            showMessage('Slug does not match.', 'error');
+            return;
+        }
+
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${apiUrl}/api/workspaces/${currentWorkspace?._id}`, {
+                method: 'DELETE',
+                headers: { 'x-workspace-slug': currentWorkspace?.slug || '' },
+                credentials: 'include'
+            });
+            if (res.ok) {
+                showMessage('Vault scheduled for extraction/deletion.');
+                setShowDeleteModal(false);
+                // Refresh to show pending status or redirect
+                setTimeout(() => window.location.reload(), 2000);
+            } else {
+                const data = await res.json();
+                showMessage(data.message || 'Termination failed.', 'error');
+            }
+        } catch (e) {
+            showMessage('Connection error.', 'error');
+        }
+    };
 
     useEffect(() => {
         if (currentWorkspace) setWsName(currentWorkspace.name);
@@ -78,6 +111,36 @@ export default function SettingsPage() {
             }
         } catch (e) {
             showMessage('Failed to update role', 'error');
+        }
+    };
+
+    const handleInviteSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!inviteEmail || !currentWorkspace?._id) return;
+        setInviteLoading(true);
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${apiUrl}/api/memberships/invite`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-workspace-id': currentWorkspace._id
+                },
+                body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
+                credentials: 'include'
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showMessage(`Vault invite dispatched to ${inviteEmail}`);
+                setShowInviteModal(false);
+                setInviteEmail('');
+            } else {
+                showMessage(data.message || 'Dispatch failed', 'error');
+            }
+        } catch (e) {
+            showMessage('Connection error', 'error');
+        } finally {
+            setInviteLoading(false);
         }
     };
 
@@ -278,11 +341,59 @@ export default function SettingsPage() {
                                 <AlertTriangle className="h-5 w-5" />
                                 <h3 className="font-black text-lg tracking-tight">Destructive Protocol</h3>
                             </div>
-                            <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-red-600 hover:bg-red-600 hover:text-white px-5 py-2.5 rounded-lg border-2 border-red-600 transition-all">
+                            <button
+                                onClick={() => setShowDeleteModal(true)}
+                                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-red-600 hover:bg-red-600 hover:text-white px-5 py-2.5 rounded-lg border-2 border-red-600 transition-all font-mono"
+                            >
                                 Terminate Workspace
                             </button>
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Termination Modal */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-text-primary/10 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-red-100 p-8 space-y-6 animate-in zoom-in-95 duration-200">
+                        <div className="flex flex-col items-center text-center space-y-2">
+                            <div className="h-12 w-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-2">
+                                <AlertTriangle className="h-6 w-6" />
+                            </div>
+                            <h3 className="text-xl font-black tracking-tight text-text-primary uppercase">Critical Authorization</h3>
+                            <p className="text-xs font-bold text-text-muted leading-relaxed">
+                                You are about to initiate a workspace extraction protocol. All Knowledge records, Alerts, and Chats will be purged after 7 days.
+                            </p>
+                        </div>
+
+                        <div className="bg-surface-light p-4 rounded-xl border border-border-light text-center">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-1">To confirm, type the slug below:</p>
+                            <p className="text-sm font-black text-blue-600 font-mono select-none">{currentWorkspace?.slug}</p>
+                        </div>
+
+                        <input
+                            type="text"
+                            value={deleteConfirmSlug}
+                            onChange={(e) => setDeleteConfirmSlug(e.target.value)}
+                            className="w-full h-11 bg-white border-2 border-border-light rounded-xl px-4 text-center text-sm font-bold outline-none focus:border-red-600 transition-all"
+                            placeholder="Enter slug to synchronize"
+                        />
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowDeleteModal(false)}
+                                className="flex-1 h-11 text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text-primary border-2 border-border-light rounded-xl transition-all"
+                            >
+                                Abort
+                            </button>
+                            <button
+                                onClick={handleTerminateWorkspace}
+                                className="flex-1 bg-red-600 text-white h-11 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-700 transition-all shadow-lg shadow-red-500/20"
+                            >
+                                Confirm Delete
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -374,7 +485,17 @@ export default function SettingsPage() {
                                 <Users className="h-5 w-5 text-blue-600" />
                                 <h3 className="font-black text-lg tracking-tight">Workspace Members</h3>
                             </div>
-                            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted">{members.length} Controlled Identities</div>
+                            <div className="flex items-center gap-4">
+                                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted">{members.length} Controlled Identities</div>
+                                {isAdmin && (
+                                    <button
+                                        onClick={() => setShowInviteModal(true)}
+                                        className="h-8 px-4 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-sm"
+                                    >
+                                        Invite Personnel
+                                    </button>
+                                )}
+                            </div>
                         </div>
                         <div className="divide-y divide-border-light">
                             {membersLoading ? (
@@ -427,6 +548,59 @@ export default function SettingsPage() {
                             ))}
                         </div>
                     </div>
+
+                    {showInviteModal && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-text-primary/10 backdrop-blur-sm animate-in fade-in duration-200">
+                            <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-border-light p-8 space-y-6 animate-in zoom-in-95 duration-200">
+                                <div>
+                                    <h3 className="text-lg font-black tracking-tight text-text-primary">Recruit Workspace Member</h3>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">Authorization will be sent via encrypted email</p>
+                                </div>
+                                <form onSubmit={handleInviteSubmit} className="space-y-4">
+                                    <div>
+                                        <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Personnel Email</label>
+                                        <input
+                                            type="email"
+                                            required
+                                            value={inviteEmail}
+                                            onChange={(e) => setInviteEmail(e.target.value)}
+                                            className="w-full h-11 bg-surface-light border-2 border-border-light rounded-xl px-4 text-sm font-bold outline-none focus:border-blue-600 transition-all"
+                                            placeholder="colleague@company.com"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Assignment Role</label>
+                                        <select
+                                            value={inviteRole}
+                                            onChange={(e) => setInviteRole(e.target.value as any)}
+                                            className="w-full h-11 bg-surface-light border-2 border-border-light rounded-xl px-4 text-sm font-bold outline-none focus:border-blue-600 transition-all"
+                                        >
+                                            <option value="admin">Administrator (Full Control)</option>
+                                            <option value="member">Standard Member (Read/Write)</option>
+                                            <option value="viewer">Guest Viewer (Read-Only)</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex gap-3 pt-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowInviteModal(false)}
+                                            className="flex-1 h-11 text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text-primary border-2 border-border-light rounded-xl transition-all"
+                                        >
+                                            Abort
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={inviteLoading}
+                                            className="flex-1 btn-primary h-11 gap-2"
+                                        >
+                                            {inviteLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                                            Send Invite
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

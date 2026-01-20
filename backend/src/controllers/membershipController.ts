@@ -1,7 +1,112 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import Membership from '../models/Membership';
 import User from '../models/User';
+import Invitation from '../models/Invitation';
 import { sendSuccess, sendError } from '../utils/response';
+import { sendInviteEmail } from '../services/emailService';
+
+const generateToken = (id: string) => {
+    return jwt.sign({ id }, process.env.JWT_SECRET || 'secret', {
+        expiresIn: '30d'
+    });
+};
+
+export const inviteMember = async (req: Request, res: Response) => {
+    try {
+        const { email, role } = req.body;
+        const workspaceId = req.workspace?._id;
+
+        if (!email || !['admin', 'member', 'viewer'].includes(role)) {
+            return sendError(res, 'Valid email and role are required', 400);
+        }
+
+        // Check if already a member
+        const existingUser = await User.findOne({ email: email.toLowerCase() });
+        if (existingUser) {
+            const isMember = await Membership.findOne({ workspaceId, userId: existingUser._id });
+            if (isMember) return sendError(res, 'User is already a member of this workspace', 400);
+        }
+
+        // Generate token
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours
+
+        // Create or update invitation
+        await Invitation.findOneAndUpdate(
+            { email: email.toLowerCase(), workspaceId },
+            {
+                token,
+                role,
+                invitedBy: req.user?._id,
+                expiresAt
+            },
+            { upsert: true, new: true }
+        );
+
+        // Send Email
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const inviteLink = `${frontendUrl}/accept-invite?token=${token}`;
+
+        await sendInviteEmail(
+            email.toLowerCase(),
+            req.user?.name || 'A colleague',
+            req.workspace?.name || 'a Workspace',
+            inviteLink
+        );
+
+        return sendSuccess(res, null, `Invitation sent to ${email}`);
+    } catch (error: any) {
+        return sendError(res, error.message, 500);
+    }
+};
+
+export const acceptInvite = async (req: Request, res: Response) => {
+    try {
+        const { token, password, name } = req.body;
+
+        const invitation = await Invitation.findOne({ token }).populate('workspaceId');
+        if (!invitation || invitation.expiresAt < new Date()) {
+            return sendError(res, 'Invalid or expired invitation', 400);
+        }
+
+        // Check if user exists, else create
+        let user = await User.findOne({ email: invitation.email });
+        if (!user) {
+            if (!password || !name) return sendError(res, 'Name and password required to setup account', 400);
+            user = await User.create({
+                name,
+                email: invitation.email,
+                password,
+                isVerified: true // They came from email
+            });
+        }
+
+        // Create membership
+        await Membership.create({
+            workspaceId: invitation.workspaceId,
+            userId: user._id,
+            role: invitation.role
+        });
+
+        // Cleanup invitation
+        await invitation.deleteOne();
+
+        // Auto-login: generate token and set cookie
+        const authToken = generateToken(user._id.toString());
+        res.cookie('token', authToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'none',
+            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+        });
+
+        return sendSuccess(res, { email: user.email }, 'Successfully joined workspace');
+    } catch (error: any) {
+        return sendError(res, error.message, 500);
+    }
+};
 
 export const listMembers = async (req: Request, res: Response) => {
     try {

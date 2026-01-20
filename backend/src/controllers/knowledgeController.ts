@@ -1,7 +1,51 @@
 import { Request, Response } from 'express';
 import Document from '../models/Document';
 import { sendSuccess, sendError } from '../utils/response';
-import { uploadFile, deleteFile } from '../services/s3Service';
+import { uploadFile, deleteFile, getDownloadUrl } from '../services/s3Service';
+
+const validateFileSignature = (buffer: Buffer, mimetype: string): boolean => {
+    if (!buffer || buffer.length < 4) return false;
+    const signature = buffer.slice(0, 4).toString('hex').toUpperCase();
+
+    // PDF: %PDF- -> 25504446
+    if (mimetype === 'application/pdf') {
+        return signature.startsWith('25504446');
+    }
+
+    // DOCX/MS Word (ZIP-based): PK.. -> 504B0304
+    if (mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || mimetype === 'application/msword') {
+        return signature.startsWith('504B');
+    }
+
+    // TXT/CSV: Pure text check
+    if (mimetype === 'text/plain' || mimetype === 'text/csv') {
+        const sample = buffer.slice(0, 1024).toString();
+        // Check for common non-printable binary characters
+        return !/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(sample);
+    }
+
+    return true;
+};
+
+export const downloadDocument = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const doc = await Document.findOne({ _id: id, workspaceId: (req as any).workspace?._id });
+
+        if (!doc) {
+            return sendError(res, 'Document not found', 404);
+        }
+
+        if (!doc.fileKey) {
+            return sendError(res, 'This is a manual record and cannot be downloaded as a file', 400);
+        }
+
+        const url = await getDownloadUrl(process.env.B2_BUCKET || 'worktoolshub', doc.fileKey);
+        return sendSuccess(res, { url }, 'Download link generated');
+    } catch (error: any) {
+        return sendError(res, error.message, 500);
+    }
+};
 
 export const uploadDocument = async (req: Request, res: Response) => {
     try {
@@ -9,27 +53,40 @@ export const uploadDocument = async (req: Request, res: Response) => {
             return sendError(res, 'No file uploaded', 400);
         }
 
-        const { title, metadata } = req.body;
         const file = req.file;
 
-        // In a real app, you would chunk and embed here
-        // For now, storing as a document
-        const metadataObj = typeof metadata === 'string' ? JSON.parse(metadata) : metadata;
-
-        // Handle auto-deletion if requested
-        let expiresAt: Date | undefined;
-        if (metadataObj?.autoDelete === true || metadataObj?.expiresIn === '30m') {
-            expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+        // Validation: 10MB limit
+        if (file.size > 10 * 1024 * 1024) {
+            return sendError(res, 'File size exceeds 10MB limit', 400);
         }
 
+        // Validation: Types
+        const allowedTypes = [
+            'application/pdf',
+            'text/plain',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'text/csv'
+        ];
+        if (!allowedTypes.includes(file.mimetype)) {
+            return sendError(res, 'Unsupported file type. Please upload PDF, TXT, DOCX, or CSV.', 400);
+        }
+
+        // Security: Magic Number Check
+        if (!validateFileSignature(file.buffer, file.mimetype)) {
+            return sendError(res, 'File content does not match its extension. Possible spoofing detected.', 400);
+        }
+
+        const { title, metadata } = req.body;
+        const metadataObj = typeof metadata === 'string' ? JSON.parse(metadata || '{}') : metadata;
+
         const doc = await Document.create({
-            workspaceId: req.workspace?._id,
+            workspaceId: (req as any).workspace?._id,
             title: title || file.originalname,
-            content: 'File content placeholder. In production, this would be the extracted text.',
+            content: 'Indexing in progress...',
             mimeType: file.mimetype,
-            fileKey: `workspaces/${req.workspace?._id}/${Date.now()}-${file.originalname}`,
+            fileKey: `workspaces/${(req as any).workspace?._id}/vault/${Date.now()}-${file.originalname}`,
             metadata: metadataObj,
-            expiresAt
         });
 
         // Upload to B2
@@ -40,7 +97,29 @@ export const uploadDocument = async (req: Request, res: Response) => {
             file.mimetype
         );
 
-        return sendSuccess(res, doc, 'Document uploaded successfully', 201);
+        return sendSuccess(res, doc, 'Document vaulted successfully', 201);
+    } catch (error: any) {
+        return sendError(res, error.message, 500);
+    }
+};
+
+export const createManualDocument = async (req: Request, res: Response) => {
+    try {
+        const { title, content, metadata } = req.body;
+
+        if (!title || !content) {
+            return sendError(res, 'Title and content are required', 400);
+        }
+
+        const doc = await Document.create({
+            workspaceId: (req as any).workspace?._id,
+            title,
+            content,
+            mimeType: 'text/plain',
+            metadata: metadata || {},
+        });
+
+        return sendSuccess(res, doc, 'Knowledge record created', 201);
     } catch (error: any) {
         return sendError(res, error.message, 500);
     }
@@ -48,7 +127,7 @@ export const uploadDocument = async (req: Request, res: Response) => {
 
 export const listDocuments = async (req: Request, res: Response) => {
     try {
-        const docs = await Document.find({ workspaceId: req.workspace?._id }).sort('-createdAt');
+        const docs = await Document.find({ workspaceId: (req as any).workspace?._id }).sort('-createdAt');
         return sendSuccess(res, docs, 'Documents fetched');
     } catch (error: any) {
         return sendError(res, error.message, 500);
@@ -58,7 +137,7 @@ export const listDocuments = async (req: Request, res: Response) => {
 export const deleteDocument = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const doc = await Document.findOne({ _id: id, workspaceId: req.workspace?._id });
+        const doc = await Document.findOne({ _id: id, workspaceId: (req as any).workspace?._id });
 
         if (!doc) {
             return sendError(res, 'Document not found', 404);
@@ -69,7 +148,6 @@ export const deleteDocument = async (req: Request, res: Response) => {
         }
 
         await doc.deleteOne();
-
         return sendSuccess(res, null, 'Document deleted');
     } catch (error: any) {
         return sendError(res, error.message, 500);

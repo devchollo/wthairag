@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { uploadDocument, listDocuments, deleteDocument } from '../controllers/knowledgeController';
+import { uploadDocument, listDocuments, deleteDocument, createManualDocument, downloadDocument } from '../controllers/knowledgeController';
 import { queryChat, getChats } from '../controllers/chatController';
 import { getWorkspaceStats } from '../controllers/workspaceDataController';
 import { protect } from '../middleware/auth';
@@ -17,7 +17,9 @@ router.get('/stats', getWorkspaceStats);
 
 // Knowledge
 router.post('/knowledge', authorize('owner', 'admin', 'member'), upload.single('file'), uploadDocument);
+router.post('/knowledge/manual', authorize('owner', 'admin', 'member'), createManualDocument);
 router.get('/knowledge', listDocuments);
+router.get('/knowledge/:id/download', authorize('owner', 'admin'), downloadDocument);
 router.delete('/knowledge/:id', authorize('owner', 'admin'), deleteDocument);
 
 // Chat
