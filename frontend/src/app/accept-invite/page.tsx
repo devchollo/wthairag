@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Shield, User, Lock, Loader2, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
-export default function AcceptInvitePage() {
+function AcceptInviteContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { verifySession } = useAuth();
@@ -136,5 +136,17 @@ export default function AcceptInvitePage() {
                 </p>
             </div>
         </div>
+    );
+}
+
+export default function AcceptInvitePage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-surface-base">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+        }>
+            <AcceptInviteContent />
+        </Suspense>
     );
 }
