@@ -10,7 +10,9 @@ dotenv.config();
 
 const app = express();
 
-// Middleware
+// Trust Proxy (Required for Render/Vercel)
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(helmet({
     contentSecurityPolicy: {
