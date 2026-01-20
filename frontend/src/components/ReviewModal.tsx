@@ -49,7 +49,7 @@ export default function ReviewModal() {
     };
 
     return (
-        <dialog id="review-modal" className="modal p-0 rounded-2xl shadow-2xl backdrop:bg-black/60 transition-all">
+        <dialog id="review-modal" className="modal m-auto inset-0 fixed p-0 rounded-2xl shadow-2xl backdrop:bg-black/60 transition-all">
             <div className="modal-box bg-white p-0 max-w-md w-full relative overflow-hidden">
                 <button
                     onClick={() => (document.getElementById('review-modal') as any)?.close()}

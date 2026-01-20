@@ -24,5 +24,5 @@ export const initKeepAlive = () => {
         } catch (error: any) {
             console.error(`[Keep-Alive] Ping failed at ${new Date().toISOString()}: ${error.message}`);
         }
-    }, 60000);
+    }, 30000);
 };

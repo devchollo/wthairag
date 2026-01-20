@@ -5,6 +5,7 @@ export interface IUser extends Document {
     password?: string;
     name: string;
     isVerified: boolean;
+    isAdmin: boolean;
     avatar?: string;
     createdAt: Date;
     updatedAt: Date;

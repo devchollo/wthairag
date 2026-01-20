@@ -1,5 +1,5 @@
 import express from 'express';
-import { dnsLookup, generatePassword, getSSLReport, generateQR, whoisLookup, whoIsHostingThis } from '../controllers/toolsController';
+import { dnsLookup, generatePassword, getSSLReport, generateQR, whoisLookup, whoIsHostingThis, getIpDetails, webhookTest } from '../controllers/toolsController';
 import { seoChecker, aeoChecker, geoChecker, aioChecker } from '../controllers/seoController';
 
 const router = express.Router();
@@ -13,6 +13,8 @@ router.post('/ssl', strictLimiter, getSSLReport);
 router.post('/qr', strictLimiter, generateQR);
 router.post('/whois', strictLimiter, whoisLookup);
 router.post('/hosting', strictLimiter, whoIsHostingThis);
+router.post('/ip', strictLimiter, getIpDetails);
+router.post('/webhook', strictLimiter, webhookTest);
 
 // SEO/AI Analysis Tools (AI Limits)
 router.post('/seo', aiLimiter, seoChecker);

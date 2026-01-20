@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import dns from 'dns';
 import tls from 'tls';
+import axios from 'axios';
 import QRCode from 'qrcode';
 import { promisify } from 'util';
 import { sendSuccess, sendError } from '../utils/response';
@@ -405,5 +406,76 @@ export const whoIsHostingThis = async (req: Request, res: Response) => {
         return sendSuccess(res, results, 'Hosting lookup successful');
     } catch (error: any) {
         return sendError(res, `Hosting lookup failed: ${error.message}`, 500);
+    }
+};
+
+export const getIpDetails = async (req: Request, res: Response) => {
+    try {
+        let ip = req.body.ip || req.ip || req.connection.remoteAddress;
+
+        // Clean up IP format
+        if (typeof ip === 'string' && ip.startsWith('::ffff:')) {
+            ip = ip.replace('::ffff:', '');
+        }
+
+        // If localhost, try to fetch public IP for dev utility
+        if (ip === '127.0.0.1' || ip === '::1') {
+            try {
+                const axios = require('axios');
+                const publicIp = await axios.get('https://api.ipify.org?format=json');
+                ip = publicIp.data.ip;
+            } catch (e) {
+                // Keep localhost
+            }
+        }
+
+        const axios = require('axios');
+        const response = await axios.get(`https://ipinfo.io/${ip}/json?token=${process.env.IPINFO_TOKEN || ''}`);
+
+        return sendSuccess(res, {
+            ip: response.data.ip,
+            hostname: response.data.hostname,
+            city: response.data.city,
+            region: response.data.region,
+            country: response.data.country,
+            loc: response.data.loc,
+            org: response.data.org,
+            timezone: response.data.timezone,
+            asn: response.data.org?.split(' ')[0]
+        }, 'IP details retrieved');
+    } catch (error: any) {
+        return sendError(res, error.message, 500);
+    }
+};
+
+export const webhookTest = async (req: Request, res: Response) => {
+    try {
+        const { url, method, headers, body } = req.body;
+
+        if (!url) return sendError(res, 'URL is required', 400);
+
+        const startTime = Date.now();
+        const axios = require('axios');
+
+        const response = await axios({
+            method: method || 'POST',
+            url,
+            headers: headers || {},
+            data: body || {},
+            validateStatus: () => true // Resolve promise for all status codes
+        });
+
+        const duration = Date.now() - startTime;
+
+        return sendSuccess(res, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: response.headers,
+            data: response.data,
+            duration
+        }, 'Webhook test complete');
+
+    } catch (error: any) {
+        return sendError(res, error.message, 500);
     }
 };
