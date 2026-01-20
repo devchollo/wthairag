@@ -36,10 +36,19 @@ const getEffectiveIp = (req: Request): string => {
     return ip;
 };
 
+/**
+ * Normalizes input (URL or naked domain) to a clean, lowercase naked domain.
+ */
+const normalizeDomain = (input: string): string => {
+    if (!input) return '';
+    return input.replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0].toLowerCase().trim();
+};
+
 export const dnsLookup = async (req: Request, res: Response) => {
     try {
-        const { domain } = req.body;
-        if (!domain) return sendError(res, 'Domain is required', 400);
+        const input = req.body.domain || req.body.url;
+        const domain = normalizeDomain(input);
+        if (!domain) return sendError(res, 'Domain or URL is required', 400);
 
         const startTime = Date.now();
         const results: any = {
@@ -52,81 +61,189 @@ export const dnsLookup = async (req: Request, res: Response) => {
                 hasDMARC: false,
                 hasDKIM: false,
                 dnssecEnabled: false
+            },
+            report: {
+                summary: 'Resolution complete.',
+                issues: [],
+                recommendations: []
             }
         };
 
-        // Fetch all record types
-        try { results.records.A = await resolveA(domain); } catch (e) { }
-        try { results.records.MX = await resolveMx(domain); } catch (e) { }
-        try { results.records.TXT = await resolveTxt(domain); } catch (e) { }
-        try { results.records.NS = await resolveNs(domain); } catch (e) { }
-        try { results.records.CNAME = await resolveCname(domain); } catch (e) { }
-        try { results.records.SOA = await resolveSoa(domain); } catch (e) { }
+        // Run common lookups in parallel
+        const [a, mx, txt, ns, soa] = await Promise.allSettled([
+            resolveA(domain),
+            resolveMx(domain),
+            resolveTxt(domain),
+            resolveNs(domain),
+            resolveSoa(domain)
+        ]);
+
+        if (a.status === 'fulfilled') results.records.A = a.value;
+        if (mx.status === 'fulfilled') {
+            results.records.MX = mx.value;
+            results.diagnostics.hasMX = true;
+        }
+        if (txt.status === 'fulfilled') {
+            results.records.TXT = txt.value;
+            const flatTxt = txt.value.flat().join(' ').toLowerCase();
+            results.diagnostics.hasSPF = flatTxt.includes('v=spf1');
+            results.diagnostics.hasDMARC = flatTxt.includes('v=dmarc1');
+        }
+        if (ns.status === 'fulfilled') results.records.NS = ns.value;
+        if (soa.status === 'fulfilled') results.records.SOA = soa.value;
 
         results.queryTime = Date.now() - startTime;
 
-        // Diagnostics
-        if (results.records.MX && results.records.MX.length > 0) {
-            results.diagnostics.hasMX = true;
+        // Recommendations based on missing records
+        if (!results.diagnostics.hasMX) {
+            results.report.issues.push('No MX records found. This domain cannot receive email.');
+            results.report.recommendations.push('Configure MX records if you intend to use this domain for email.');
         }
-        if (results.records.TXT) {
-            const txtFlat = results.records.TXT.flat().join(' ');
-            results.diagnostics.hasSPF = txtFlat.includes('v=spf1');
-            results.diagnostics.hasDMARC = txtFlat.toLowerCase().includes('v=dmarc1');
-            results.diagnostics.hasDKIM = txtFlat.toLowerCase().includes('v=dkim1') || txtFlat.toLowerCase().includes('k=rsa');
+        if (!results.diagnostics.hasSPF) {
+            results.report.issues.push('Missing SPF record.');
+            results.report.recommendations.push('Add an SPF TXT record to authorize your mail servers and prevent spoofing.');
         }
-
-        // Generate report
-        const issues: string[] = [];
-        if (!results.diagnostics.hasMX) issues.push('No MX records found. Email may not be configured.');
-        if (!results.diagnostics.hasSPF) issues.push('Missing SPF record. Email spoofing risk is elevated.');
-        if (!results.diagnostics.hasDMARC) issues.push('Missing DMARC record. Email authentication policies are not enforced.');
-
-        results.report = {
-            summary: issues.length === 0 ? 'All critical mail security records are present.' : `${issues.length} potential configuration issue(s) detected.`,
-            issues,
-            recommendations: issues.length > 0 ? [
-                'Add SPF records to prevent email spoofing.',
-                'Configure DMARC for email authentication.',
-                'Consider enabling DNSSEC for enhanced security.'
-            ] : ['Continue monitoring DNS propagation regularly.']
-        };
 
         return sendSuccess(res, results, 'DNS lookup successful');
     } catch (error: any) {
-        return sendError(res, error.message, 500);
+        return sendError(res, `DNS resolution failed: ${error.message}`, 500);
     }
 };
 
 export const generatePassword = async (req: Request, res: Response) => {
     const { length = 16, numbers = true, symbols = true, uppercase = true } = req.body;
 
-    const lower = 'abcdefghijklmnopqrstuvwxyz';
-    const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const nums = '0123456789';
-    const syms = '!@#$%^&*()_+~`|}{[]:;?><,./-=';
+    const charset = {
+        lower: 'abcdefghijklmnopqrstuvwxyz',
+        upper: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+        num: '0123456789',
+        sym: '!@#$%^&*()_+~`|}{[]:;?><,./-='
+    };
 
-    let chars = lower;
-    if (uppercase) chars += upper;
-    if (numbers) chars += nums;
-    if (symbols) chars += syms;
+    let characters = charset.lower;
+    if (uppercase) characters += charset.upper;
+    if (numbers) characters += charset.num;
+    if (symbols) characters += charset.sym;
 
     let password = '';
+    const array = new Uint32Array(length);
+    crypto.getRandomValues(array);
+
     for (let i = 0; i < length; i++) {
-        password += chars.charAt(Math.floor(Math.random() * chars.length));
+        password += characters[array[i] % characters.length];
     }
 
-    return sendSuccess(res, { password }, 'Password generated');
+    return sendSuccess(res, { password, length, strength: length > 12 ? 'Strong' : 'Medium' }, 'Password generated');
 };
 
-export const getWhois = async (req: Request, res: Response) => {
-    const { domain } = req.body;
-    return sendSuccess(res, {
-        domain,
-        registrar: 'Query Service',
-        expiry: '2027-01-01',
-        aiReport: `The WHOIS information for ${domain} shows it is registered. Detailed analytics are being processed in the background.`
-    }, 'WHOIS lookup successful');
+export const getSSLReport = async (req: Request, res: Response) => {
+    try {
+        const input = req.body.domain || req.body.url;
+        const domain = normalizeDomain(input);
+        if (!domain) return sendError(res, 'Domain or URL is required', 400);
+
+        const startTime = Date.now();
+
+        const checkSSL = (target: string): Promise<any> => {
+            return new Promise((resolve, reject) => {
+                const socket = tls.connect({
+                    host: target,
+                    port: 443,
+                    servername: target,
+                    rejectUnauthorized: false
+                }, () => {
+                    const cert = socket.getPeerCertificate(true);
+                    const protocol = socket.getProtocol();
+                    const cipher = socket.getCipher();
+                    socket.destroy();
+
+                    if (!cert || Object.keys(cert).length === 0) {
+                        reject(new Error('Could not retrieve certificate.'));
+                        return;
+                    }
+
+                    resolve({
+                        valid: socket.authorized,
+                        reason: socket.authorizationError,
+                        issuer: cert.issuer?.O || cert.issuer?.CN || 'Unknown',
+                        subject: cert.subject?.CN || 'Unknown',
+                        expiry: cert.valid_to,
+                        validFrom: cert.valid_from,
+                        bits: cert.bits || 0,
+                        serialNumber: cert.serialNumber || 'N/A',
+                        fingerprint256: cert.fingerprint256 || 'N/A',
+                        protocol: protocol || 'Unknown',
+                        cipher: cipher?.name || 'Unknown',
+                        cipherVersion: cipher?.version || 'Unknown',
+                        altNames: cert.subjectaltname?.split(', ').map((s: string) => s.replace('DNS:', '')) || []
+                    });
+                });
+
+                socket.on('error', (e) => {
+                    socket.destroy();
+                    reject(e);
+                });
+
+                socket.setTimeout(5000, () => {
+                    socket.destroy();
+                    reject(new Error('Connection timed out after 5 seconds'));
+                });
+            });
+        };
+
+        try {
+            const certData = await checkSSL(domain);
+            const queryTime = Date.now() - startTime;
+
+            // Advanced diagnostics
+            const expiryDate = new Date(certData.expiry);
+            const now = new Date();
+            const daysUntilExpiry = Math.floor((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+            const issues: string[] = [];
+            if (!certData.valid) issues.push(`Chain validation failed: ${certData.reason}`);
+            if (daysUntilExpiry < 30) issues.push(`Certificate expires in ${daysUntilExpiry} days.`);
+            if (certData.bits < 2048) issues.push(`Key size (${certData.bits} bits) is below recommended 2048 bits.`);
+            if (certData.protocol === 'TLSv1' || certData.protocol === 'TLSv1.1') {
+                issues.push(`Outdated protocol detected: ${certData.protocol}. Upgrade to TLS 1.2+.`);
+            }
+
+            return sendSuccess(res, {
+                domain,
+                queryTime,
+                certificate: {
+                    status: certData.valid ? 'Valid Chain' : `Invalid (${certData.reason})`,
+                    issuer: certData.issuer,
+                    subject: certData.subject,
+                    expiry: certData.expiry,
+                    validFrom: certData.validFrom,
+                    daysUntilExpiry,
+                    serialNumber: certData.serialNumber,
+                    fingerprint256: certData.fingerprint256,
+                    keyStrength: `${certData.bits} bits`,
+                    altNames: certData.altNames
+                },
+                connection: {
+                    protocol: certData.protocol,
+                    cipher: certData.cipher,
+                    cipherVersion: certData.cipherVersion
+                },
+                report: {
+                    summary: issues.length === 0 ? 'SSL configuration is optimal.' : `${issues.length} issue(s) detected.`,
+                    issues,
+                    recommendations: issues.length > 0 ? [
+                        'Renew certificate before expiry.',
+                        'Upgrade to TLS 1.3 for enhanced security.',
+                        'Ensure HSTS is enabled with a long max-age.'
+                    ] : ['Certificate is healthy. Consider enabling OCSP stapling for faster validation.']
+                }
+            }, 'SSL report generated');
+        } catch (error: any) {
+            return sendError(res, `Failed to audit SSL: ${error.message}`, 500);
+        }
+    } catch (err: any) {
+        return sendError(res, `SSL operation failed: ${err.message}`, 500);
+    }
 };
 
 export const generateQR = async (req: Request, res: Response) => {
@@ -153,116 +270,12 @@ export const generateQR = async (req: Request, res: Response) => {
     }
 };
 
-export const getSSLReport = async (req: Request, res: Response) => {
-    const { domain } = req.body;
-    if (!domain) return sendError(res, 'Domain is required', 400);
-
-    const startTime = Date.now();
-
-    const checkSSL = (target: string): Promise<any> => {
-        return new Promise((resolve, reject) => {
-            const socket = tls.connect({
-                host: target,
-                port: 443,
-                servername: target,
-                rejectUnauthorized: false
-            }, () => {
-                const cert = socket.getPeerCertificate(true);
-                const protocol = socket.getProtocol();
-                const cipher = socket.getCipher();
-                socket.destroy();
-
-                if (!cert || Object.keys(cert).length === 0) {
-                    reject(new Error('Could not retrieve certificate.'));
-                    return;
-                }
-
-                resolve({
-                    valid: socket.authorized,
-                    reason: socket.authorizationError,
-                    issuer: cert.issuer?.O || cert.issuer?.CN || 'Unknown',
-                    subject: cert.subject?.CN || 'Unknown',
-                    expiry: cert.valid_to,
-                    validFrom: cert.valid_from,
-                    bits: cert.bits || 0,
-                    serialNumber: cert.serialNumber || 'N/A',
-                    fingerprint256: cert.fingerprint256 || 'N/A',
-                    protocol: protocol || 'Unknown',
-                    cipher: cipher?.name || 'Unknown',
-                    cipherVersion: cipher?.version || 'Unknown',
-                    altNames: cert.subjectaltname?.split(', ').map((s: string) => s.replace('DNS:', '')) || []
-                });
-            });
-
-            socket.on('error', (e) => {
-                socket.destroy();
-                reject(e);
-            });
-
-            socket.setTimeout(5000, () => {
-                socket.destroy();
-                reject(new Error('Connection timed out after 5 seconds'));
-            });
-        });
-    };
-
-    try {
-        const certData = await checkSSL(domain);
-        const queryTime = Date.now() - startTime;
-
-        // Advanced diagnostics
-        const expiryDate = new Date(certData.expiry);
-        const now = new Date();
-        const daysUntilExpiry = Math.floor((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-
-        const issues: string[] = [];
-        if (!certData.valid) issues.push(`Chain validation failed: ${certData.reason}`);
-        if (daysUntilExpiry < 30) issues.push(`Certificate expires in ${daysUntilExpiry} days.`);
-        if (certData.bits < 2048) issues.push(`Key size (${certData.bits} bits) is below recommended 2048 bits.`);
-        if (certData.protocol === 'TLSv1' || certData.protocol === 'TLSv1.1') {
-            issues.push(`Outdated protocol detected: ${certData.protocol}. Upgrade to TLS 1.2+.`);
-        }
-
-        return sendSuccess(res, {
-            domain,
-            queryTime,
-            certificate: {
-                status: certData.valid ? 'Valid Chain' : `Invalid (${certData.reason})`,
-                issuer: certData.issuer,
-                subject: certData.subject,
-                expiry: certData.expiry,
-                validFrom: certData.validFrom,
-                daysUntilExpiry,
-                serialNumber: certData.serialNumber,
-                fingerprint256: certData.fingerprint256,
-                keyStrength: `${certData.bits} bits`,
-                altNames: certData.altNames
-            },
-            connection: {
-                protocol: certData.protocol,
-                cipher: certData.cipher,
-                cipherVersion: certData.cipherVersion
-            },
-            report: {
-                summary: issues.length === 0 ? 'SSL configuration is optimal.' : `${issues.length} issue(s) detected.`,
-                issues,
-                recommendations: issues.length > 0 ? [
-                    'Renew certificate before expiry.',
-                    'Upgrade to TLS 1.3 for enhanced security.',
-                    'Ensure HSTS is enabled with a long max-age.'
-                ] : ['Certificate is healthy. Consider enabling OCSP stapling for faster validation.']
-            }
-        }, 'SSL report generated');
-    } catch (error: any) {
-        return sendError(res, `Failed to audit SSL: ${error.message}`, 500);
-    }
-};
-
 // WHOIS Lookup
 export const whoisLookup = async (req: Request, res: Response) => {
     try {
-        const { domain } = req.body;
-        if (!domain) return sendError(res, 'Domain is required', 400);
+        const input = req.body.domain || req.body.url;
+        const domain = normalizeDomain(input);
+        if (!domain) return sendError(res, 'Domain or URL is required', 400);
 
         const whois = require('whois-json');
         const startTime = Date.now();
@@ -324,8 +337,9 @@ export const whoisLookup = async (req: Request, res: Response) => {
 // WhoIsHostingThis - Hosting provider detection
 export const whoIsHostingThis = async (req: Request, res: Response) => {
     try {
-        const { domain } = req.body;
-        if (!domain) return sendError(res, 'Domain is required', 400);
+        const input = req.body.domain || req.body.url;
+        const domain = normalizeDomain(input);
+        if (!domain) return sendError(res, 'Domain or URL is required', 400);
 
         const startTime = Date.now();
         const results: any = {
@@ -474,8 +488,28 @@ export const getIpDetails = async (req: Request, res: Response) => {
             responseData = apiRes.data;
         } catch (apiErr: any) {
             console.error('IPInfo API Error:', apiErr.message);
-            // If API fails, we still return the IP we detected
-            responseData = { ip };
+            // Fallback for 429 or other API errors
+            try {
+                console.log('Falling back to ip-api.com...');
+                const fallbackRes = await axios.get(`http://ip-api.com/json/${ip}`);
+                if (fallbackRes.data && fallbackRes.data.status === 'success') {
+                    const d = fallbackRes.data;
+                    responseData = {
+                        ip: d.query,
+                        city: d.city,
+                        region: d.regionName,
+                        country: d.countryCode,
+                        loc: `${d.lat},${d.lon}`,
+                        org: d.isp,
+                        timezone: d.timezone
+                    };
+                } else {
+                    responseData = { ip };
+                }
+            } catch (fallbackErr: any) {
+                console.error('Fallback API Error:', fallbackErr.message);
+                responseData = { ip };
+            }
         }
 
         const results = {

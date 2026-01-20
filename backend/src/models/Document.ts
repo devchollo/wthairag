@@ -9,6 +9,7 @@ export interface IDocument extends Document {
     mimeType?: string;
     metadata: Record<string, any>;
     embeddingId?: string; // Reference to vector DB if needed
+    expiresAt?: Date; // For temporary files
     createdAt: Date;
     updatedAt: Date;
 }
@@ -23,6 +24,7 @@ const DocumentSchema: Schema = new Schema(
         mimeType: { type: String },
         metadata: { type: Schema.Types.Mixed, default: {} },
         embeddingId: { type: String },
+        expiresAt: { type: Date },
     },
     { timestamps: true }
 );

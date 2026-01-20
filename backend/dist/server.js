@@ -41,6 +41,16 @@ app.use((0, cookie_parser_1.default)());
 app.use(express_1.default.json({ limit: '10mb' }));
 app.use(express_1.default.urlencoded({ extended: true, limit: '10mb' }));
 // NoSQL Injection Protection
+// Express 5 makes req.query a getter; mongoSanitize needs it to be writable
+app.use((req, res, next) => {
+    Object.defineProperty(req, 'query', {
+        value: { ...req.query },
+        writable: true,
+        enumerable: true,
+        configurable: true
+    });
+    next();
+});
 app.use((0, express_mongo_sanitize_1.default)());
 // Pollution Protection
 const hpp_1 = __importDefault(require("hpp"));

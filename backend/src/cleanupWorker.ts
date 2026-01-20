@@ -9,12 +9,24 @@ import { deleteFile } from './services/s3Service';
 export const initCleanupWorker = () => {
     // Run every 30 minutes
     cron.schedule('*/30 * * * *', async () => {
-        console.log('Running cleanup worker...');
+        console.log('Running cleanup worker for temporary files...');
 
-        // 1. Delete temporary documents (placeholder logic: assuming temporary if marked in metadata or logic)
-        // For this prompt, let's assume "temp" bucket or specific metadata
-        const halfHourAgo = new Date(Date.now() - 30 * 60 * 1000);
-        // Logic for temp file cleanup would go here
+        const now = new Date();
+        const expiredDocs = await Document.find({
+            expiresAt: { $lte: now }
+        });
+
+        for (const doc of expiredDocs) {
+            try {
+                if (doc.fileKey) {
+                    await deleteFile(process.env.B2_BUCKET || 'worktoolshub', doc.fileKey);
+                }
+                await doc.deleteOne();
+                console.log(`Auto-deleted expired document: ${doc._id} (${doc.title})`);
+            } catch (err: any) {
+                console.error(`Failed to cleanup document ${doc._id}:`, err.message);
+            }
+        }
     });
 
     // Run every day at midnight

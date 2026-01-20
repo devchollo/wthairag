@@ -14,13 +14,22 @@ export const uploadDocument = async (req: Request, res: Response) => {
 
         // In a real app, you would chunk and embed here
         // For now, storing as a document
+        const metadataObj = typeof metadata === 'string' ? JSON.parse(metadata) : metadata;
+
+        // Handle auto-deletion if requested
+        let expiresAt: Date | undefined;
+        if (metadataObj?.autoDelete === true || metadataObj?.expiresIn === '30m') {
+            expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+        }
+
         const doc = await Document.create({
             workspaceId: req.workspace?._id,
             title: title || file.originalname,
             content: 'File content placeholder. In production, this would be the extracted text.',
             mimeType: file.mimetype,
             fileKey: `workspaces/${req.workspace?._id}/${Date.now()}-${file.originalname}`,
-            metadata: typeof metadata === 'string' ? JSON.parse(metadata) : metadata,
+            metadata: metadataObj,
+            expiresAt
         });
 
         // Upload to B2

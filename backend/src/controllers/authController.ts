@@ -149,7 +149,7 @@ export const completeSignup = async (req: Request, res: Response) => {
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: 'lax',
             maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
         });
 
@@ -198,7 +198,7 @@ export const login = async (req: Request, res: Response) => {
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: 'lax',
             maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
         });
 
@@ -219,7 +219,7 @@ export const logout = async (req: Request, res: Response) => {
         res.clearCookie('token', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict'
+            sameSite: 'lax'
         });
         return sendSuccess(res, {}, 'Logged out successfully');
     } catch (error: any) {

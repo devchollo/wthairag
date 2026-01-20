@@ -43,6 +43,7 @@ const DocumentSchema = new mongoose_1.Schema({
     mimeType: { type: String },
     metadata: { type: mongoose_1.Schema.Types.Mixed, default: {} },
     embeddingId: { type: String },
+    expiresAt: { type: Date },
 }, { timestamps: true });
 DocumentSchema.index({ workspaceId: 1 });
 exports.default = mongoose_1.default.model('Document', DocumentSchema);
