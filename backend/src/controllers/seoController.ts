@@ -12,10 +12,12 @@ export const seoChecker = async (req: Request, res: Response) => {
         const startTime = Date.now();
 
         // Fetch the page
-        const response = await axios.get(url, {
-            headers: { 'User-Agent': 'WorkToolsHub-SEO-Bot/1.0' },
-            timeout: 10000
-        });
+        // Fetch the page safely (SSRF Protection)
+        // @ts-ignore
+        const safeResponse = await import('../utils/safeFetch').then(m => m.safeFetch(url, {
+            headers: { 'User-Agent': 'WorkToolsHub-SEO-Bot/1.0' }
+        }));
+        const response = safeResponse as any;
 
         const $ = cheerio.load(response.data);
 

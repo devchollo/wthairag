@@ -4,18 +4,20 @@ import { seoChecker, aeoChecker, geoChecker, aioChecker } from '../controllers/s
 
 const router = express.Router();
 
-// Infrastructure Tools
-router.post('/dns', dnsLookup);
-router.post('/password', generatePassword);
-router.post('/ssl', getSSLReport);
-router.post('/qr', generateQR);
-router.post('/whois', whoisLookup);
-router.post('/hosting', whoIsHostingThis);
+// Infrastructure Tools (Strict Limits)
+import { strictLimiter, aiLimiter } from '../server';
 
-// SEO/AI Analysis Tools
-router.post('/seo', seoChecker);
-router.post('/aeo', aeoChecker);
-router.post('/geo', geoChecker);
-router.post('/aio', aioChecker);
+router.post('/dns', strictLimiter, dnsLookup);
+router.post('/password', strictLimiter, generatePassword);
+router.post('/ssl', strictLimiter, getSSLReport);
+router.post('/qr', strictLimiter, generateQR);
+router.post('/whois', strictLimiter, whoisLookup);
+router.post('/hosting', strictLimiter, whoIsHostingThis);
+
+// SEO/AI Analysis Tools (AI Limits)
+router.post('/seo', aiLimiter, seoChecker);
+router.post('/aeo', aiLimiter, aeoChecker);
+router.post('/geo', aiLimiter, geoChecker);
+router.post('/aio', aiLimiter, aioChecker);
 
 export default router;

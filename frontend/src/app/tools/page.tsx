@@ -5,6 +5,7 @@ import {
     Shield, Globe, Key, QrCode, Search, MessageSquare, Sparkles, Cpu,
     Server, Files, Image as ImageIcon, FileText, Settings, Database, ArrowRight, Terminal, Zap, RefreshCw
 } from 'lucide-react';
+import JsonLd from '@/components/JsonLd';
 
 const tools = [
     // Infrastructure
@@ -134,8 +135,24 @@ const tools = [
 ];
 
 export default function ToolsPage() {
+    const jsonLd = {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "WorkToolsHub",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Web",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "description": "A suite of high-performance developer tools for DNS, SSL, SEO, and AI analysis.",
+        "featureList": "DNS Lookup, SSL Audit, SEO Checker, AI RAG, Password Generator"
+    };
+
     return (
-        <div className="mx-auto max-w-[1240px] px-6 py-12 lg:py-20 bg-white">
+        <div className="mx-auto max-w-[1200px] px-6 py-20">
+            <JsonLd data={jsonLd} />
             <div className="mb-16">
                 <div className="mb-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
                     <Terminal className="h-4 w-4" /> WorkToolsHub / System Architecture & Primitives

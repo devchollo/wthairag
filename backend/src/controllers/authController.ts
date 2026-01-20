@@ -57,7 +57,12 @@ export const register = async (req: Request, res: Response) => {
     }
 };
 
+// Rate limit middleware should handle this, but adding a small artificial delay helps
 export const login = async (req: Request, res: Response) => {
+    // Basic anti-timing attack measure
+    const minTime = 300; // ms
+    const start = Date.now();
+
     try {
         const { email, password } = req.body;
 
@@ -68,8 +73,13 @@ export const login = async (req: Request, res: Response) => {
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
+            const elapsed = Date.now() - start;
+            if (elapsed < minTime) await new Promise(r => setTimeout(r, minTime - elapsed));
             return sendError(res, 'Invalid credentials', 401);
         }
+
+        const elapsed = Date.now() - start;
+        if (elapsed < minTime) await new Promise(r => setTimeout(r, minTime - elapsed));
 
         return sendSuccess(res, {
             _id: user._id,

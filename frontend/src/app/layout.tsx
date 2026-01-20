@@ -9,7 +9,44 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "WorkToolsHub — Modern AI & Public Utilities",
-  description: "A professional workspace for modern engineers. AI RAG, DNS, and Security primitives.",
+  description: "A professional workspace for modern engineers. Features AI RAG, DNS Debugging, SSL Audits, and high-performance developer utilities.",
+  keywords: ["developer tools", "dns lookup", "ssl checker", "seo analysis", "ai rag", "engineering workspace"],
+  authors: [{ name: "WorkToolsHub Engineering" }],
+  creator: "WorkToolsHub",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://worktoolshub.com",
+    title: "WorkToolsHub — The Modern Engineering Workspace",
+    description: "Stateless, privacy-focused utilities for developers. DNS, SSL, AI, and more.",
+    siteName: "WorkToolsHub",
+    images: [
+      {
+        url: "https://worktoolshub.com/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "WorkToolsHub Dashboard Interface",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "WorkToolsHub — Developer Utilities & AI",
+    description: "Engineering-grade tools for the modern web. Perform DNS lookups, SSL checks, and AI analysis in seconds.",
+    images: ["https://worktoolshub.com/og-image.png"],
+    creator: "@worktoolshub",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 export default function RootLayout({

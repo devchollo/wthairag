@@ -42,10 +42,15 @@
     "pdf-parse": "^1.1.1",
     "mammoth": "^1.6.0",
     "office-text-extractor": "^3.0.0",
-    "html-to-docx": "^3.2.0"
+    "html-to-docx": "^3.2.0",
+    "express-rate-limit": "^7.1.5",
+    "hpp": "^0.2.3",
+    "ip-range-check": "^0.2.0",
+    "@types/ip-range-check": "0.0.1"
   },
   "devDependencies": {
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "@types/hpp": "^0.2.6"
   }
 }

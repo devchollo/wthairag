@@ -11,13 +11,60 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(helmet());
-app.use(cors({
-    origin: process.env.FRONTEND_URL || '*',
-    credentials: true,
+// Middleware
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://vercel.live"], // Allow Vercel analytics
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:", "https:"],
+            connectSrc: ["'self'", process.env.FRONTEND_URL || '*', "https://vitals.vercel-insights.com"],
+        }
+    },
+    crossOriginEmbedderPolicy: false
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+app.use(cors({
+    origin: process.env.FRONTEND_URL ? [process.env.FRONTEND_URL, 'http://localhost:3000'] : '*',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+app.use(express.json({ limit: '10mb' })); // Body limit
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Pollution Protection
+import hpp from 'hpp';
+app.use(hpp());
+
+// Rate Limiting
+import rateLimit from 'express-rate-limit';
+
+// Global Limiter (100 reqs / 15 mins)
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { status: 'error', message: 'Too many requests, please try again later.' }
+});
+app.use(globalLimiter);
+
+// Strict Limiter for Auth/Tools (50 reqs / hour)
+export const strictLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 50,
+    message: { status: 'error', message: 'Rate limit exceeded for this endpoint.' }
+});
+
+// AI Tool Limiter (20 reqs / hour) - applied in routes
+export const aiLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 20,
+    message: { status: 'error', message: 'AI generation limit reached. Please upgrade or wait.' }
+});
 
 // Health Check
 app.get('/health', (req, res) => {
