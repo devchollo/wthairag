@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import Document from '../models/Document';
+import DocumentChunk from '../models/DocumentChunk';
 import { sendSuccess, sendError } from '../utils/response';
 import { uploadFile, deleteFile, getDownloadUrl } from '../services/s3Service';
+import { AIService } from '../services/aiService';
 
 const validateFileSignature = (buffer: Buffer, mimetype: string): boolean => {
     if (!buffer || buffer.length < 4) return false;
@@ -107,7 +109,39 @@ export const uploadDocument = async (req: Request, res: Response) => {
             mimeType: file.mimetype,
             fileKey: `workspaces/${(req as any).workspace?._id}/vault/${Date.now()}-${file.originalname}`,
             metadata: metadataObj,
+
         });
+
+        // CHUNKING & EMBEDDING
+        // Simple chunking strategy: Split by ~1000 characters with overlap
+        const chunkSize = 1000;
+        const overlap = 200;
+        const textToChunk = extractedText.length > 0 ? extractedText : 'No content';
+
+        // Only embed if we have meaningful content
+        if (textToChunk.length > 50) {
+            const chunks = [];
+            for (let i = 0; i < textToChunk.length; i += (chunkSize - overlap)) {
+                chunks.push(textToChunk.substring(i, i + chunkSize));
+            }
+
+            // Process chunks in parallel (limit concurrency if needed, but for single file strictly okay)
+            await Promise.all(chunks.map(async (chunkText, index) => {
+                try {
+                    const embedding = await AIService.generateEmbedding(chunkText);
+                    await DocumentChunk.create({
+                        workspaceId: (req as any).workspace?._id,
+                        documentId: doc._id,
+                        content: chunkText,
+                        embedding: embedding,
+                        chunkIndex: index,
+                        metadata: doc.metadata
+                    });
+                } catch (e) {
+                    console.error(`Failed to embed chunk ${index} for doc ${doc._id}`, e);
+                }
+            }));
+        }
 
         // Upload to B2
         await uploadFile(
@@ -137,7 +171,35 @@ export const createManualDocument = async (req: Request, res: Response) => {
             content,
             mimeType: 'text/plain',
             metadata: metadata || {},
+
         });
+
+        // CHUNKING & EMBEDDING
+        const chunkSize = 1000;
+        const overlap = 200;
+
+        if (content.length > 0) {
+            const chunks = [];
+            for (let i = 0; i < content.length; i += (chunkSize - overlap)) {
+                chunks.push(content.substring(i, i + chunkSize));
+            }
+
+            await Promise.all(chunks.map(async (chunkText, index) => {
+                try {
+                    const embedding = await AIService.generateEmbedding(chunkText);
+                    await DocumentChunk.create({
+                        workspaceId: (req as any).workspace?._id,
+                        documentId: doc._id,
+                        content: chunkText,
+                        embedding: embedding,
+                        chunkIndex: index,
+                        metadata: doc.metadata
+                    });
+                } catch (e) {
+                    console.error(`Failed to embed chunk ${index} for doc ${doc._id}`, e);
+                }
+            }));
+        }
 
         return sendSuccess(res, doc, 'Knowledge record created', 201);
     } catch (error: any) {
@@ -168,6 +230,10 @@ export const deleteDocument = async (req: Request, res: Response) => {
         }
 
         await doc.deleteOne();
+
+        // Delete all associated chunks
+        await DocumentChunk.deleteMany({ documentId: doc._id });
+
         return sendSuccess(res, null, 'Document deleted');
     } catch (error: any) {
         return sendError(res, error.message, 500);

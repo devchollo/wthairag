@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Chat from '../models/Chat';
 import Alert from '../models/Alert';
 import Document from '../models/Document';
+import DocumentChunk from '../models/DocumentChunk';
 import UsageLog from '../models/UsageLog';
 import { sendSuccess, sendError } from '../utils/response';
 import { AIService } from '../services/aiService';
@@ -24,43 +25,105 @@ export const queryChat = async (req: Request, res: Response) => {
             });
         }
 
-        // RAG logic: fetch context from Documents and Alerts
-        const [documents, alerts] = await Promise.all([
-            Document.find({ workspaceId }).sort('-createdAt').limit(5),
-            Alert.find({ workspaceId }).sort('-createdAt').limit(5)
-        ]);
+        // RAG logic: Vector Search with Fallback
+        let documents: any[] = [];
+        let context = "";
 
-        let context = "Knowledge Base Information:\n";
-        documents.forEach(doc => {
-            const snippet = doc.content ? doc.content.substring(0, 1500) : 'No content';
-            context += `- ${doc.title}: ${snippet}...\n`;
-        });
+        try {
+            // Generate Query Embedding
+            const queryEmbedding = await AIService.generateEmbedding(query);
+
+            // Vector Search Aggregation
+            // NOTE: Requires 'vector_index' to be created in MongoDB Atlas on the 'embedding' field
+            documents = await DocumentChunk.aggregate([
+                {
+                    $vectorSearch: {
+                        index: "vector_index",
+                        path: "embedding",
+                        queryVector: queryEmbedding,
+                        numCandidates: 100,
+                        limit: 5
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "documents",
+                        localField: "documentId",
+                        foreignField: "_id",
+                        as: "document"
+                    }
+                },
+                { $unwind: "$document" },
+                {
+                    $project: {
+                        content: 1,
+                        title: "$document.title",
+                        documentId: 1,
+                        score: { $meta: "vectorSearchScore" }
+                    }
+                }
+            ]);
+
+            if (documents.length > 0) {
+                console.log('Vector search successful, found chunks:', documents.length);
+                context = "Retrieved Context:\n";
+                documents.forEach(doc => {
+                    context += `- [${doc.title}] (Score: ${doc.score}): ${doc.content}\n`;
+                });
+            } else {
+                console.log('Vector search returned no results. Falling back to recent documents.');
+                throw new Error('No vector results');
+            }
+
+        } catch (err) {
+            console.log('Vector search failed or not configured, reverting to simple recent-doc fetch.', err);
+            // Fallback: Fetch recent 5 documents (Legacy behavior)
+            const recentDocs = await Document.find({ workspaceId }).sort('-createdAt').limit(5);
+            documents = recentDocs.map(d => ({
+                title: d.title,
+                content: d.content ? d.content.substring(0, 1500) : '',
+                _id: d._id
+            }));
+
+            context = "Recent Knowledge Base Information (Vector Search Unavailable):\n";
+            documents.forEach(doc => {
+                const snippet = doc.content ? doc.content.substring(0, 1500) : 'No content';
+                context += `- ${doc.title}: ${snippet}...\n`;
+            });
+        }
+
+        // Always fetch alerts as high priority context
+        const alerts = await Alert.find({ workspaceId }).sort('-createdAt').limit(5);
 
         context += "\nSecurity Alerts:\n";
         alerts.forEach(alert => {
             context += `- ${alert.title} [${alert.severity}]: ${alert.description || 'No description'} (Status: ${alert.status})\n`;
         });
 
-        const systemPrompt = `You are an AI assistant for a technical workspace. Use the provided Knowledge Base and Security Alert context to answer questions. 
-         IMPORTANT GUIDELINES:
-         1. **Scope & Referencing**: 
-            - If the user's query is about a topic found in the "Knowledge Base Information" or "Security Alerts", answer strictly based on that context.
-            - If the query is about a supported tool or specific workspace procedure NOT in the context, check if it's general technical knowledge.
-            - **CRITICAL**: If the user asks about third-party software (e.g., "How to configure AWS S3", "How to use Slack") and the answer is NOT in the provided Internal Knowledge Base, you MUST explicitly recommend referring to the official documentation for that tool. Do NOT try to summarize general internet knowledge for specific third-party configurations unless it's a very general concept.
-            - Example: "I don't have specific internal guidelines for AWS S3 configuration in this workspace. Please refer to the [AWS Official Documentation](https://aws.amazon.com/documentation/) for the most accurate and up-to-date instructions."
-         
-         2. **Formatting**:
-            - Format your answer using clear **Markdown**.
-            - Use **Bold** for key concepts or steps.
-            - Use \`Code Blocks\` for any commands, snippets, or file paths.
-            - Use Bulleted Lists for steps or itemization.
-            - Ensure the response is visually structured and easy to read.
 
-         3. **Detail Level**:
-            - Provide complete, detailed technical answers. Do not truncate.
-         
-         4. **Citations**:
-            - DO NOT include inline citations like [1] or [Source 1] manually. The system handles this.`;
+        // Stable System Prompt for Caching
+        const systemPrompt = `You are an AI assistant for a technical workspace. 
+All your answers must be grounded in the provided 'Retrieved Context' and 'Security Alerts'.
+
+IMPORTANT GUIDELINES:
+1. **Refusal Policy**: 
+   - If the user's query is not answered by the provided Context or Alerts, YOU MUST REFUSE to answer.
+   - Say: "I don't have enough information in the provided knowledge base to answer this question."
+   - You may ask a clarifying question if the query is ambiguous.
+
+2. **Scope**: 
+   - Answer strictly based on the context.
+   - Do NOT use outside knowledge for specific workspace procedures.
+   - If asked about generic 3rd party tools (AWS, Slack) NOT in context, refer them to official docs.
+   - Example: "I don't have instructions for [Tool] in the knowledge base. Please check official documentation."
+
+3. **Formatting**:
+   - Use Markdown (Bold, Code Blocks, Lists).
+   - Be concise and professional.
+
+4. **Citations**:
+   - Do NOT manually add [Source] citations. The system handles it.
+`;
 
         // CACHING LOGIC: Check for identical queries in the last 24 hours
         // We use UsageLog for this as it tracks queries
