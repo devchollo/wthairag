@@ -419,7 +419,7 @@ export default function SettingsPage() {
                             </div>
                             <h3 className="text-xl font-black tracking-tight text-text-primary uppercase">Critical Authorization</h3>
                             <p className="text-xs font-bold text-text-muted leading-relaxed">
-                                You are about to initiate a workspace extraction protocol. All Knowledge records, Alerts, and Chats will be purged after 7 days.
+                                You are about to initiate a workspace extraction protocol. All Knowledge records, Alerts, and Chats will be purged right away.
                             </p>
                         </div>
 
@@ -534,7 +534,7 @@ export default function SettingsPage() {
                 </div>
             )}
 
-                        {activeTab === 'members' && (
+            {activeTab === 'members' && (
                 <div className="space-y-6 animate-in fade-in duration-400">
                     <div className="card p-0 border-2 border-border-light overflow-hidden">
                         <div className="p-8 border-b border-border-light flex items-center justify-between bg-surface-light/50">
