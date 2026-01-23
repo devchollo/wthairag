@@ -7,6 +7,8 @@ export interface IUser extends Document {
     isVerified: boolean;
     isAdmin: boolean;
     avatar?: string;
+    resetPasswordToken?: string;
+    resetPasswordExpire?: Date;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -19,6 +21,8 @@ const UserSchema: Schema = new Schema(
         isVerified: { type: Boolean, default: false },
         isAdmin: { type: Boolean, default: false },
         avatar: { type: String },
+        resetPasswordToken: { type: String },
+        resetPasswordExpire: { type: Date },
     },
     { timestamps: true }
 );

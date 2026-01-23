@@ -24,6 +24,7 @@ export default function SettingsPage() {
 
     // Members State
     const [members, setMembers] = useState<any[]>([]);
+    const [invites, setInvites] = useState<any[]>([]);
     const [membersLoading, setMembersLoading] = useState(false);
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [inviteEmail, setInviteEmail] = useState('');
@@ -89,8 +90,26 @@ export default function SettingsPage() {
         }
     };
 
+    const fetchInvites = async () => {
+        if (!isAdmin || !currentWorkspace?._id) return;
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${apiUrl}/api/memberships/invites/pending`, {
+                headers: { 'x-workspace-id': currentWorkspace._id },
+                credentials: 'include'
+            });
+            const data = await res.json();
+            if (res.ok) setInvites(data.data);
+        } catch (e) {
+            console.error("Failed to fetch invites", e);
+        }
+    };
+
     useEffect(() => {
-        if (activeTab === 'members') fetchMembers();
+        if (activeTab === 'members') {
+            fetchMembers();
+            fetchInvites();
+        }
     }, [activeTab, currentWorkspace?._id]);
 
     const handleUpdateRole = async (membershipId: string, role: string) => {
@@ -159,6 +178,44 @@ export default function SettingsPage() {
             }
         } catch (e) {
             showMessage('Failed to remove member', 'error');
+        }
+    };
+
+    const handleCancelInvite = async (inviteId: string) => {
+        if (!confirm('Cancel this invitation?')) return;
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${apiUrl}/api/memberships/invites/${inviteId}`, {
+                method: 'DELETE',
+                headers: { 'x-workspace-id': currentWorkspace?._id || '' },
+                credentials: 'include'
+            });
+            if (res.ok) {
+                showMessage('Invitation withdrawn.');
+                fetchInvites();
+            }
+        } catch (e) {
+            showMessage('Failed to cancel invite', 'error');
+        }
+    };
+
+    const handleResetMemberPassword = async (email: string) => {
+        if (!confirm(`Send password reset email to ${email}?`)) return;
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${apiUrl}/api/auth/forgot-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+                credentials: 'include'
+            });
+            if (res.ok) {
+                showMessage(`Reset link sent to ${email}`);
+            } else {
+                showMessage('Failed to send reset link', 'error');
+            }
+        } catch (e) {
+            showMessage('Connection error', 'error');
         }
     };
 
@@ -477,7 +534,7 @@ export default function SettingsPage() {
                 </div>
             )}
 
-            {activeTab === 'members' && (
+                        {activeTab === 'members' && (
                 <div className="space-y-6 animate-in fade-in duration-400">
                     <div className="card p-0 border-2 border-border-light overflow-hidden">
                         <div className="p-8 border-b border-border-light flex items-center justify-between bg-surface-light/50">
@@ -536,18 +593,62 @@ export default function SettingsPage() {
                                         </div>
 
                                         {member.role !== 'owner' && member.userId?._id !== user?._id && (
-                                            <button
-                                                onClick={() => handleRemoveMember(member._id)}
-                                                className="h-8 w-8 flex items-center justify-center rounded-lg text-text-muted hover:text-red-600 hover:bg-red-50 transition-all"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleResetMemberPassword(member.userId?.email)}
+                                                    className="h-8 w-8 flex items-center justify-center rounded-lg text-text-muted hover:text-blue-600 hover:bg-blue-50 transition-all"
+                                                    title="Send Password Reset Email"
+                                                >
+                                                    <Lock className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleRemoveMember(member._id)}
+                                                    className="h-8 w-8 flex items-center justify-center rounded-lg text-text-muted hover:text-red-600 hover:bg-red-50 transition-all"
+                                                    title="Remove Member"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
                             ))}
                         </div>
                     </div>
+
+                    {isAdmin && invites.length > 0 && (
+                        <div className="card p-0 border-2 border-border-light overflow-hidden mt-8">
+                            <div className="p-8 border-b border-border-light flex items-center gap-3 bg-surface-light/50">
+                                <Mail className="h-5 w-5 text-indigo-600" />
+                                <h3 className="font-black text-lg tracking-tight">Pending Invitations</h3>
+                            </div>
+                            <div className="divide-y divide-border-light">
+                                {invites.map((invite) => (
+                                    <div key={invite._id} className="p-6 flex items-center justify-between hover:bg-surface-light/30 transition-all">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-10 w-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 border-2 border-indigo-100 font-black">
+                                                <Mail className="h-4 w-4" />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-sm font-black text-text-primary">{invite.email}</h4>
+                                                <div className="flex items-center gap-2 text-[10px] font-bold text-text-muted">
+                                                    <span>Role: <span className="text-blue-600 uppercase">{invite.role}</span></span>
+                                                    <span>•</span>
+                                                    <span>Invited by: {invite.invitedBy?.name || 'Admin'}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => handleCancelInvite(invite._id)}
+                                            className="text-[10px] font-black uppercase tracking-widest text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-all"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {showInviteModal && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-text-primary/10 backdrop-blur-sm animate-in fade-in duration-200">
@@ -603,9 +704,12 @@ export default function SettingsPage() {
                     )}
                 </div>
             )}
+
+
         </div>
-    );
+    )
 }
+
 
 function RefreshCcw(props: any) {
     return (

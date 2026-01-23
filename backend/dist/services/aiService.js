@@ -22,9 +22,9 @@ class AIService {
                 { role: 'user', content: `Context:\n${context}\n\nQuestion: ${query}` }
             ];
             const response = await axios_1.default.post('https://api.openai.com/v1/chat/completions', {
-                model: 'gpt-4o', // or gpt-3.5-turbo if preferred for cost
+                model: 'gpt-3.5-turbo', // or gpt-3.5-turbo if preferred for cost or gpt-4o
                 messages: messages,
-                temperature: 0.7,
+                temperature: 0.4,
                 max_tokens: 1000
             }, {
                 headers: {

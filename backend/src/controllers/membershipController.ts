@@ -164,3 +164,27 @@ export const removeMember = async (req: Request, res: Response) => {
         return sendError(res, error.message, 500);
     }
 };
+
+export const listPendingInvites = async (req: Request, res: Response) => {
+    try {
+        const invites = await Invitation.find({ workspaceId: req.workspace?._id })
+            .populate('invitedBy', 'name email')
+            .sort('-createdAt');
+        return sendSuccess(res, invites, 'Pending invites fetched');
+    } catch (error: any) {
+        return sendError(res, error.message, 500);
+    }
+};
+
+export const cancelInvite = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const invite = await Invitation.findOne({ _id: id, workspaceId: req.workspace?._id });
+        if (!invite) return sendError(res, 'Invitation not found', 404);
+
+        await invite.deleteOne();
+        return sendSuccess(res, null, 'Invitation cancelled');
+    } catch (error: any) {
+        return sendError(res, error.message, 500);
+    }
+};

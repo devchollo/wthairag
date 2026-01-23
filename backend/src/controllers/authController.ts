@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import nodeCrypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import Workspace from '../models/Workspace';
@@ -259,6 +260,63 @@ export const updateMe = async (req: Request, res: Response) => {
 
         const user = await User.findByIdAndUpdate(req.user?._id, updates, { new: true }).select('-password');
         return sendSuccess(res, user, 'Profile updated');
+    } catch (error: any) {
+        return sendError(res, error.message, 500);
+    }
+};
+
+export const forgotPassword = async (req: Request, res: Response) => {
+    try {
+        const { email } = req.body;
+        if (!email) return sendError(res, 'Email is required', 400);
+
+        const user = await User.findOne({ email });
+        if (!user) return sendError(res, 'User not found', 404);
+
+        const resetToken = nodeCrypto.randomBytes(32).toString('hex');
+        const resetTokenHash = nodeCrypto.createHash('sha256').update(resetToken).digest('hex');
+
+        user.resetPasswordToken = resetTokenHash;
+        user.resetPasswordExpire = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+        await user.save();
+
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+        // Send email (mocked or real)
+        // In a real app, use: await sendResetPasswordEmail(user.email, resetUrl);
+        // For now, assuming email service exists
+        console.log(`Reset URL: ${resetUrl}`);
+        // We will define sendResetPasswordEmail in emailService later
+
+        return sendSuccess(res, null, 'Password reset email sent');
+    } catch (error: any) {
+        return sendError(res, error.message, 500);
+    }
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+    try {
+        const { token, password } = req.body;
+        if (!token || !password) return sendError(res, 'Token and Password required', 400);
+
+        const resetTokenHash = nodeCrypto.createHash('sha256').update(token).digest('hex');
+
+        const user = await User.findOne({
+            resetPasswordToken: resetTokenHash,
+            resetPasswordExpire: { $gt: Date.now() }
+        });
+
+        if (!user) return sendError(res, 'Invalid or expired token', 400);
+
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(password, salt);
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpire = undefined;
+        await user.save();
+
+        return sendSuccess(res, null, 'Password reset successful');
     } catch (error: any) {
         return sendError(res, error.message, 500);
     }

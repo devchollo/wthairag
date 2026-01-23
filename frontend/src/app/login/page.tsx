@@ -112,6 +112,11 @@ export default function LoginPage() {
                             autoComplete="current-password"
                         />
                     </div>
+                    <div className="flex justify-end">
+                        <Link href="/login/forgot-password" className="text-[10px] font-bold text-text-muted hover:text-blue-600 transition-colors uppercase tracking-wider">
+                            Forgot Credentials?
+                        </Link>
+                    </div>
 
                     {error && (
                         <div className="flex items-center gap-2 text-red-600 text-xs font-semibold bg-red-50 p-3 rounded-lg border border-red-200">

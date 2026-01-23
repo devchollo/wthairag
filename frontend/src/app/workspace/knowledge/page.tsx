@@ -282,15 +282,13 @@ export default function KnowledgeBase() {
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            {doc.mimeType !== 'text/plain' && (
-                                <button
-                                    onClick={() => handleDownload(doc._id, doc.title)}
-                                    className="h-9 w-9 flex items-center justify-center rounded-lg text-text-muted hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                                    title="Download File"
-                                >
-                                    <Download className="h-4 w-4" />
-                                </button>
-                            )}
+                            <button
+                                onClick={() => handleDownload(doc._id, doc.title)}
+                                className="h-9 w-9 flex items-center justify-center rounded-lg text-text-muted hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                title="Download/View Record"
+                            >
+                                <Download className="h-4 w-4" />
+                            </button>
                             {isAdmin && (
                                 <button
                                     onClick={() => handleDelete(doc._id)}

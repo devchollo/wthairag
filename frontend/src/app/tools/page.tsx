@@ -175,7 +175,13 @@ export default function ToolsPage() {
             "priceCurrency": "USD"
         },
         "description": "A suite of high-performance developer tools for DNS, SSL, SEO, and AI analysis.",
-        "featureList": "DNS Lookup, SSL Audit, SEO Checker, AI RAG, Password Generator"
+        "hasPart": tools.map(t => ({
+            "@type": "SoftwareApplication",
+            "name": t.name,
+            "description": t.desc,
+            "applicationCategory": t.category,
+            "operatingSystem": "Web"
+        }))
     };
 
     return (
@@ -244,12 +250,6 @@ export default function ToolsPage() {
                         </div>
                     </Link>
                 ))}
-            </div>
-
-            <div className="mt-20 pt-10 border-t border-border-light text-center">
-                <p className="text-xs font-black uppercase tracking-widest text-text-muted">
-                    More primitives under development: IP Analyzer, JSON Schema Valdiator, Webhook Debugger.
-                </p>
             </div>
         </div>
     );
