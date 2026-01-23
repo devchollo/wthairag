@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Shield, Lock, Activity } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -10,7 +10,13 @@ export default function AdminLogin() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const router = useRouter();
-    const { login } = useAuth();
+    const { login, logout, user } = useAuth();
+
+    useEffect(() => {
+        if (user?.isAdmin) {
+            router.replace('/admin/dashboard');
+        }
+    }, [user, router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -35,6 +41,12 @@ export default function AdminLogin() {
             const meData = await meRes.json();
 
             if (!meRes.ok) throw new Error('Failed to fetch profile');
+
+            if (!meData.data.user?.isAdmin) {
+                await logout();
+                setError('Access Denied. Invalid credentials.');
+                return;
+            }
 
             login({
                 user: meData.data.user,

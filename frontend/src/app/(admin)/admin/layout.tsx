@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function AdminLayout({
@@ -9,18 +9,39 @@ export default function AdminLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const { user } = useAuth();
+    const { user, loading } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
+    const isLoginRoute = pathname === '/admin/login';
 
     useEffect(() => {
+        if (loading) {
+            return;
+        }
+
         // If not logged in, redirect to login
         if (!user) {
-            router.push('/admin/login');
-        } else if (!user.isAdmin) {
-            // If not admin, redirect to dashboard (or somewhere else)
-            router.push('/workspace/dashboard');
+            if (!isLoginRoute) {
+                router.replace('/admin/login');
+            }
+            return;
         }
-    }, [user, router]);
+
+        if (!user.isAdmin) {
+            if (!isLoginRoute) {
+                router.replace('/admin/login');
+            }
+            return;
+        }
+
+        if (isLoginRoute) {
+            router.replace('/admin/dashboard');
+        }
+    }, [user, loading, isLoginRoute, router]);
+
+    if (isLoginRoute) {
+        return <>{children}</>;
+    }
 
     if (!user || !user.isAdmin) {
         return null; // Don't render until authorized
