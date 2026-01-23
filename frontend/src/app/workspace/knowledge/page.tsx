@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FileText, Trash2, Upload, Terminal, BookOpen, Clock, Activity, Search, Filter, Download } from 'lucide-react';
+import { FileText, Trash2, Upload, Terminal, BookOpen, Clock, Activity, Search, Filter, Download, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 import { KnowledgeSkeleton } from '@/components/Skeleton';
@@ -12,6 +12,8 @@ interface Document {
     mimeType: string;
     createdAt: string;
     size?: string;
+    content?: string;
+    fileKey?: string;
 }
 
 export default function KnowledgeBase() {
@@ -24,6 +26,8 @@ export default function KnowledgeBase() {
     const [showManualForm, setShowManualForm] = useState(false);
     const [manualTitle, setManualTitle] = useState('');
     const [manualContent, setManualContent] = useState('');
+    const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const isAdmin = userRole === 'owner' || userRole === 'admin';
 
@@ -121,7 +125,7 @@ export default function KnowledgeBase() {
     };
 
     const handleDownload = async (id: string, title: string) => {
-        if (!currentWorkspace?._id || !isAdmin) return;
+        if (!currentWorkspace?._id) return;
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
             const res = await fetch(`${apiUrl}/api/workspace-data/knowledge/${id}/download`, {
@@ -136,6 +140,8 @@ export default function KnowledgeBase() {
                 const link = document.createElement('a');
                 link.href = data.data.url;
                 link.setAttribute('download', title);
+                link.setAttribute('target', '_blank');
+                link.setAttribute('rel', 'noopener noreferrer');
                 document.body.appendChild(link);
                 link.click();
                 link.remove();
@@ -145,6 +151,16 @@ export default function KnowledgeBase() {
         } catch (e) {
             console.error("Download failed", e);
         }
+    };
+
+    const handleView = (doc: Document) => {
+        setSelectedDoc(doc);
+        setIsModalOpen(true);
+    };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setSelectedDoc(null);
     };
 
     const handleDelete = async (id: string) => {
@@ -282,13 +298,23 @@ export default function KnowledgeBase() {
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => handleDownload(doc._id, doc.title)}
-                                className="h-9 w-9 flex items-center justify-center rounded-lg text-text-muted hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                                title="Download/View Record"
-                            >
-                                <Download className="h-4 w-4" />
-                            </button>
+                            {doc.fileKey ? (
+                                <button
+                                    onClick={() => handleDownload(doc._id, doc.title)}
+                                    className="h-9 w-9 flex items-center justify-center rounded-lg text-text-muted hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                    title="Download File"
+                                >
+                                    <Download className="h-4 w-4" />
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => handleView(doc)}
+                                    className="h-9 w-9 flex items-center justify-center rounded-lg text-text-muted hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                    title="View Record"
+                                >
+                                    <BookOpen className="h-4 w-4" />
+                                </button>
+                            )}
                             {isAdmin && (
                                 <button
                                     onClick={() => handleDelete(doc._id)}
@@ -308,6 +334,34 @@ export default function KnowledgeBase() {
                     <p className="text-xs font-bold text-text-secondary uppercase tracking-widest">
                         {search || filter !== 'all' ? 'No records match your filters.' : 'Vault is empty. Index your documentation to begin.'}
                     </p>
+                </div>
+            )}
+            {isModalOpen && selectedDoc && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+                    <div className="bg-white w-full max-w-3xl rounded-2xl border border-border-light shadow-xl">
+                        <div className="flex items-center justify-between border-b border-border-light px-6 py-4">
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">Manual Record</p>
+                                <h2 className="text-lg font-black text-text-primary">{selectedDoc.title}</h2>
+                            </div>
+                            <button
+                                onClick={closeModal}
+                                className="h-9 w-9 flex items-center justify-center rounded-lg text-text-muted hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                aria-label="Close modal"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+                        <div className="px-6 py-5">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-3 flex items-center gap-2">
+                                <Clock className="h-3 w-3" />
+                                {new Date(selectedDoc.createdAt).toLocaleString()}
+                            </div>
+                            <div className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap text-sm text-text-secondary leading-relaxed pr-2">
+                                {selectedDoc.content || 'No content available for this record.'}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
