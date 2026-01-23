@@ -5,6 +5,8 @@ import { Send, User, Bot, BookOpen, Terminal, Activity, Plus } from 'lucide-reac
 import { useAuth } from '@/context/AuthContext';
 
 import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Message {
     role: 'user' | 'assistant' | 'system';
@@ -119,8 +121,52 @@ export default function RAGChat() {
                             <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${m.role === 'assistant' ? 'bg-blue-600 text-white' : 'bg-surface-light text-text-secondary border border-border-light'}`}>
                                 {m.role === 'assistant' ? <Bot className="h-4 w-4" /> : <User className="h-4 w-4" />}
                             </div>
-                            <div className={`rounded-xl px-4 py-3 text-sm font-bold leading-relaxed shadow-sm ${m.role === 'assistant' ? 'bg-white border border-border-light text-text-primary' : 'bg-blue-600 text-white'}`}>
-                                {m.content}
+                            <div className={`rounded-xl px-4 py-3 text-sm leading-relaxed shadow-sm ${m.role === 'assistant' ? 'bg-white border border-border-light text-text-primary' : 'bg-blue-600 text-white font-bold'}`}>
+                                {m.role === 'assistant' ? (
+                                    <div className="markdown-content">
+                                        <ReactMarkdown
+                                            remarkPlugins={[remarkGfm]}
+                                            components={{
+                                                p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed font-medium">{children}</p>,
+                                                ul: ({ children }) => <ul className="list-disc pl-4 mb-3 space-y-1">{children}</ul>,
+                                                ol: ({ children }) => <ol className="list-decimal pl-4 mb-3 space-y-1">{children}</ol>,
+                                                li: ({ children }) => <li className="mb-1">{children}</li>,
+                                                h1: ({ children }) => <h1 className="text-xl font-black tracking-tight mb-2 mt-4">{children}</h1>,
+                                                h2: ({ children }) => <h2 className="text-lg font-bold tracking-tight mb-2 mt-3">{children}</h2>,
+                                                h3: ({ children }) => <h3 className="text-base font-bold mb-1 mt-2">{children}</h3>,
+                                                code: ({ className, children, ...props }: any) => {
+                                                    const match = /language-(\w+)/.exec(className || '');
+                                                    const isInline = !match && !String(children).includes('\n');
+                                                    return isInline ? (
+                                                        <code className="bg-surface-dark/10 dark:bg-surface-light/10 rounded px-1.5 py-0.5 font-mono text-xs font-bold" {...props}>
+                                                            {children}
+                                                        </code>
+                                                    ) : (
+                                                        <div className="rounded-lg bg-gray-900 text-gray-100 p-3 my-3 overflow-x-auto font-mono text-xs shadow-md">
+                                                            <code className={className} {...props}>
+                                                                {children}
+                                                            </code>
+                                                        </div>
+                                                    );
+                                                },
+                                                blockquote: ({ children }) => (
+                                                    <blockquote className="border-l-4 border-blue-500 pl-4 py-2 my-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-r-lg italic text-text-muted">
+                                                        {children}
+                                                    </blockquote>
+                                                ),
+                                                a: ({ href, children }) => (
+                                                    <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 underline underline-offset-2">
+                                                        {children}
+                                                    </a>
+                                                ),
+                                            }}
+                                        >
+                                            {m.content}
+                                        </ReactMarkdown>
+                                    </div>
+                                ) : (
+                                    m.content
+                                )}
                                 {m.citations && m.citations.length > 0 && (
                                     <div className="mt-3 flex flex-wrap gap-2 border-t border-border-light pt-3">
                                         {m.citations.map((cite, i) => (

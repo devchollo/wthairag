@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { ChevronDown, Shield, Server, Search, Settings, Lock, Menu, X, Database, Terminal, Globe, Key, QrCode, ArrowRight, MessageSquare, Network, Send, LogOut } from 'lucide-react';
+import { ChevronDown, Shield, Server, Search, Settings, Lock, Menu, X, Database, Terminal, Globe, Key, QrCode, ArrowRight, MessageSquare, Network, Send, LogOut, User, LayoutGrid } from 'lucide-react';
 
 const toolSections = [
     {
@@ -39,8 +39,10 @@ const toolSections = [
 export default function Navbar() {
     const { user, logout } = useAuth();
     const [isToolsOpen, setIsToolsOpen] = useState(false);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const profileTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const handleMouseEnter = () => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -52,6 +54,18 @@ export default function Navbar() {
             setIsToolsOpen(false);
         }, 150);
     };
+
+    const handleProfileMouseEnter = () => {
+        if (profileTimeoutRef.current) clearTimeout(profileTimeoutRef.current);
+        setIsProfileOpen(true);
+    };
+
+    const handleProfileMouseLeave = () => {
+        profileTimeoutRef.current = setTimeout(() => {
+            setIsProfileOpen(false);
+        }, 150);
+    };
+
 
     return (
         <nav className="sticky top-0 z-50 w-full border-b border-border-light bg-white/90 backdrop-blur-md">
@@ -131,7 +145,7 @@ export default function Navbar() {
                 </div>
 
                 <div className="hidden items-center gap-3 lg:flex">
-                    {!user && (
+                    {!user ? (
                         <>
                             <Link href="/login" className="btn-secondary h-9 px-4 text-[12px]">
                                 Sign In
@@ -140,6 +154,64 @@ export default function Navbar() {
                                 Get Started
                             </Link>
                         </>
+                    ) : (
+                        <div
+                            className="relative py-4"
+                            onMouseEnter={handleProfileMouseEnter}
+                            onMouseLeave={handleProfileMouseLeave}
+                        >
+                            <button
+                                className="flex items-center gap-2 text-[13px] font-bold text-text-primary transition-colors hover:text-blue-600 outline-none"
+                            >
+                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-light border border-border-light text-blue-600">
+                                    <User className="h-3.5 w-3.5" />
+                                </div>
+                                <span className="hidden xl:inline">{user.name}</span>
+                                <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {/* Profile Dropdown */}
+                            {isProfileOpen && (
+                                <div className="absolute right-0 top-[100%] w-[240px] animate-in fade-in slide-in-from-top-1 duration-200">
+                                    <div className="mt-1 rounded-xl border border-border-light bg-white p-2 shadow-2xl shadow-black/10">
+                                        <div className="px-3 py-2 mb-2 border-b border-border-light">
+                                            <div className="text-[13px] font-bold text-text-primary truncate">{user.name}</div>
+                                            <div className="text-[11px] font-medium text-text-muted truncate">{user.email}</div>
+                                        </div>
+                                        <div className="space-y-0.5">
+                                            <Link
+                                                href="/workspace"
+                                                onClick={() => setIsProfileOpen(false)}
+                                                className="group flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors hover:bg-surface-light"
+                                            >
+                                                <LayoutGrid className="h-4 w-4 text-text-muted group-hover:text-blue-600 transition-colors" />
+                                                <div className="text-[12px] font-bold text-text-primary">My Workspaces</div>
+                                            </Link>
+                                            <Link
+                                                href="/workspace/settings"
+                                                onClick={() => setIsProfileOpen(false)}
+                                                className="group flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors hover:bg-surface-light"
+                                            >
+                                                <Settings className="h-4 w-4 text-text-muted group-hover:text-blue-600 transition-colors" />
+                                                <div className="text-[12px] font-bold text-text-primary">Settings</div>
+                                            </Link>
+                                        </div>
+                                        <div className="mt-2 pt-2 border-t border-border-light">
+                                            <button
+                                                onClick={() => {
+                                                    logout();
+                                                    setIsProfileOpen(false);
+                                                }}
+                                                className="group flex w-full items-center gap-2.5 rounded-lg px-3 py-2 transition-colors hover:bg-red-50 text-left"
+                                            >
+                                                <LogOut className="h-4 w-4 text-text-muted group-hover:text-red-500 transition-colors" />
+                                                <div className="text-[12px] font-bold text-text-primary group-hover:text-red-600">Sign Out</div>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
 
