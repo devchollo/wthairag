@@ -51,10 +51,10 @@ export default function SettingsPage() {
                 credentials: 'include'
             });
             if (res.ok) {
-                showMessage('Vault scheduled for extraction/deletion.');
+                showMessage('Workspace terminated. Redirecting...');
                 setShowDeleteModal(false);
                 // Refresh to show pending status or redirect
-                setTimeout(() => window.location.reload(), 2000);
+                setTimeout(() => window.location.href = '/workspace', 1500);
             } else {
                 const data = await res.json();
                 showMessage(data.message || 'Termination failed.', 'error');

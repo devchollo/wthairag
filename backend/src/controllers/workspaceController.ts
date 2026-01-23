@@ -1,6 +1,12 @@
 import { Request, Response } from 'express';
 import Workspace from '../models/Workspace';
 import Membership from '../models/Membership';
+import Document from '../models/Document';
+import Alert from '../models/Alert';
+import Chat from '../models/Chat';
+import UsageLog from '../models/UsageLog';
+import Invitation from '../models/Invitation';
+import { deleteFile } from '../services/s3Service';
 import { sendSuccess, sendError } from '../utils/response';
 
 export const getWorkspace = async (req: Request, res: Response) => {
@@ -44,30 +50,39 @@ export const updateWorkspace = async (req: Request, res: Response) => {
 
 export const deleteWorkspaceRequest = async (req: Request, res: Response) => {
     try {
-        const pendingDeletionAt = new Date();
-        pendingDeletionAt.setDate(pendingDeletionAt.getDate() + 7);
+        const workspaceId = req.workspace?._id;
+        if (!workspaceId) return sendError(res, 'Workspace context missing', 400);
 
-        const workspace = await Workspace.findByIdAndUpdate(
-            req.workspace?._id,
-            { pendingDeletionAt },
-            { new: true }
-        );
+        // 1. Delete associated files from storage (S3/B2)
+        const documents = await Document.find({ workspaceId });
+        const fileDeletionPromises = documents
+            .filter(doc => doc.fileKey)
+            .map(doc => deleteFile(process.env.B2_BUCKET || 'worktoolshub', doc.fileKey!).catch(err => {
+                console.error(`Failed to delete file ${doc.fileKey}:`, err);
+            }));
 
-        return sendSuccess(res, workspace, 'Workspace scheduled for deletion in 7 days');
+        await Promise.all(fileDeletionPromises);
+
+        // 2. Delete all related database records
+        await Promise.all([
+            Document.deleteMany({ workspaceId }),
+            Alert.deleteMany({ workspaceId }),
+            Chat.deleteMany({ workspaceId }),
+            UsageLog.deleteMany({ workspaceId }),
+            Invitation.deleteMany({ workspaceId }),
+            Membership.deleteMany({ workspaceId }) // Removes all members including owner
+        ]);
+
+        // 3. Delete the workspace itself
+        await Workspace.findByIdAndDelete(workspaceId);
+
+        return sendSuccess(res, null, 'Workspace and all associated data have been permanently terminated.');
     } catch (error: any) {
+        console.error('Workspace termination failed:', error);
         return sendError(res, error.message, 500);
     }
 };
 
 export const cancelDeleteWorkspace = async (req: Request, res: Response) => {
-    try {
-        const workspace = await Workspace.findByIdAndUpdate(
-            req.workspace?._id,
-            { $unset: { pendingDeletionAt: 1 } },
-            { new: true }
-        );
-        return sendSuccess(res, workspace, 'Workspace deletion cancelled');
-    } catch (error: any) {
-        return sendError(res, error.message, 500);
-    }
+    return sendError(res, 'Workspace deletion is now immediate and cannot be cancelled.', 400);
 };
