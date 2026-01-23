@@ -10,7 +10,7 @@ const navItems = [
     { name: 'Dashboard', href: '/workspace/dashboard', icon: LayoutDashboard, adminOnly: true },
     { name: 'Knowledge Base', href: '/workspace/knowledge', icon: BookOpen, adminOnly: false },
     { name: 'AI RAG Console', href: '/workspace/chat', icon: MessageSquare, adminOnly: false },
-    { name: 'Alerts', href: '/workspace/alerts', icon: Bell, adminOnly: true },
+    { name: 'Alerts', href: '/workspace/alerts', icon: Bell, adminOnly: false },
     { name: 'Settings', href: '/workspace/settings', icon: Settings, adminOnly: false },
 ];
 
