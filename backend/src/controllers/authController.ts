@@ -179,8 +179,9 @@ export const login = async (req: Request, res: Response) => {
             return sendError(res, validated.error.issues[0].message, 400);
         }
         const { email, password } = validated.data;
+        const normalizedEmail = email.toLowerCase();
 
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email: normalizedEmail });
         if (!user || !user.password) {
             return sendError(res, 'Invalid credentials', 401);
         }

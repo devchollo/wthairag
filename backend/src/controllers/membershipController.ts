@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import Membership from '../models/Membership';
 import User from '../models/User';
@@ -75,10 +76,12 @@ export const acceptInvite = async (req: Request, res: Response) => {
         let user = await User.findOne({ email: invitation.email });
         if (!user) {
             if (!password || !name) return sendError(res, 'Name and password required to setup account', 400);
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(password, salt);
             user = await User.create({
                 name,
                 email: invitation.email,
-                password,
+                password: hashedPassword,
                 isVerified: true // They came from email
             });
         }
