@@ -140,6 +140,8 @@ export default function KnowledgeBase() {
                 const link = document.createElement('a');
                 link.href = data.data.url;
                 link.setAttribute('download', title);
+                link.setAttribute('target', '_blank');
+                link.setAttribute('rel', 'noopener noreferrer');
                 document.body.appendChild(link);
                 link.click();
                 link.remove();
