@@ -6,7 +6,7 @@ import User from '../models/User';
 import Workspace from '../models/Workspace';
 import Membership from '../models/Membership';
 import Verification from '../models/Verification';
-import { sendVerificationEmail } from '../services/emailService';
+import { sendVerificationEmail, sendResetPasswordEmail } from '../services/emailService';
 import { sendSuccess, sendError } from '../utils/response';
 import { z } from 'zod';
 
@@ -285,11 +285,9 @@ export const forgotPassword = async (req: Request, res: Response) => {
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
         const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
-        // Send email (mocked or real)
-        // In a real app, use: await sendResetPasswordEmail(user.email, resetUrl);
-        // For now, assuming email service exists
-        console.log(`Reset URL: ${resetUrl}`);
-        // We will define sendResetPasswordEmail in emailService later
+        // Send email
+        await sendResetPasswordEmail(user.email, resetUrl);
+        console.log(`Reset link sent to ${user.email}`);
 
         return sendSuccess(res, null, 'Password reset email sent');
     } catch (error: any) {

@@ -85,3 +85,23 @@ export const sendInviteEmail = async (email: string, inviterName: string, worksp
 
     return sendEmail({ to: email, subject, html });
 };
+
+export const sendResetPasswordEmail = async (email: string, resetLink: string) => {
+    const subject = `Reset Your Password - WorkToolsHub`;
+    const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+            <h2 style="color: #000; letter-spacing: -1px;">Reset Your Password</h2>
+            <p style="color: #555; line-height: 1.6;">
+                We received a request to reset the password for your WorkToolsHub account. If you didn't make this request, you can safely ignore this email.
+            </p>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="${resetLink}" style="background: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 6px; display: inline-block;">Reset Password</a>
+            </div>
+            <p style="color: #888; font-size: 12px;">
+                This link will expire in 10 minutes.
+            </p>
+        </div>
+    `;
+
+    return sendEmail({ to: email, subject, html });
+};

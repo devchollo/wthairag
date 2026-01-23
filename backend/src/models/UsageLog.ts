@@ -17,7 +17,7 @@ const UsageLogSchema: Schema = new Schema(
         tokens: { type: Number, required: true },
         query: { type: String, required: true },
         citedDocuments: [{ type: String }], // Document Titles
-        aiModel: { type: String, default: 'gpt-4o' },
+        aiModel: { type: String, default: 'gpt-4o-mini' },
     },
     { timestamps: true }
 );
