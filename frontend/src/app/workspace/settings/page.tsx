@@ -5,7 +5,7 @@ import { Settings, Shield, User, Palette, Globe, Save, Trash2, AlertTriangle, Te
 import { useAuth } from '@/context/AuthContext';
 
 export default function SettingsPage() {
-    const { currentWorkspace, user, login, userRole } = useAuth();
+    const { currentWorkspace, user, login, logout, userRole } = useAuth();
     const [activeTab, setActiveTab] = useState<'workspace' | 'account' | 'members'>('workspace');
 
     // Workspace State
@@ -51,10 +51,13 @@ export default function SettingsPage() {
                 credentials: 'include'
             });
             if (res.ok) {
-                showMessage('Workspace terminated. Redirecting...');
+                showMessage('Workspace terminated. Logging out...');
                 setShowDeleteModal(false);
-                // Refresh to show pending status or redirect
-                setTimeout(() => window.location.href = '/workspace', 1500);
+
+                // Log out the user and redirect to landing page
+                // We use window.location.href to force a full page reload and clear client state
+                await logout();
+                window.location.href = '/';
             } else {
                 const data = await res.json();
                 showMessage(data.message || 'Termination failed.', 'error');

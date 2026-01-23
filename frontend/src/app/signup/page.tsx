@@ -8,26 +8,18 @@ import { useRouter } from 'next/navigation';
 
 export default function SignupPage() {
     const router = useRouter();
-    const { login, user, loading: authLoading } = useAuth();
+    const { login, user, loading: authLoading, workspaces } = useAuth();
 
     useEffect(() => {
-        if (!authLoading && user) {
+        if (!authLoading && user && workspaces.length > 0) {
             router.push('/workspace/dashboard');
         }
-    }, [user, authLoading, router]);
+    }, [user, authLoading, workspaces, router]);
 
     // Steps: 0 = Email, 1 = Verify, 2 = Details
     const [step, setStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    if (authLoading) {
-        return (
-            <div className="flex h-screen items-center justify-center bg-white">
-                <ShieldCheck className="h-8 w-8 animate-spin text-blue-600" />
-            </div>
-        );
-    }
 
     // Form Data
     const [email, setEmail] = useState('');
@@ -37,6 +29,14 @@ export default function SignupPage() {
     const [orgName, setOrgName] = useState('');
 
     const [signupToken, setSignupToken] = useState<string | null>(null);
+
+    if (authLoading) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-white">
+                <ShieldCheck className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+        );
+    }
 
     // Step 0: Initiate Signup
     const handleInitiate = async (e: React.FormEvent) => {

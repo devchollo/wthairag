@@ -11,14 +11,18 @@ export default function LoginPage() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const { login, user, loading } = useAuth();
+    const { login, user, loading, workspaces } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
         if (!loading && user) {
-            router.push('/workspace/dashboard');
+            if (workspaces.length > 0) {
+                router.push('/workspace/dashboard');
+            } else {
+                router.push('/signup');
+            }
         }
-    }, [user, loading, router]);
+    }, [user, loading, workspaces, router]);
 
     if (loading) {
         return (
