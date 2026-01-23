@@ -5,6 +5,13 @@ import { sendSuccess, sendError } from '../utils/response';
 import { uploadFile, deleteFile, getDownloadUrl } from '../services/s3Service';
 import { AIService } from '../services/aiService';
 
+const buildSummary = (text: string, maxLength: number) => {
+    const normalized = text.replace(/\s+/g, ' ').trim();
+    if (!normalized) return '';
+    if (normalized.length <= maxLength) return normalized;
+    return `${normalized.slice(0, maxLength).trim()}...`;
+};
+
 const validateFileSignature = (buffer: Buffer, mimetype: string): boolean => {
     if (!buffer || buffer.length < 4) return false;
     const signature = buffer.slice(0, 4).toString('hex').toUpperCase();
@@ -106,6 +113,7 @@ export const uploadDocument = async (req: Request, res: Response) => {
             workspaceId: (req as any).workspace?._id,
             title: title || file.originalname,
             content: extractedText || 'No printable content found.',
+            summary: buildSummary(extractedText || 'No printable content found.', 600),
             mimeType: file.mimetype,
             fileKey: `workspaces/${(req as any).workspace?._id}/vault/${Date.now()}-${file.originalname}`,
             metadata: metadataObj,
@@ -133,6 +141,7 @@ export const uploadDocument = async (req: Request, res: Response) => {
                         workspaceId: (req as any).workspace?._id,
                         documentId: doc._id,
                         content: chunkText,
+                        summary: buildSummary(chunkText, 240),
                         embedding: embedding,
                         chunkIndex: index,
                         metadata: doc.metadata
@@ -169,6 +178,7 @@ export const createManualDocument = async (req: Request, res: Response) => {
             workspaceId: (req as any).workspace?._id,
             title,
             content,
+            summary: buildSummary(content, 600),
             mimeType: 'text/plain',
             metadata: metadata || {},
 
@@ -191,6 +201,7 @@ export const createManualDocument = async (req: Request, res: Response) => {
                         workspaceId: (req as any).workspace?._id,
                         documentId: doc._id,
                         content: chunkText,
+                        summary: buildSummary(chunkText, 240),
                         embedding: embedding,
                         chunkIndex: index,
                         metadata: doc.metadata

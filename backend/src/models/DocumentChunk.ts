@@ -5,6 +5,7 @@ export interface IDocumentChunk extends Document {
     workspaceId: mongoose.Types.ObjectId;
     documentId: mongoose.Types.ObjectId;
     content: string;
+    summary?: string;
     embedding: number[];
     chunkIndex: number;
     metadata: Record<string, any>;
@@ -17,6 +18,7 @@ const DocumentChunkSchema: Schema = new Schema(
         workspaceId: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true },
         documentId: { type: Schema.Types.ObjectId, ref: 'Document', required: true },
         content: { type: String, required: true },
+        summary: { type: String },
         embedding: [{ type: Number, required: true }],
         chunkIndex: { type: Number, required: true },
         metadata: { type: Schema.Types.Mixed, default: {} },

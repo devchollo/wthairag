@@ -1,16 +1,84 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
 import Chat from '../models/Chat';
 import Alert from '../models/Alert';
 import Document from '../models/Document';
 import DocumentChunk from '../models/DocumentChunk';
 import UsageLog from '../models/UsageLog';
+import ResponseCache from '../models/ResponseCache';
 import { sendSuccess, sendError } from '../utils/response';
 import { AIService } from '../services/aiService';
+
+const normalizeQuery = (query: string) => query.trim().toLowerCase().replace(/\s+/g, ' ');
+const hashText = (value: string) => crypto.createHash('sha256').update(value).digest('hex');
+const estimateTokens = (text: string) => Math.ceil(text.length / 4);
+const clampText = (text: string, maxChars: number) => {
+    if (text.length <= maxChars) return text;
+    return `${text.slice(0, maxChars).trim()}...`;
+};
+
+const isAlertRelevant = (query: string, alerts: any[]) => {
+    if (!alerts.length) return false;
+    const normalized = normalizeQuery(query);
+    const securityKeywords = ['alert', 'security', 'incident', 'vulnerability', 'breach', 'risk', 'severity', 'cve', 'threat'];
+    if (securityKeywords.some(keyword => normalized.includes(keyword))) return true;
+
+    const queryTerms = normalized.split(' ').filter(term => term.length > 3);
+    return alerts.some(alert => {
+        const haystack = `${alert.title} ${alert.description || ''}`.toLowerCase();
+        return queryTerms.some(term => haystack.includes(term));
+    });
+};
+
+const buildContext = (params: {
+    header: string;
+    documents: Array<{ title: string; content?: string; summary?: string; score?: number }>;
+    alerts: Array<{ title: string; description?: string; severity?: string; status?: string }>;
+    tokenBudget: number;
+}) => {
+    const { header, documents, alerts, tokenBudget } = params;
+    let context = `${header}\n`;
+    let usedTokens = estimateTokens(context);
+
+    for (const doc of documents) {
+        const snippet = doc.summary?.trim() || doc.content?.trim() || '';
+        if (!snippet) continue;
+        const line = `- [${doc.title}]${doc.score ? ` (Score: ${doc.score.toFixed(3)})` : ''}: ${clampText(snippet, 800)}\n`;
+        const lineTokens = estimateTokens(line);
+        if (usedTokens + lineTokens > tokenBudget) break;
+        context += line;
+        usedTokens += lineTokens;
+    }
+
+    if (alerts.length) {
+        context += "\nSecurity Alerts:\n";
+        usedTokens = estimateTokens(context);
+        for (const alert of alerts) {
+            const description = alert.description ? clampText(alert.description, 400) : 'No description';
+            const line = `- ${alert.title} [${alert.severity}]: ${description} (Status: ${alert.status})\n`;
+            const lineTokens = estimateTokens(line);
+            if (usedTokens + lineTokens > tokenBudget) break;
+            context += line;
+            usedTokens += lineTokens;
+        }
+    }
+
+    return context.trim();
+};
+
+const getMaxTokensForQuery = (query: string) => {
+    const length = query.trim().length;
+    if (length < 200) return 400;
+    if (length < 600) return 700;
+    return 1000;
+};
 
 export const queryChat = async (req: Request, res: Response) => {
     try {
         const { chatId, query } = req.body;
         const workspaceId = req.workspace?._id;
+        const normalizedQuery = normalizeQuery(query);
+        const queryHash = hashText(normalizedQuery);
 
         let chat;
         if (chatId) {
@@ -28,6 +96,7 @@ export const queryChat = async (req: Request, res: Response) => {
         // RAG logic: Vector Search with Fallback
         let documents: any[] = [];
         let context = "";
+        let contextHeader = "Retrieved Context:";
 
         try {
             // Generate Query Embedding
@@ -56,9 +125,12 @@ export const queryChat = async (req: Request, res: Response) => {
                 { $unwind: "$document" },
                 {
                     $project: {
+                        _id: 1,
                         content: 1,
+                        summary: 1,
                         title: "$document.title",
                         documentId: 1,
+                        updatedAt: 1,
                         score: { $meta: "vectorSearchScore" }
                     }
                 }
@@ -66,10 +138,6 @@ export const queryChat = async (req: Request, res: Response) => {
 
             if (documents.length > 0) {
                 console.log('Vector search successful, found chunks:', documents.length);
-                context = "Retrieved Context:\n";
-                documents.forEach(doc => {
-                    context += `- [${doc.title}] (Score: ${doc.score}): ${doc.content}\n`;
-                });
             } else {
                 console.log('Vector search returned no results. Falling back to recent documents.');
                 throw new Error('No vector results');
@@ -82,24 +150,67 @@ export const queryChat = async (req: Request, res: Response) => {
             documents = recentDocs.map(d => ({
                 title: d.title,
                 content: d.content ? d.content.substring(0, 1500) : '',
-                _id: d._id
+                summary: d.summary,
+                _id: d._id,
+                updatedAt: d.updatedAt
             }));
 
-            context = "Recent Knowledge Base Information (Vector Search Unavailable):\n";
-            documents.forEach(doc => {
-                const snippet = doc.content ? doc.content.substring(0, 1500) : 'No content';
-                context += `- ${doc.title}: ${snippet}...\n`;
-            });
+            contextHeader = "Recent Knowledge Base Information (Vector Search Unavailable):";
         }
 
         // Always fetch alerts as high priority context
         const alerts = await Alert.find({ workspaceId }).sort('-createdAt').limit(5);
+        const relevantAlerts = isAlertRelevant(query, alerts) ? alerts.slice(0, 3) : [];
 
-        context += "\nSecurity Alerts:\n";
-        alerts.forEach(alert => {
-            context += `- ${alert.title} [${alert.severity}]: ${alert.description || 'No description'} (Status: ${alert.status})\n`;
+        const contextHash = hashText(JSON.stringify({
+            documents: documents.map(doc => ({
+                id: doc._id || doc.documentId,
+                updatedAt: doc.updatedAt,
+                score: doc.score
+            })),
+            alerts: relevantAlerts.map(alert => ({ id: alert._id, updatedAt: alert.updatedAt }))
+        }));
+
+        const cachedResponse = await ResponseCache.findOne({
+            workspaceId,
+            queryHash,
+            contextHash,
+            expiresAt: { $gt: new Date() }
         });
 
+        if (cachedResponse) {
+            const userMessage = { role: 'user', content: query, createdAt: new Date() };
+            const assistantMessage = {
+                role: 'assistant',
+                content: cachedResponse.answer,
+                citations: cachedResponse.citations,
+                createdAt: new Date()
+            };
+
+            chat.messages.push(userMessage as any);
+            chat.messages.push(assistantMessage as any);
+            await chat.save();
+
+            if (req.user && workspaceId) {
+                await UsageLog.create({
+                    workspaceId,
+                    userId: req.user._id,
+                    tokens: 0,
+                    query: query.substring(0, 500),
+                    citedDocuments: cachedResponse.citations.map(c => c.title || c.documentId).filter(Boolean),
+                    aiModel: 'cache'
+                }).catch(err => console.error('Failed to log usage:', err));
+            }
+
+            return sendSuccess(res, { chat, response: assistantMessage }, 'Query processed (cached)');
+        }
+
+        context = buildContext({
+            header: contextHeader,
+            documents,
+            alerts: relevantAlerts,
+            tokenBudget: 1400
+        });
 
         // Stable System Prompt for Caching
         const systemPrompt = `You are an AI assistant for a technical workspace. 
@@ -155,7 +266,13 @@ IMPORTANT GUIDELINES:
         }
 
         // Call AI Service
-        const aiResponse = await AIService.getQueryResponse(query, context, workspaceId as any, systemPrompt);
+        const aiResponse = await AIService.getQueryResponse(
+            query,
+            context,
+            workspaceId as any,
+            systemPrompt,
+            getMaxTokensForQuery(query)
+        );
 
         // Map citations to real internal links FIRST
         const enhancedCitations = aiResponse.citations.map(cit => {
@@ -185,6 +302,20 @@ IMPORTANT GUIDELINES:
                 aiModel: 'gpt-4o'
             }).catch(err => console.error('Failed to log usage:', err));
         }
+
+        await ResponseCache.findOneAndUpdate(
+            { workspaceId, queryHash, contextHash },
+            {
+                workspaceId,
+                queryHash,
+                contextHash,
+                answer: aiResponse.answer,
+                citations: enhancedCitations,
+                tokensUsed: aiResponse.tokensUsed || 0,
+                expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+            },
+            { upsert: true, new: true }
+        );
 
         const userMessage = { role: 'user', content: query, createdAt: new Date() };
         // enhancedCitations already calculated above
