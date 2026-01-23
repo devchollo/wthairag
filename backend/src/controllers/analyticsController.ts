@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import UsageLog from '../models/UsageLog';
+import Document from '../models/Document';
+import Alert from '../models/Alert';
 import { sendSuccess, sendError } from '../utils/response';
 
 export const getUserStats = async (req: Request, res: Response) => {
@@ -30,7 +32,7 @@ export const getUserStats = async (req: Request, res: Response) => {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-        const chartData = await UsageLog.aggregate([
+        const chartDataRaw = await UsageLog.aggregate([
             { $match: { userId, workspaceId, createdAt: { $gte: thirtyDaysAgo } } },
             {
                 $group: {
@@ -41,13 +43,63 @@ export const getUserStats = async (req: Request, res: Response) => {
             { $sort: { _id: 1 } }
         ]);
 
+        const labels = chartDataRaw.map(d => new Date(d._id).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+        const tokens = chartDataRaw.map(d => d.tokens);
+
+        const recentUsage = await UsageLog.findOne({
+            userId,
+            workspaceId,
+            citedDocuments: { $exists: true, $ne: [] }
+        })
+            .sort('-createdAt')
+            .select('citedDocuments createdAt')
+            .lean();
+
+        let recentItem = null;
+
+        if (recentUsage?.citedDocuments?.length) {
+            const titles = recentUsage.citedDocuments.filter(Boolean);
+            const [documents, alerts] = await Promise.all([
+                Document.find({ workspaceId, title: { $in: titles } })
+                    .select('title updatedAt')
+                    .lean(),
+                Alert.find({ workspaceId, title: { $in: titles } })
+                    .select('title updatedAt severity status')
+                    .lean()
+            ]);
+
+            const documentMap = new Map(documents.map(doc => [doc.title, doc]));
+            const alertMap = new Map(alerts.map(alert => [alert.title, alert]));
+
+            const matchedTitle = titles.find(title => documentMap.has(title) || alertMap.has(title));
+            if (matchedTitle) {
+                const document = documentMap.get(matchedTitle);
+                const alert = alertMap.get(matchedTitle);
+                if (document) {
+                    recentItem = {
+                        type: 'knowledge',
+                        title: document.title,
+                        updatedAt: document.updatedAt,
+                        link: '/workspace/knowledge'
+                    };
+                } else if (alert) {
+                    recentItem = {
+                        type: 'alert',
+                        title: alert.title,
+                        updatedAt: alert.updatedAt,
+                        link: '/workspace/alerts',
+                        severity: alert.severity,
+                        status: alert.status
+                    };
+                }
+            }
+        }
+
         return sendSuccess(res, {
             totalTokens: totalTokens[0]?.total || 0,
             topQueries: topQueries.map(q => ({ query: q._id, count: q.count, lastUsed: q.lastUsed })),
-            chartData // Frontend expects { tokens: number[], labels: string[] } mapping logic locally or here? 
-            // Frontend page.tsx maps `chartData.tokens`. Let's return formatted if needed or raw.
-            // Existing frontend logic: (stats?.chartData?.tokens || [])
-            // So we should format it here.
+            chartData: { labels, tokens },
+            recentItem
         }, 'User stats fetched');
     } catch (error: any) {
         return sendError(res, error.message, 500);

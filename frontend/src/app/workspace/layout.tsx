@@ -7,7 +7,7 @@ import { LayoutDashboard, BookOpen, MessageSquare, Bell, Settings, LogOut, Termi
 import { usePathname, useRouter } from 'next/navigation';
 
 const navItems = [
-    { name: 'Dashboard', href: '/workspace/dashboard', icon: LayoutDashboard, adminOnly: true },
+    { name: 'Dashboard', href: '/workspace/dashboard', icon: LayoutDashboard, adminOnly: false },
     { name: 'Knowledge Base', href: '/workspace/knowledge', icon: BookOpen, adminOnly: false },
     { name: 'AI RAG Console', href: '/workspace/chat', icon: MessageSquare, adminOnly: false },
     { name: 'Alerts', href: '/workspace/alerts', icon: Bell, adminOnly: false },

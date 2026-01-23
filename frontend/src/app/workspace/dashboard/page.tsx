@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Zap, FileText, Users, TrendingUp, ArrowUpRight, Terminal, Activity, Coins, Calendar, BarChart3, User, PieChart } from 'lucide-react';
+import Link from 'next/link';
+import { LayoutDashboard, Terminal, User, FileText, Bell, BarChart3 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { DashboardSkeleton } from '@/components/Skeleton';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 export default function Dashboard() {
     const { currentWorkspace, user, userRole } = useAuth();
@@ -65,6 +66,11 @@ export default function Dashboard() {
         tokens: workspaceStats.chartData.tokens[i]
     })) || [];
 
+    const userTopQueriesData = userStats?.topQueries?.map((query: any) => ({
+        name: query.query,
+        count: query.count
+    })) || [];
+
     return (
         <div className="space-y-8">
             <div className="flex items-center justify-between">
@@ -106,23 +112,78 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                <div className="card p-6">
-                    <h3 className="text-sm font-black text-text-primary mb-4 uppercase tracking-wide">My Recent Topics</h3>
-                    {userStats?.topQueries?.length > 0 ? (
-                        <div className="space-y-3">
-                            {userStats.topQueries.map((q: any, i: number) => (
-                                <div key={i} className="flex justify-between items-center py-2 border-b border-border-light last:border-0">
-                                    <span className="text-sm font-medium text-text-secondary truncate max-w-[70%]">{q.query}</span>
-                                    <div className="flex items-center gap-4">
-                                        <span className="text-[10px] font-black bg-surface-light px-2 py-1 rounded text-text-muted">{q.count} queries</span>
-                                        <span className="text-[10px] text-text-muted">{new Date(q.lastUsed).toLocaleDateString()}</span>
-                                    </div>
-                                </div>
-                            ))}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="card p-6">
+                        <h3 className="text-sm font-black text-text-primary mb-4 uppercase tracking-wide flex items-center gap-2">
+                            <BarChart3 className="h-4 w-4 text-blue-600" /> Most Queried Topics
+                        </h3>
+                        <div className="h-[180px]">
+                            {userTopQueriesData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={userTopQueriesData} margin={{ top: 10, right: 16, left: -10, bottom: 0 }}>
+                                        <XAxis dataKey="name" tick={false} />
+                                        <YAxis allowDecimals={false} />
+                                        <Tooltip
+                                            cursor={{ fill: '#f8fafc' }}
+                                            contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                                        />
+                                        <Bar dataKey="count" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="flex h-full items-center justify-center text-xs text-text-muted italic">No queries recorded yet.</div>
+                            )}
                         </div>
-                    ) : (
-                        <p className="text-sm text-text-muted italic">No queries recorded yet.</p>
-                    )}
+                        {userStats?.topQueries?.length > 0 && (
+                            <div className="mt-4 space-y-2">
+                                {userStats.topQueries.map((q: any, i: number) => (
+                                    <div key={i} className="flex justify-between items-center py-2 border-b border-border-light last:border-0">
+                                        <span className="text-sm font-medium text-text-secondary truncate max-w-[70%]">{q.query}</span>
+                                        <div className="flex items-center gap-4">
+                                            <span className="text-[10px] font-black bg-surface-light px-2 py-1 rounded text-text-muted">{q.count} queries</span>
+                                            <span className="text-[10px] text-text-muted">{new Date(q.lastUsed).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="card p-6">
+                        <h3 className="text-sm font-black text-text-primary mb-4 uppercase tracking-wide flex items-center gap-2">
+                            {userStats?.recentItem?.type === 'alert' ? (
+                                <Bell className="h-4 w-4 text-amber-600" />
+                            ) : (
+                                <FileText className="h-4 w-4 text-emerald-600" />
+                            )}
+                            Recently Viewed
+                        </h3>
+                        {userStats?.recentItem ? (
+                            <div className="space-y-3">
+                                <div className="text-sm font-bold text-text-primary">{userStats.recentItem.title}</div>
+                                <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-wide text-text-muted">
+                                    <span className="rounded-full bg-surface-light px-2 py-1 font-black">
+                                        {userStats.recentItem.type === 'alert' ? 'Alert' : 'Knowledge Base'}
+                                    </span>
+                                    {userStats.recentItem.status && (
+                                        <span className="rounded-full bg-amber-50 px-2 py-1 font-black text-amber-700">
+                                            {userStats.recentItem.status}
+                                        </span>
+                                    )}
+                                    {userStats.recentItem.updatedAt && (
+                                        <span>{new Date(userStats.recentItem.updatedAt).toLocaleDateString()}</span>
+                                    )}
+                                </div>
+                                {userStats.recentItem.link && (
+                                    <Link href={userStats.recentItem.link} className="text-xs font-black uppercase tracking-widest text-blue-600 hover:text-blue-700">
+                                        View Details
+                                    </Link>
+                                )}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-text-muted italic">No recent knowledge base file or alert viewed.</p>
+                        )}
+                    </div>
                 </div>
             </div>
 
