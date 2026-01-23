@@ -77,7 +77,13 @@ export class AIService {
         }
     }
 
-    static async getQueryResponse(query: string, context: string, workspaceId: string, systemPrompt?: string): Promise<AIResponse> {
+    static async getQueryResponse(
+        query: string,
+        context: string,
+        workspaceId: string,
+        systemPrompt?: string,
+        maxTokens: number = 1000
+    ): Promise<AIResponse> {
         if (!this.openaiKey) {
             throw new Error("OpenAI API Key is not configured.");
         }
@@ -94,7 +100,7 @@ export class AIService {
                     model: 'gpt-4o-mini',
                     messages: messages,
                     temperature: 0.1, // Lower temperature for more grounded response
-                    max_tokens: 1000
+                    max_tokens: maxTokens
                 },
                 {
                     headers: {
