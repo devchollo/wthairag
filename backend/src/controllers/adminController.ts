@@ -59,11 +59,6 @@ export const getAdminOverview = async (_req: Request, res: Response) => {
                     }
                 }
             ])
-        const [totalUsers, activeTenants, pendingReviews, totalTokens] = await Promise.all([
-            User.countDocuments({}),
-            Workspace.countDocuments({}),
-            Testimonial.countDocuments({ isApproved: false }),
-            UsageLog.aggregate([{ $group: { _id: null, total: { $sum: '$tokens' } } }])
         ]);
 
         const labels = buildDateLabels();
