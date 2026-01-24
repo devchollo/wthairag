@@ -6,6 +6,7 @@ export interface IUser extends Document {
     name: string;
     isVerified: boolean;
     isAdmin: boolean;
+    isOwner: boolean;
     avatar?: string;
     resetPasswordToken?: string;
     resetPasswordExpire?: Date;
@@ -20,6 +21,7 @@ const UserSchema: Schema = new Schema(
         name: { type: String, required: true },
         isVerified: { type: Boolean, default: false },
         isAdmin: { type: Boolean, default: false },
+        isOwner: { type: Boolean, default: false },
         avatar: { type: String },
         resetPasswordToken: { type: String },
         resetPasswordExpire: { type: Date },

@@ -27,7 +27,7 @@ export default function AdminLayout({
             return;
         }
 
-        if (!user.isAdmin) {
+        if (!user.isOwner) {
             if (!isLoginRoute) {
                 router.replace('/admin/login');
             }
@@ -43,7 +43,7 @@ export default function AdminLayout({
         return <>{children}</>;
     }
 
-    if (!user || !user.isAdmin) {
+    if (!user || !user.isOwner) {
         return null; // Don't render until authorized
     }
 

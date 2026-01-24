@@ -14,6 +14,7 @@ interface User {
     email: string;
     avatar?: string;
     isAdmin?: boolean;
+    isOwner?: boolean;
 }
 
 interface Membership {

@@ -25,6 +25,7 @@ const seedAdmin = async () => {
             console.log('User already exists, updating to Admin...');
             user.password = hashedPassword;
             user.isAdmin = true;
+            user.isOwner = true;
             user.name = name;
             user.isVerified = true;
             await user.save();
@@ -36,6 +37,7 @@ const seedAdmin = async () => {
                 email,
                 password: hashedPassword,
                 isAdmin: true,
+                isOwner: true,
                 isVerified: true
             });
             console.log('Admin user created successfully.');

@@ -26,6 +26,20 @@ const completeSignupSchema = z.object({
     orgName: z.string().max(100, 'Organization name too long').optional()
 });
 
+const getOwnerEmails = () => {
+    const envList = process.env.APP_OWNER_EMAILS || process.env.OWNER_EMAIL || '';
+    return envList
+        .split(',')
+        .map(email => email.trim().toLowerCase())
+        .filter(Boolean);
+};
+
+const isOwnerEmail = (email: string) => {
+    const normalized = email.trim().toLowerCase();
+    const ownerEmails = getOwnerEmails();
+    return ownerEmails.includes(normalized);
+};
+
 const generateToken = (id: string) => {
     return jwt.sign({ id }, process.env.JWT_SECRET || 'secret', {
         expiresIn: '30d',
@@ -125,7 +139,8 @@ export const completeSignup = async (req: Request, res: Response) => {
             password: hashedPassword,
             name,
             isVerified: true,
-            isAdmin: true // User is admin of their own workspace
+            isAdmin: false,
+            isOwner: isOwnerEmail(email)
         });
 
         // Create Workspace
@@ -196,6 +211,11 @@ export const login = async (req: Request, res: Response) => {
         const elapsed = Date.now() - start;
         if (elapsed < minTime) await new Promise(r => setTimeout(r, minTime - elapsed));
 
+        if (isOwnerEmail(user.email) && !user.isOwner) {
+            user.isOwner = true;
+            await user.save();
+        }
+
         // Set httpOnly cookie
         const token = generateToken(user._id.toString());
         res.cookie('token', token, {
@@ -235,6 +255,10 @@ export const logout = async (req: Request, res: Response) => {
 export const getMe = async (req: Request, res: Response) => {
     try {
         const user = await User.findById(req.user?._id).select('-password');
+        if (user && isOwnerEmail(user.email) && !user.isOwner) {
+            user.isOwner = true;
+            await user.save();
+        }
         const memberships = await Membership.find({ userId: user?._id }).populate('workspaceId');
 
         return sendSuccess(res, { user, memberships }, 'User profile fetched');
