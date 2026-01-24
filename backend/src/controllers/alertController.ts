@@ -82,6 +82,7 @@ export const deleteAlert = async (req: Request, res: Response) => {
 export const recordAlertView = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
+        const workspaceId = req.workspace?._id;
         const alert = await Alert.findOne({ _id: id, workspaceId: req.workspace?._id })
             .select('title updatedAt severity status')
             .lean();
@@ -94,8 +95,12 @@ export const recordAlertView = async (req: Request, res: Response) => {
             return sendError(res, 'User context missing', 400);
         }
 
+        if (!workspaceId) {
+            return sendError(res, 'Workspace context missing', 400);
+        }
+
         await UsageLog.create({
-            workspaceId: req.workspace?._id,
+            workspaceId,
             userId: req.user?._id,
             tokens: 0,
             query: alert.title,
@@ -103,7 +108,7 @@ export const recordAlertView = async (req: Request, res: Response) => {
             eventType: 'view'
         });
         await recordUsageSummaryForView({
-            workspaceId: req.workspace?._id.toString(),
+            workspaceId: workspaceId.toString(),
             userId: req.user?._id.toString(),
             lastViewed: {
                 type: 'alert',
