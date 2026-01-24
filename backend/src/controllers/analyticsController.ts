@@ -3,7 +3,7 @@ import UsageLog from '../models/UsageLog';
 import Document from '../models/Document';
 import Alert from '../models/Alert';
 import User from '../models/User';
-import UsageSummary from '../models/UsageSummary';
+import UsageSummary, { IUsageSummaryLastViewed } from '../models/UsageSummary';
 import { sendSuccess, sendError } from '../utils/response';
 
 const buildDailySeries = (
@@ -159,7 +159,10 @@ const deriveTopicFromQuery = (query: string, citedDocuments?: string[]) => {
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-const findRecentItemByTitles = async (workspaceId: string, titles: string[]) => {
+const findRecentItemByTitles = async (
+    workspaceId: string,
+    titles: string[]
+): Promise<IUsageSummaryLastViewed | null> => {
     if (!titles.length) {
         return null;
     }
