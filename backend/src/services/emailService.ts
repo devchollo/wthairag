@@ -1,4 +1,6 @@
 import axios from 'axios';
+import fs from 'fs/promises';
+import path from 'path';
 
 interface EmailOptions {
     to: string;
@@ -47,19 +49,50 @@ export const sendEmail = async ({ to, subject, html, text }: EmailOptions) => {
     }
 };
 
-export const sendVerificationEmail = async (email: string, code: string) => {
-    const subject = `${code} is your WorkToolsHub verification code`;
-    const html = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
-            <h2 style="color: #000; letter-spacing: -1px;">Verify your email</h2>
-            <p style="color: #555; line-height: 1.6;">
-                Welcome to WorkToolsHub. Use the code below to complete your signup and initialize your workspace.
-            </p>
-            <div style="background: #f4f4f5; padding: 20px; text-align: center; border-radius: 8px; margin: 30px 0;">
-                <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #2563eb;">${code}</span>
+const logoPath = path.resolve(__dirname, '../../../frontend/src/app/WorkToolsHub.png');
+let logoDataUri: string | null = null;
+
+const getLogoSection = async () => {
+    if (logoDataUri === null) {
+        try {
+            const file = await fs.readFile(logoPath);
+            logoDataUri = `data:image/png;base64,${file.toString('base64')}`;
+        } catch (error) {
+            console.warn('[EmailService] Unable to load logo for email templates.', error);
+            logoDataUri = '';
+        }
+    }
+
+    if (!logoDataUri) {
+        return `
+            <div style="text-align: center; margin-bottom: 24px;">
+                <div style="font-size: 20px; font-weight: bold; color: #111827;">WorkToolsHub</div>
             </div>
-            <p style="color: #888; font-size: 12px; margin-top: 30px;">
-                This code will expire in 10 minutes. If you did not request this, please ignore this email.
+        `;
+    }
+
+    return `
+        <div style="text-align: center; margin-bottom: 24px;">
+            <img src="${logoDataUri}" alt="WorkToolsHub" width="160" style="display: inline-block; max-width: 100%; height: auto;" />
+        </div>
+    `;
+};
+
+export const sendVerificationEmail = async (email: string, code: string) => {
+    const subject = `Your WorkToolsHub verification code: ${code}`;
+    const logoSection = await getLogoSection();
+    const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff;">
+            ${logoSection}
+            <h2 style="color: #111827; letter-spacing: -0.5px; margin: 0 0 12px;">Verify your email address</h2>
+            <p style="color: #555; line-height: 1.6;">
+                Welcome to WorkToolsHub! Use this 6-digit code to finish creating your account and activate your workspace.
+            </p>
+            <div style="background: #f3f4f6; padding: 20px; text-align: center; border-radius: 10px; margin: 28px 0;">
+                <span style="font-size: 32px; font-weight: 700; letter-spacing: 6px; color: #2563eb;">${code}</span>
+            </div>
+            <p style="color: #6b7280; font-size: 12px; margin-top: 24px;">
+                This code expires in 10 minutes. If you didn’t request this, you can safely ignore this email.
             </p>
         </div>
     `;
@@ -67,18 +100,25 @@ export const sendVerificationEmail = async (email: string, code: string) => {
     return sendEmail({ to: email, subject, html });
 };
 export const sendInviteEmail = async (email: string, inviterName: string, workspaceName: string, inviteLink: string) => {
-    const subject = `You are invited to join ${workspaceName} on WorkToolsHub`;
+    const subject = `You're invited to ${workspaceName} on WorkToolsHub`;
+    const logoSection = await getLogoSection();
     const html = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
-            <h2 style="color: #000; letter-spacing: -1px;">Join your workspace</h2>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff;">
+            ${logoSection}
+            <h2 style="color: #111827; letter-spacing: -0.5px; margin: 0 0 12px;">You’ve been invited</h2>
             <p style="color: #555; line-height: 1.6;">
-                <strong>${inviterName}</strong> has invited you to collaborate on the <strong>${workspaceName}</strong> workspace.
+                <strong>${inviterName}</strong> invited you to join the <strong>${workspaceName}</strong> workspace on WorkToolsHub.
             </p>
             <div style="text-align: center; margin: 30px 0;">
                 <a href="${inviteLink}" style="background: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 6px; display: inline-block;">Accept Invitation</a>
             </div>
-            <p style="color: #888; font-size: 12px;">
-                This link will expire in 48 hours. If you did not expect this invitation, you can safely ignore this email.
+            <p style="color: #6b7280; font-size: 12px; margin-top: 24px;">
+                This invitation link expires in 48 hours. If the button doesn’t work, copy and paste this URL into your browser:
+                <br />
+                <a href="${inviteLink}" style="color: #2563eb; word-break: break-all;">${inviteLink}</a>
+            </p>
+            <p style="color: #6b7280; font-size: 12px; margin-top: 16px;">
+                If you weren’t expecting this invite, you can safely ignore this email.
             </p>
         </div>
     `;
@@ -87,18 +127,25 @@ export const sendInviteEmail = async (email: string, inviterName: string, worksp
 };
 
 export const sendResetPasswordEmail = async (email: string, resetLink: string) => {
-    const subject = `Reset Your Password - WorkToolsHub`;
+    const subject = `Reset your WorkToolsHub password`;
+    const logoSection = await getLogoSection();
     const html = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
-            <h2 style="color: #000; letter-spacing: -1px;">Reset Your Password</h2>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff;">
+            ${logoSection}
+            <h2 style="color: #111827; letter-spacing: -0.5px; margin: 0 0 12px;">Reset your password</h2>
             <p style="color: #555; line-height: 1.6;">
-                We received a request to reset the password for your WorkToolsHub account. If you didn't make this request, you can safely ignore this email.
+                We received a request to reset the password for your WorkToolsHub account. You can set a new password using the button below.
             </p>
             <div style="text-align: center; margin: 30px 0;">
                 <a href="${resetLink}" style="background: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 6px; display: inline-block;">Reset Password</a>
             </div>
-            <p style="color: #888; font-size: 12px;">
-                This link will expire in 10 minutes.
+            <p style="color: #6b7280; font-size: 12px; margin-top: 24px;">
+                This link expires in 10 minutes. If you didn’t request a password reset, you can safely ignore this email.
+            </p>
+            <p style="color: #6b7280; font-size: 12px; margin-top: 16px;">
+                Having trouble with the button? Copy and paste this URL into your browser:
+                <br />
+                <a href="${resetLink}" style="color: #2563eb; word-break: break-all;">${resetLink}</a>
             </p>
         </div>
     `;
