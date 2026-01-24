@@ -89,7 +89,7 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
                         className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-[11px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50 transition-colors"
                     >
                         <LogOut className="h-4 w-4" />
-                        Log Out
+                        Sign Out
                     </button>
                 </div>
             </aside>
