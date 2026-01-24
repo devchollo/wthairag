@@ -16,15 +16,9 @@ export default function Home() {
   const { user } = useAuth();
   const [latency, setLatency] = useState<number | null>(null);
   const [testimonialIndex, setTestimonialIndex] = useState(0);
-
-  const testimonials = [
-    {
-      name: 'Be the first to review',
-      role: 'Your feedback helps improve this tool',
-      text: 'This tool is new and hasn’t been reviewed yet. Share your experience and help others decide.',
-      rating: 5
-    }
-  ];
+  const [testimonials, setTestimonials] = useState<Array<{ name: string; role: string; text: string; rating: number }>>([]);
+  const [testimonialsLoading, setTestimonialsLoading] = useState(true);
+  const [testimonialsError, setTestimonialsError] = useState<string | null>(null);
 
   useEffect(() => {
     const measureLatency = async () => {
@@ -41,8 +35,52 @@ export default function Home() {
     measureLatency();
   }, []);
 
-  const nextTestimonial = () => setTestimonialIndex((prev) => (prev + 1) % testimonials.length);
-  const prevTestimonial = () => setTestimonialIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+  useEffect(() => {
+    const loadTestimonials = async () => {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      try {
+        setTestimonialsLoading(true);
+        const res = await fetch(`${apiUrl}/api/testimonials`);
+        if (!res.ok) {
+          throw new Error('Failed to load testimonials');
+        }
+        const payload = await res.json();
+        const approved = Array.isArray(payload?.data) ? payload.data : [];
+        setTestimonials(approved);
+        setTestimonialsError(null);
+      } catch (error) {
+        console.error('Failed to load testimonials', error);
+        setTestimonials([]);
+        setTestimonialsError('Unable to load testimonials right now.');
+      } finally {
+        setTestimonialsLoading(false);
+      }
+    };
+
+    loadTestimonials();
+  }, []);
+
+  useEffect(() => {
+    if (testimonialIndex >= testimonials.length) {
+      setTestimonialIndex(0);
+    }
+  }, [testimonialIndex, testimonials.length]);
+
+  const nextTestimonial = () => {
+    if (testimonials.length === 0) {
+      return;
+    }
+    setTestimonialIndex((prev) => (prev + 1) % testimonials.length);
+  };
+  const prevTestimonial = () => {
+    if (testimonials.length === 0) {
+      return;
+    }
+    setTestimonialIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+  };
+
+  const hasTestimonials = testimonials.length > 0;
+  const activeTestimonial = hasTestimonials ? testimonials[testimonialIndex] : null;
 
   return (
     <div className="flex flex-col gap-20 py-12 sm:gap-24 sm:py-20 bg-white overflow-hidden">
@@ -211,33 +249,53 @@ export default function Home() {
         <ScrollReveal delay={100}>
           <div className="relative">
             <div className="card border-2 border-border-light p-8 md:p-12 text-center min-h-[280px] flex flex-col justify-center">
-              <div className="flex justify-center gap-1 mb-6">
-                {Array.from({ length: testimonials[testimonialIndex].rating }).map((_, i) => (
-                  <Star key={i} className="h-5 w-5 text-amber-400 fill-amber-400" />
-                ))}
-              </div>
-              <p className="text-xl font-medium text-text-primary leading-relaxed mb-8 italic">
-                "{testimonials[testimonialIndex].text}"
-              </p>
-              <div>
-                <div className="font-bold text-text-primary">{testimonials[testimonialIndex].name}</div>
-                <div className="text-sm font-medium text-text-muted">{testimonials[testimonialIndex].role}</div>
-              </div>
+              {testimonialsLoading ? (
+                <p className="text-lg font-medium text-text-muted">Loading reviews…</p>
+              ) : testimonialsError ? (
+                <div className="space-y-3">
+                  <p className="text-lg font-medium text-text-primary">{testimonialsError}</p>
+                  <p className="text-sm font-medium text-text-muted">Please check back soon.</p>
+                </div>
+              ) : hasTestimonials && activeTestimonial ? (
+                <>
+                  <div className="flex justify-center gap-1 mb-6">
+                    {Array.from({ length: activeTestimonial.rating }).map((_, i) => (
+                      <Star key={i} className="h-5 w-5 text-amber-400 fill-amber-400" />
+                    ))}
+                  </div>
+                  <p className="text-xl font-medium text-text-primary leading-relaxed mb-8 italic">
+                    "{activeTestimonial.text}"
+                  </p>
+                  <div>
+                    <div className="font-bold text-text-primary">{activeTestimonial.name}</div>
+                    <div className="text-sm font-medium text-text-muted">{activeTestimonial.role}</div>
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-xl font-medium text-text-primary">No reviews yet.</p>
+                  <p className="text-sm font-medium text-text-muted">
+                    Be the first to share your experience and help the community decide.
+                  </p>
+                </div>
+              )}
             </div>
 
-            <div className="flex justify-center gap-4 mt-6">
-              <button onClick={prevTestimonial} className="h-10 w-10 rounded-full border border-border-light flex items-center justify-center hover:border-blue-600 transition-colors">
-                <ChevronLeft className="h-5 w-5 text-text-muted" />
-              </button>
-              <div className="flex items-center gap-2">
-                {testimonials.map((_, i) => (
-                  <div key={i} className={`h-2 w-2 rounded-full transition-colors ${i === testimonialIndex ? 'bg-blue-600' : 'bg-border-light'}`}></div>
-                ))}
+            {hasTestimonials && testimonials.length > 1 ? (
+              <div className="flex justify-center gap-4 mt-6">
+                <button onClick={prevTestimonial} className="h-10 w-10 rounded-full border border-border-light flex items-center justify-center hover:border-blue-600 transition-colors">
+                  <ChevronLeft className="h-5 w-5 text-text-muted" />
+                </button>
+                <div className="flex items-center gap-2">
+                  {testimonials.map((_, i) => (
+                    <div key={i} className={`h-2 w-2 rounded-full transition-colors ${i === testimonialIndex ? 'bg-blue-600' : 'bg-border-light'}`}></div>
+                  ))}
+                </div>
+                <button onClick={nextTestimonial} className="h-10 w-10 rounded-full border border-border-light flex items-center justify-center hover:border-blue-600 transition-colors">
+                  <ChevronRight className="h-5 w-5 text-text-muted" />
+                </button>
               </div>
-              <button onClick={nextTestimonial} className="h-10 w-10 rounded-full border border-border-light flex items-center justify-center hover:border-blue-600 transition-colors">
-                <ChevronRight className="h-5 w-5 text-text-muted" />
-              </button>
-            </div>
+            ) : null}
 
             <div className="mt-10 text-center">
               <button
