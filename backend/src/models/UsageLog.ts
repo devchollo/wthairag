@@ -7,6 +7,7 @@ export interface IUsageLog extends Document {
     query: string;
     citedDocuments: string[];
     aiModel: string;
+    eventType: 'query' | 'view';
     createdAt: Date;
 }
 
@@ -18,6 +19,7 @@ const UsageLogSchema: Schema = new Schema(
         query: { type: String, required: true },
         citedDocuments: [{ type: String }], // Document Titles
         aiModel: { type: String, default: 'gpt-4o' },
+        eventType: { type: String, enum: ['query', 'view'], default: 'query' },
     },
     { timestamps: true }
 );

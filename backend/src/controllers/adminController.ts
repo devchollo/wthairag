@@ -36,8 +36,12 @@ export const getAdminOverview = async (_req: Request, res: Response) => {
             User.countDocuments({}),
             Workspace.countDocuments({}),
             Testimonial.countDocuments({ isApproved: false }),
-            UsageLog.aggregate([{ $group: { _id: null, total: { $sum: '$tokens' } } }]),
             UsageLog.aggregate([
+                { $match: { eventType: 'query' } },
+                { $group: { _id: null, total: { $sum: '$tokens' } } }
+            ]),
+            UsageLog.aggregate([
+                { $match: { eventType: 'query' } },
                 { $group: { _id: '$workspaceId', totalTokens: { $sum: '$tokens' }, requestCount: { $sum: 1 } } },
                 { $sort: { totalTokens: -1 } },
                 { $limit: 5 },
@@ -66,7 +70,7 @@ export const getAdminOverview = async (_req: Request, res: Response) => {
 
         const [usageAgg, userAgg, workspaceAgg] = await Promise.all([
             UsageLog.aggregate([
-                { $match: { createdAt: { $gte: startDate } } },
+                { $match: { eventType: 'query', createdAt: { $gte: startDate } } },
                 {
                     $group: {
                         _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },

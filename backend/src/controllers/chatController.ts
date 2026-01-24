@@ -198,7 +198,8 @@ export const queryChat = async (req: Request, res: Response) => {
                     tokens: 0,
                     query: query.substring(0, 500),
                     citedDocuments: cachedResponse.citations.map(c => c.title || c.documentId).filter(Boolean),
-                    aiModel: 'cache'
+                    aiModel: 'cache',
+                    eventType: 'query'
                 }).catch(err => console.error('Failed to log usage:', err));
             }
 
@@ -299,7 +300,8 @@ IMPORTANT GUIDELINES:
                 tokens: aiResponse.tokensUsed || 0,
                 query: query.substring(0, 500),
                 citedDocuments: citedTitles,
-                aiModel: aiResponse.modelUsed
+                aiModel: aiResponse.modelUsed,
+                eventType: 'query'
             }).catch(err => console.error('Failed to log usage:', err));
         }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bell, ShieldAlert, CheckCircle, Clock, Activity, Plus, MoreVertical, Trash2, Edit2, Terminal } from 'lucide-react';
+import { ShieldAlert, CheckCircle, Clock, Plus, Trash2, Terminal, Eye } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { AlertsSkeleton } from '@/components/Skeleton';
 
@@ -20,6 +20,7 @@ export default function AlertsPage() {
     const [loading, setLoading] = useState(true);
     const [showCreate, setShowCreate] = useState(false);
     const [newAlert, setNewAlert] = useState({ title: '', description: '', severity: 'low' as const });
+    const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
 
     const isAdmin = userRole === 'owner' || userRole === 'admin';
 
@@ -112,6 +113,34 @@ export default function AlertsPage() {
         }
     };
 
+    const recordAlertView = async (id: string) => {
+        if (!currentWorkspace?._id) return;
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            await fetch(`${apiUrl}/api/alerts/${id}/view`, {
+                method: 'POST',
+                headers: {
+                    'x-workspace-id': currentWorkspace._id,
+                    'x-workspace-slug': currentWorkspace.slug || ''
+                },
+                credentials: 'include'
+            });
+        } catch (e) {
+            console.error('Failed to record alert view', e);
+        }
+    };
+
+    const handleView = (alert: Alert) => {
+        setSelectedAlert(alert);
+        recordAlertView(alert._id);
+    };
+
+    const truncateDetails = (value?: string, maxLength = 140) => {
+        if (!value) return 'No details provided.';
+        if (value.length <= maxLength) return value;
+        return `${value.slice(0, maxLength).trimEnd()}…`;
+    };
+
     if (loading && alerts.length === 0) {
         return <AlertsSkeleton />;
     }
@@ -170,61 +199,89 @@ export default function AlertsPage() {
             )}
 
             <div className="space-y-4">
-                {alerts.map(alert => (
-                    <div key={alert._id} className="card flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center p-6 group">
-                        <div className="flex items-start gap-4">
-                            <div className={`mt-1 flex h-10 w-10 items-center justify-center rounded-lg ${alert.severity === 'high' ? 'bg-red-500/10 text-red-500' :
-                                alert.severity === 'medium' ? 'bg-amber-500/10 text-amber-500' :
-                                    'bg-blue-500/10 text-blue-500'
-                                }`}>
-                                <ShieldAlert className="h-5 w-5" />
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border ${alert.severity === 'high' ? 'border-red-500/20 text-red-600 bg-red-50' :
-                                        alert.severity === 'medium' ? 'border-amber-500/20 text-amber-600 bg-amber-50' :
-                                            'border-blue-500/20 text-blue-600 bg-blue-50'
-                                        }`}>
-                                        {alert.severity} Priority
-                                    </span>
-                                    <span className="text-xs text-text-muted flex items-center gap-1 font-bold">
-                                        <Clock className="h-3 w-3" /> {new Date(alert.createdAt).toLocaleString()}
-                                    </span>
-                                </div>
-                                <h3 className="text-lg font-black text-text-primary tracking-tight">{alert.title}</h3>
-                                {alert.description && <p className="text-xs font-bold text-text-muted mt-1">{alert.description}</p>}
-                                <p className="text-sm font-bold text-text-secondary mt-1">Status: {alert.status === 'open' ? 'Immediate Action Required' : 'Resolution Confirmed'}</p>
-                            </div>
+                {alerts.length > 0 && (
+                    <div className="card overflow-hidden">
+                        <div className="grid grid-cols-12 gap-4 bg-surface-light px-6 py-3 text-[10px] font-black uppercase tracking-widest text-text-muted">
+                            <div className="col-span-4">Title</div>
+                            <div className="col-span-2">Timestamp</div>
+                            <div className="col-span-3">Details</div>
+                            <div className="col-span-1">Status</div>
+                            <div className="col-span-2 text-right">Actions</div>
                         </div>
-
-                        <div className="flex items-center gap-3 self-end sm:self-center">
-                            {alert.status === 'open' ? (
-                                isAdmin && (
-                                    <button
-                                        className="btn-secondary h-9 px-4 text-[10px] font-black uppercase tracking-widest border-2 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-600"
-                                        onClick={() => handleResolve(alert._id)}
-                                    >
-                                        Resolve
-                                    </button>
-                                )
-                            ) : (
-                                <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
-                                    <CheckCircle className="h-3.5 w-3.5" />
-                                    Optimized
+                        <div className="divide-y divide-border-light">
+                            {alerts.map(alert => (
+                                <div key={alert._id} className="grid grid-cols-12 gap-4 px-6 py-5 items-start">
+                                    <div className="col-span-4 flex gap-3">
+                                        <div className={`mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg ${alert.severity === 'high' ? 'bg-red-500/10 text-red-500' :
+                                            alert.severity === 'medium' ? 'bg-amber-500/10 text-amber-500' :
+                                                'bg-blue-500/10 text-blue-500'
+                                            }`}>
+                                            <ShieldAlert className="h-4 w-4" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border ${alert.severity === 'high' ? 'border-red-500/20 text-red-600 bg-red-50' :
+                                                    alert.severity === 'medium' ? 'border-amber-500/20 text-amber-600 bg-amber-50' :
+                                                        'border-blue-500/20 text-blue-600 bg-blue-50'
+                                                    }`}>
+                                                    {alert.severity} Priority
+                                                </span>
+                                            </div>
+                                            <h3 className="text-sm font-black text-text-primary tracking-tight truncate">{alert.title}</h3>
+                                        </div>
+                                    </div>
+                                    <div className="col-span-2 text-xs font-bold text-text-muted flex items-center gap-1">
+                                        <Clock className="h-3 w-3" /> {new Date(alert.createdAt).toLocaleString()}
+                                    </div>
+                                    <div className="col-span-3 text-xs font-bold text-text-secondary">
+                                        {truncateDetails(alert.description)}
+                                    </div>
+                                    <div className="col-span-1">
+                                        {alert.status === 'open' ? (
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-100">
+                                                Open
+                                            </span>
+                                        ) : (
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">
+                                                Resolved
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="col-span-2 flex items-center justify-end gap-2">
+                                        <button
+                                            onClick={() => handleView(alert)}
+                                            className="btn-secondary h-9 px-3 text-[10px] font-black uppercase tracking-widest flex items-center gap-2"
+                                        >
+                                            <Eye className="h-3.5 w-3.5" /> View
+                                        </button>
+                                        {alert.status === 'open' && isAdmin && (
+                                            <button
+                                                className="btn-secondary h-9 px-3 text-[10px] font-black uppercase tracking-widest border-2 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-600"
+                                                onClick={() => handleResolve(alert._id)}
+                                            >
+                                                Resolve
+                                            </button>
+                                        )}
+                                        {alert.status !== 'open' && (
+                                            <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
+                                                <CheckCircle className="h-3.5 w-3.5" />
+                                                Optimized
+                                            </div>
+                                        )}
+                                        {isAdmin && (
+                                            <button
+                                                onClick={() => handleDelete(alert._id)}
+                                                className="h-9 w-9 flex items-center justify-center rounded-lg text-text-muted hover:text-red-500 hover:bg-red-50 transition-colors"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
-                            )}
-
-                            {isAdmin && (
-                                <button
-                                    onClick={() => handleDelete(alert._id)}
-                                    className="h-9 w-9 flex items-center justify-center rounded-lg text-text-muted hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </button>
-                            )}
+                            ))}
                         </div>
                     </div>
-                ))}
+                )}
 
                 {alerts.length === 0 && !loading && (
                     <div className="p-12 bg-surface-light rounded-xl border border-dashed border-border-light text-center">
@@ -233,7 +290,63 @@ export default function AlertsPage() {
                     </div>
                 )}
             </div>
+            {selectedAlert && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+                    <div className="card w-full max-w-2xl p-6 relative">
+                        <button
+                            onClick={() => setSelectedAlert(null)}
+                            className="absolute right-4 top-4 text-text-muted hover:text-text-primary"
+                            aria-label="Close alert details"
+                        >
+                            ✕
+                        </button>
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${selectedAlert.severity === 'high' ? 'bg-red-500/10 text-red-500' :
+                                selectedAlert.severity === 'medium' ? 'bg-amber-500/10 text-amber-500' :
+                                    'bg-blue-500/10 text-blue-500'
+                                }`}>
+                                <ShieldAlert className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-black text-text-primary">{selectedAlert.title}</h2>
+                                <p className="text-xs font-bold text-text-muted flex items-center gap-1 mt-1">
+                                    <Clock className="h-3 w-3" /> {new Date(selectedAlert.createdAt).toLocaleString()}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-widest mb-4">
+                            <span className={`px-2 py-1 rounded-full border ${selectedAlert.severity === 'high' ? 'border-red-500/20 text-red-600 bg-red-50' :
+                                selectedAlert.severity === 'medium' ? 'border-amber-500/20 text-amber-600 bg-amber-50' :
+                                    'border-blue-500/20 text-blue-600 bg-blue-50'
+                                }`}>
+                                {selectedAlert.severity} Priority
+                            </span>
+                            <span className={`${selectedAlert.status === 'open' ? 'text-amber-600 bg-amber-50 border-amber-100' : 'text-emerald-600 bg-emerald-50 border-emerald-100'} px-2 py-1 rounded-full border`}>
+                                {selectedAlert.status === 'open' ? 'Open' : 'Resolved'}
+                            </span>
+                        </div>
+                        <div className="text-sm font-bold text-text-secondary whitespace-pre-wrap">
+                            {selectedAlert.description || 'No details provided.'}
+                        </div>
+                        <div className="mt-6 flex justify-end gap-3">
+                            {selectedAlert.status === 'open' && isAdmin && (
+                                <button
+                                    className="btn-secondary h-9 px-4 text-[10px] font-black uppercase tracking-widest border-2 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-600"
+                                    onClick={() => handleResolve(selectedAlert._id)}
+                                >
+                                    Resolve
+                                </button>
+                            )}
+                            <button
+                                onClick={() => setSelectedAlert(null)}
+                                className="btn-primary h-9 px-4 text-[10px] font-black uppercase tracking-widest"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
-
