@@ -10,7 +10,7 @@ import { Analytics } from "@vercel/analytics/next";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://worktoolshub.com"),
+  metadataBase: new URL("https://worktoolshub.info"),
   title: "WorkToolsHub — Modern AI & Public Utilities",
   description: "A professional workspace for modern engineers. Features AI RAG, DNS Debugging, SSL Audits, and high-performance developer utilities.",
   keywords: ["developer tools", "dns lookup", "ssl checker", "seo analysis", "ai rag", "engineering workspace"],
