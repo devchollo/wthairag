@@ -92,7 +92,8 @@ export default function AdminDashboard() {
     const [overview, setOverview] = useState<OverviewStats | null>(null);
     const [charts, setCharts] = useState<OverviewCharts | null>(null);
     const [tenants, setTenants] = useState<TenantRow[]>([]);
-    const [testimonials, setTestimonials] = useState<TestimonialRow[]>([]);
+    const [pendingTestimonials, setPendingTestimonials] = useState<TestimonialRow[]>([]);
+    const [approvedTestimonials, setApprovedTestimonials] = useState<TestimonialRow[]>([]);
     const [loadingOverview, setLoadingOverview] = useState(true);
     const [loadingTenants, setLoadingTenants] = useState(false);
     const [loadingTestimonials, setLoadingTestimonials] = useState(false);
@@ -100,6 +101,7 @@ export default function AdminDashboard() {
     const [actionBusyId, setActionBusyId] = useState<string | null>(null);
     const [systemConfig, setSystemConfig] = useState<SystemConfig | null>(null);
     const [loadingSystemConfig, setLoadingSystemConfig] = useState(false);
+    const [reviewStatus, setReviewStatus] = useState<'pending' | 'approved'>('pending');
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -119,13 +121,17 @@ export default function AdminDashboard() {
         }
     };
 
-    const fetchTestimonials = async () => {
+    const fetchTestimonials = async (status: 'pending' | 'approved') => {
         setLoadingTestimonials(true);
         try {
-            const res = await fetch(`${apiUrl}/api/admin/testimonials?status=pending`, { credentials: 'include' });
+            const res = await fetch(`${apiUrl}/api/admin/testimonials?status=${status}`, { credentials: 'include' });
             if (res.ok) {
                 const data = await res.json();
-                setTestimonials(data.data || []);
+                if (status === 'pending') {
+                    setPendingTestimonials(data.data || []);
+                } else {
+                    setApprovedTestimonials(data.data || []);
+                }
             }
         } catch (error) {
             console.error('Failed to load testimonials', error);
@@ -158,7 +164,8 @@ export default function AdminDashboard() {
                 credentials: 'include'
             });
             if (res.ok) {
-                setTestimonials((prev) => prev.filter((item) => item._id !== id));
+                setPendingTestimonials((prev) => prev.filter((item) => item._id !== id));
+                fetchTestimonials('approved');
                 fetchOverview();
             }
         } catch (error) {
@@ -176,7 +183,8 @@ export default function AdminDashboard() {
                 credentials: 'include'
             });
             if (res.ok) {
-                setTestimonials((prev) => prev.filter((item) => item._id !== id));
+                setPendingTestimonials((prev) => prev.filter((item) => item._id !== id));
+                setApprovedTestimonials((prev) => prev.filter((item) => item._id !== id));
                 fetchOverview();
             }
         } catch (error) {
@@ -203,7 +211,8 @@ export default function AdminDashboard() {
 
     useEffect(() => {
         fetchOverview();
-        fetchTestimonials();
+        fetchTestimonials('pending');
+        fetchTestimonials('approved');
         fetchTenants();
         fetchSystemConfig();
     }, []);
@@ -263,6 +272,10 @@ export default function AdminDashboard() {
         }
         return `${hours}h ${minutes}m`;
     }, [systemConfig?.server.uptimeSeconds]);
+
+    const activeTestimonials = reviewStatus === 'pending' ? pendingTestimonials : approvedTestimonials;
+    const pendingCount = pendingTestimonials.length;
+    const approvedCount = approvedTestimonials.length;
 
     return (
         <div className="flex min-h-screen bg-zinc-50">
@@ -455,17 +468,41 @@ export default function AdminDashboard() {
                         <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
                             <div className="p-6 border-b border-zinc-200 flex justify-between items-center bg-zinc-50/50">
                                 <h3 className="font-bold text-lg text-zinc-900">Review Moderation Queue</h3>
-                                <div className="text-xs font-semibold text-zinc-400">
-                                    {loadingTestimonials ? 'Refreshing…' : `${testimonials.length} pending`}
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setReviewStatus('pending')}
+                                        className={`px-3 py-1 rounded-full text-[11px] font-bold transition-colors ${
+                                            reviewStatus === 'pending'
+                                                ? 'bg-blue-600 text-white'
+                                                : 'bg-white text-zinc-500 border border-zinc-200 hover:text-zinc-700'
+                                        }`}
+                                    >
+                                        Pending ({pendingCount})
+                                    </button>
+                                    <button
+                                        onClick={() => setReviewStatus('approved')}
+                                        className={`px-3 py-1 rounded-full text-[11px] font-bold transition-colors ${
+                                            reviewStatus === 'approved'
+                                                ? 'bg-emerald-600 text-white'
+                                                : 'bg-white text-zinc-500 border border-zinc-200 hover:text-zinc-700'
+                                        }`}
+                                    >
+                                        Approved ({approvedCount})
+                                    </button>
+                                    <span className="text-xs font-semibold text-zinc-400">
+                                        {loadingTestimonials ? 'Refreshing…' : `${activeTestimonials.length} shown`}
+                                    </span>
                                 </div>
                             </div>
                             <div className="divide-y divide-zinc-100">
                                 {loadingTestimonials ? (
                                     <div className="p-6 text-sm text-zinc-500">Loading reviews…</div>
-                                ) : testimonials.length === 0 ? (
-                                    <div className="p-6 text-sm text-zinc-500">No pending reviews. 🎉</div>
+                                ) : activeTestimonials.length === 0 ? (
+                                    <div className="p-6 text-sm text-zinc-500">
+                                        {reviewStatus === 'pending' ? 'No pending reviews. 🎉' : 'No approved reviews yet.'}
+                                    </div>
                                 ) : (
-                                    testimonials.map((review) => (
+                                    activeTestimonials.map((review) => (
                                         <div key={review._id} className="p-6 flex items-start gap-6 hover:bg-zinc-50 transition-colors">
                                             <div className="h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-black">
                                                 {review.rating}
@@ -478,22 +515,30 @@ export default function AdminDashboard() {
                                                 <p className="text-sm text-zinc-600 mb-4">"{review.text}"</p>
                                                 <div className="flex flex-wrap items-center gap-3 text-[10px] font-bold text-zinc-400 mb-4">
                                                     <span>{new Date(review.createdAt).toLocaleDateString()}</span>
-                                                    <span className="uppercase tracking-widest">Pending</span>
+                                                    <span
+                                                        className={`uppercase tracking-widest ${
+                                                            review.isApproved ? 'text-emerald-600' : 'text-amber-600'
+                                                        }`}
+                                                    >
+                                                        {review.isApproved ? 'Approved' : 'Pending'}
+                                                    </span>
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => handleApprove(review._id)}
-                                                        disabled={actionBusyId === review._id}
-                                                        className="btn-sm bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                                                    >
-                                                        <CheckCircle className="h-3 w-3" /> Approve
-                                                    </button>
+                                                    {!review.isApproved && (
+                                                        <button
+                                                            onClick={() => handleApprove(review._id)}
+                                                            disabled={actionBusyId === review._id}
+                                                            className="btn-sm bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                                                        >
+                                                            <CheckCircle className="h-3 w-3" /> Approve
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={() => handleReject(review._id)}
                                                         disabled={actionBusyId === review._id}
                                                         className="btn-sm bg-red-100 text-red-700 hover:bg-red-200 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                                                     >
-                                                        <XCircle className="h-3 w-3" /> Reject
+                                                        <XCircle className="h-3 w-3" /> {review.isApproved ? 'Remove' : 'Reject'}
                                                     </button>
                                                 </div>
                                             </div>
