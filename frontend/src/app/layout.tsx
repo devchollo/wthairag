@@ -5,6 +5,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
 import { Github, Twitter, Linkedin, Terminal } from "lucide-react";
 import CookieBanner from "@/components/CookieBanner";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -138,6 +139,7 @@ export default function RootLayout({
             </div>
           </footer>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );
