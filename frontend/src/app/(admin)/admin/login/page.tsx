@@ -13,7 +13,7 @@ export default function AdminLogin() {
     const { login, logout, user } = useAuth();
 
     useEffect(() => {
-        if (user?.isAdmin) {
+        if (user?.isOwner) {
             router.replace('/admin/dashboard');
         }
     }, [user, router]);
@@ -42,7 +42,7 @@ export default function AdminLogin() {
 
             if (!meRes.ok) throw new Error('Failed to fetch profile');
 
-            if (!meData.data.user?.isAdmin) {
+            if (!meData.data.user?.isOwner) {
                 await logout();
                 setError('Access Denied. Invalid credentials.');
                 return;

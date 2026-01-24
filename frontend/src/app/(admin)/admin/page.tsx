@@ -13,7 +13,7 @@ export default function AdminIndexPage() {
             return;
         }
 
-        if (user?.isAdmin) {
+        if (user?.isOwner) {
             router.replace('/admin/dashboard');
         } else {
             router.replace('/admin/login');
