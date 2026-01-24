@@ -5,7 +5,19 @@ import Link from 'next/link';
 import { LayoutDashboard, Terminal, User, FileText, Bell, BarChart3 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { DashboardSkeleton } from '@/components/Skeleton';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import {
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    Tooltip,
+    ResponsiveContainer,
+    BarChart,
+    Bar,
+    CartesianGrid,
+    AreaChart,
+    Area
+} from 'recharts';
 
 export default function Dashboard() {
     const { currentWorkspace, user, userRole } = useAuth();
@@ -71,6 +83,39 @@ export default function Dashboard() {
         count: query.count
     })) || [];
 
+    const workspaceTopQueriesData = workspaceStats?.topQueries?.map((query: any) => ({
+        name: query.query,
+        count: query.count
+    })) || [];
+
+    const buildSeries = (labels?: string[], values?: number[], key = 'value') =>
+        labels?.map((label, i) => ({
+            name: label,
+            [key]: values?.[i] ?? 0
+        })) || [];
+
+    const recentKnowledgeSeries = buildSeries(
+        userStats?.recentKnowledgeBase?.labels,
+        userStats?.recentKnowledgeBase?.counts,
+        'count'
+    );
+    const recentAlertSeries = buildSeries(
+        userStats?.recentAlerts?.labels,
+        userStats?.recentAlerts?.counts,
+        'count'
+    );
+
+    const workspaceRecentKnowledgeSeries = buildSeries(
+        workspaceStats?.recentKnowledgeBase?.labels,
+        workspaceStats?.recentKnowledgeBase?.counts,
+        'count'
+    );
+    const workspaceRecentAlertSeries = buildSeries(
+        workspaceStats?.recentAlerts?.labels,
+        workspaceStats?.recentAlerts?.counts,
+        'count'
+    );
+
     return (
         <div className="space-y-8">
             <div className="flex items-center justify-between">
@@ -99,6 +144,9 @@ export default function Dashboard() {
                             {userChartData.length > 0 ? (
                                 <ResponsiveContainer width="100%" height="100%">
                                     <LineChart data={userChartData}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                        <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={6} />
+                                        <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                                         <Tooltip
                                             contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
                                         />
@@ -121,8 +169,9 @@ export default function Dashboard() {
                             {userTopQueriesData.length > 0 ? (
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={userTopQueriesData} margin={{ top: 10, right: 16, left: -10, bottom: 0 }}>
-                                        <XAxis dataKey="name" tick={false} />
-                                        <YAxis allowDecimals={false} />
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                        <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-15} textAnchor="end" height={50} />
+                                        <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                                         <Tooltip
                                             cursor={{ fill: '#f8fafc' }}
                                             contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
@@ -153,6 +202,8 @@ export default function Dashboard() {
                         <h3 className="text-sm font-black text-text-primary mb-4 uppercase tracking-wide flex items-center gap-2">
                             {userStats?.recentItem?.type === 'alert' ? (
                                 <Bell className="h-4 w-4 text-amber-600" />
+                            ) : userStats?.recentItem?.type === 'query' ? (
+                                <Terminal className="h-4 w-4 text-blue-600" />
                             ) : (
                                 <FileText className="h-4 w-4 text-emerald-600" />
                             )}
@@ -163,7 +214,11 @@ export default function Dashboard() {
                                 <div className="text-sm font-bold text-text-primary">{userStats.recentItem.title}</div>
                                 <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-wide text-text-muted">
                                     <span className="rounded-full bg-surface-light px-2 py-1 font-black">
-                                        {userStats.recentItem.type === 'alert' ? 'Alert' : 'Knowledge Base'}
+                                        {userStats.recentItem.type === 'alert'
+                                            ? 'Alert'
+                                            : userStats.recentItem.type === 'query'
+                                                ? 'Query'
+                                                : 'Knowledge Base'}
                                     </span>
                                     {userStats.recentItem.status && (
                                         <span className="rounded-full bg-amber-50 px-2 py-1 font-black text-amber-700">
@@ -183,6 +238,65 @@ export default function Dashboard() {
                         ) : (
                             <p className="text-sm text-text-muted italic">No recent knowledge base file or alert viewed.</p>
                         )}
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="card p-6">
+                        <h3 className="text-sm font-black text-text-primary mb-4 uppercase tracking-wide flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-emerald-600" /> Recently Added Knowledge Base
+                        </h3>
+                        <div className="h-[180px]">
+                            {recentKnowledgeSeries.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={recentKnowledgeSeries}>
+                                        <defs>
+                                            <linearGradient id="knowledgeGradient" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
+                                                <stop offset="100%" stopColor="#10b981" stopOpacity={0.05} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                        <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={6} />
+                                        <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                                        />
+                                        <Area type="monotone" dataKey="count" stroke="#10b981" fill="url(#knowledgeGradient)" strokeWidth={2} />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="flex h-full items-center justify-center text-xs text-text-muted italic">No recent knowledge base activity.</div>
+                            )}
+                        </div>
+                    </div>
+                    <div className="card p-6">
+                        <h3 className="text-sm font-black text-text-primary mb-4 uppercase tracking-wide flex items-center gap-2">
+                            <Bell className="h-4 w-4 text-amber-600" /> Recently Added Alerts
+                        </h3>
+                        <div className="h-[180px]">
+                            {recentAlertSeries.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={recentAlertSeries}>
+                                        <defs>
+                                            <linearGradient id="alertGradient" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} />
+                                                <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.05} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                        <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={6} />
+                                        <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                                        />
+                                        <Area type="monotone" dataKey="count" stroke="#f59e0b" fill="url(#alertGradient)" strokeWidth={2} />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="flex h-full items-center justify-center text-xs text-text-muted italic">No recent alerts activity.</div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -205,6 +319,9 @@ export default function Dashboard() {
                                 {wsChartData.length > 0 ? (
                                     <ResponsiveContainer width="100%" height="100%">
                                         <BarChart data={wsChartData}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                            <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={6} />
+                                            <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                                             <Tooltip
                                                 cursor={{ fill: '#f1f5f9' }}
                                                 contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
@@ -223,8 +340,26 @@ export default function Dashboard() {
                         {/* Top Topics */}
                         <div className="card p-6">
                             <h3 className="text-sm font-black text-text-primary mb-4 uppercase tracking-wide">Most Popular Topics</h3>
-                            {workspaceStats?.topQueries?.length > 0 ? (
-                                <div className="space-y-3">
+                            <div className="h-[180px]">
+                                {workspaceTopQueriesData.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={workspaceTopQueriesData} margin={{ top: 10, right: 16, left: -10, bottom: 0 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                            <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-15} textAnchor="end" height={50} />
+                                            <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                                            <Tooltip
+                                                cursor={{ fill: '#f1f5f9' }}
+                                                contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                                            />
+                                            <Bar dataKey="count" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex h-full items-center justify-center text-xs text-text-muted italic">No activity recorded.</div>
+                                )}
+                            </div>
+                            {workspaceStats?.topQueries?.length > 0 && (
+                                <div className="mt-4 space-y-2">
                                     {workspaceStats.topQueries.map((q: any, i: number) => (
                                         <div key={i} className="flex justify-between items-center py-2 border-b border-border-light last:border-0">
                                             <span className="text-sm font-medium text-text-secondary truncate max-w-[70%]">{q.query}</span>
@@ -232,8 +367,6 @@ export default function Dashboard() {
                                         </div>
                                     ))}
                                 </div>
-                            ) : (
-                                <p className="text-sm text-text-muted italic">No activity recorded.</p>
                             )}
                         </div>
 
@@ -258,6 +391,65 @@ export default function Dashboard() {
                             ) : (
                                 <p className="text-sm text-text-muted italic">No user activity.</p>
                             )}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className="card p-6">
+                            <h3 className="text-sm font-black text-text-primary mb-4 uppercase tracking-wide flex items-center gap-2">
+                                <FileText className="h-4 w-4 text-emerald-600" /> Recently Added Knowledge Base
+                            </h3>
+                            <div className="h-[180px]">
+                                {workspaceRecentKnowledgeSeries.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={workspaceRecentKnowledgeSeries}>
+                                            <defs>
+                                                <linearGradient id="workspaceKnowledgeGradient" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
+                                                    <stop offset="100%" stopColor="#10b981" stopOpacity={0.05} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                            <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={6} />
+                                            <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                                            <Tooltip
+                                                contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                                            />
+                                            <Area type="monotone" dataKey="count" stroke="#10b981" fill="url(#workspaceKnowledgeGradient)" strokeWidth={2} />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex h-full items-center justify-center text-xs text-text-muted italic">No recent knowledge base activity.</div>
+                                )}
+                            </div>
+                        </div>
+                        <div className="card p-6">
+                            <h3 className="text-sm font-black text-text-primary mb-4 uppercase tracking-wide flex items-center gap-2">
+                                <Bell className="h-4 w-4 text-amber-600" /> Recently Added Alerts
+                            </h3>
+                            <div className="h-[180px]">
+                                {workspaceRecentAlertSeries.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={workspaceRecentAlertSeries}>
+                                            <defs>
+                                                <linearGradient id="workspaceAlertGradient" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} />
+                                                    <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.05} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                            <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={6} />
+                                            <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                                            <Tooltip
+                                                contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                                            />
+                                            <Area type="monotone" dataKey="count" stroke="#f59e0b" fill="url(#workspaceAlertGradient)" strokeWidth={2} />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex h-full items-center justify-center text-xs text-text-muted italic">No recent alerts activity.</div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

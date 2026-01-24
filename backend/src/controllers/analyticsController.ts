@@ -4,6 +4,103 @@ import Document from '../models/Document';
 import Alert from '../models/Alert';
 import { sendSuccess, sendError } from '../utils/response';
 
+const buildDailySeries = (
+    raw: Array<{ _id: string; value: number }>,
+    days: number
+) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const start = new Date(today);
+    start.setDate(today.getDate() - (days - 1));
+
+    const valuesByDate = new Map(raw.map(item => [item._id, item.value]));
+    const labels: string[] = [];
+    const values: number[] = [];
+
+    for (let i = 0; i < days; i += 1) {
+        const current = new Date(start);
+        current.setDate(start.getDate() + i);
+        const key = current.toISOString().split('T')[0];
+        labels.push(current.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+        values.push(valuesByDate.get(key) || 0);
+    }
+
+    return { labels, values };
+};
+
+const buildTopTopics = async (match: Record<string, unknown>) => {
+    return UsageLog.aggregate([
+        { $match: match },
+        {
+            $project: {
+                topics: {
+                    $cond: [
+                        { $gt: [{ $size: { $ifNull: ["$citedDocuments", []] } }, 0] },
+                        "$citedDocuments",
+                        ["$query"]
+                    ]
+                },
+                createdAt: 1
+            }
+        },
+        { $unwind: "$topics" },
+        { $match: { topics: { $ne: null, $ne: "" } } },
+        { $group: { _id: "$topics", count: { $sum: 1 }, lastUsed: { $max: "$createdAt" } } },
+        { $sort: { count: -1 } },
+        { $limit: 5 }
+    ]);
+};
+
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const findRecentItemByTitles = async (workspaceId: string, titles: string[]) => {
+    if (!titles.length) {
+        return null;
+    }
+
+    const [documents, alerts] = await Promise.all([
+        Document.find({ workspaceId, title: { $in: titles } })
+            .select('title updatedAt')
+            .lean(),
+        Alert.find({ workspaceId, title: { $in: titles } })
+            .select('title updatedAt severity status')
+            .lean()
+    ]);
+
+    const documentMap = new Map(documents.map(doc => [doc.title, doc]));
+    const alertMap = new Map(alerts.map(alert => [alert.title, alert]));
+
+    const matchedTitle = titles.find(title => documentMap.has(title) || alertMap.has(title));
+    if (!matchedTitle) {
+        return null;
+    }
+
+    const document = documentMap.get(matchedTitle);
+    const alert = alertMap.get(matchedTitle);
+
+    if (document) {
+        return {
+            type: 'knowledge',
+            title: document.title,
+            updatedAt: document.updatedAt,
+            link: '/workspace/knowledge'
+        };
+    }
+
+    if (alert) {
+        return {
+            type: 'alert',
+            title: alert.title,
+            updatedAt: alert.updatedAt,
+            link: '/workspace/alerts',
+            severity: alert.severity,
+            status: alert.status
+        };
+    }
+
+    return null;
+};
+
 export const getUserStats = async (req: Request, res: Response) => {
     try {
         const userId = req.user?._id;
@@ -20,13 +117,7 @@ export const getUserStats = async (req: Request, res: Response) => {
         ]);
 
         // Most Queried Topics (using Cited Documents now)
-        const topQueries = await UsageLog.aggregate([
-            { $match: { userId, workspaceId } },
-            { $unwind: "$citedDocuments" },
-            { $group: { _id: "$citedDocuments", count: { $sum: 1 }, lastUsed: { $max: "$createdAt" } } },
-            { $sort: { count: -1 } },
-            { $limit: 5 }
-        ]);
+        const topQueries = await buildTopTopics({ userId, workspaceId });
 
         // Chart Data (Daily Tokens for last 30 days)
         const thirtyDaysAgo = new Date();
@@ -43,38 +134,37 @@ export const getUserStats = async (req: Request, res: Response) => {
             { $sort: { _id: 1 } }
         ]);
 
-        const labels = chartDataRaw.map(d => new Date(d._id).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-        const tokens = chartDataRaw.map(d => d.tokens);
+        const usageSeries = buildDailySeries(
+            chartDataRaw.map(item => ({ _id: item._id, value: item.tokens })),
+            30
+        );
 
         const recentUsage = await UsageLog.findOne({
             userId,
-            workspaceId,
-            citedDocuments: { $exists: true, $ne: [] }
+            workspaceId
         })
             .sort('-createdAt')
-            .select('citedDocuments createdAt')
+            .select('citedDocuments createdAt query')
             .lean();
 
         let recentItem = null;
 
-        if (recentUsage?.citedDocuments?.length) {
-            const titles = recentUsage.citedDocuments.filter(Boolean);
-            const [documents, alerts] = await Promise.all([
-                Document.find({ workspaceId, title: { $in: titles } })
-                    .select('title updatedAt')
-                    .lean(),
-                Alert.find({ workspaceId, title: { $in: titles } })
-                    .select('title updatedAt severity status')
-                    .lean()
-            ]);
+        const citedTitles = recentUsage?.citedDocuments?.filter(Boolean) || [];
+        recentItem = await findRecentItemByTitles(workspaceId.toString(), citedTitles);
 
-            const documentMap = new Map(documents.map(doc => [doc.title, doc]));
-            const alertMap = new Map(alerts.map(alert => [alert.title, alert]));
+        if (!recentItem && recentUsage?.query) {
+            const queryTitle = recentUsage.query.trim();
+            if (queryTitle) {
+                const regex = new RegExp(`^${escapeRegExp(queryTitle)}$`, 'i');
+                const [document, alert] = await Promise.all([
+                    Document.findOne({ workspaceId, title: regex })
+                        .select('title updatedAt')
+                        .lean(),
+                    Alert.findOne({ workspaceId, title: regex })
+                        .select('title updatedAt severity status')
+                        .lean()
+                ]);
 
-            const matchedTitle = titles.find(title => documentMap.has(title) || alertMap.has(title));
-            if (matchedTitle) {
-                const document = documentMap.get(matchedTitle);
-                const alert = alertMap.get(matchedTitle);
                 if (document) {
                     recentItem = {
                         type: 'knowledge',
@@ -91,15 +181,55 @@ export const getUserStats = async (req: Request, res: Response) => {
                         severity: alert.severity,
                         status: alert.status
                     };
+                } else {
+                    recentItem = {
+                        type: 'query',
+                        title: queryTitle,
+                        updatedAt: recentUsage.createdAt
+                    };
                 }
             }
         }
 
+        const [recentKnowledgeRaw, recentAlertsRaw] = await Promise.all([
+            Document.aggregate([
+                { $match: { workspaceId, createdAt: { $gte: thirtyDaysAgo } } },
+                {
+                    $group: {
+                        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                        count: { $sum: 1 }
+                    }
+                },
+                { $sort: { _id: 1 } }
+            ]),
+            Alert.aggregate([
+                { $match: { workspaceId, createdAt: { $gte: thirtyDaysAgo } } },
+                {
+                    $group: {
+                        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                        count: { $sum: 1 }
+                    }
+                },
+                { $sort: { _id: 1 } }
+            ])
+        ]);
+
+        const knowledgeSeries = buildDailySeries(
+            recentKnowledgeRaw.map(item => ({ _id: item._id, value: item.count })),
+            30
+        );
+        const alertSeries = buildDailySeries(
+            recentAlertsRaw.map(item => ({ _id: item._id, value: item.count })),
+            30
+        );
+
         return sendSuccess(res, {
             totalTokens: totalTokens[0]?.total || 0,
             topQueries: topQueries.map(q => ({ query: q._id, count: q.count, lastUsed: q.lastUsed })),
-            chartData: { labels, tokens },
-            recentItem
+            chartData: { labels: usageSeries.labels, tokens: usageSeries.values },
+            recentItem,
+            recentKnowledgeBase: { labels: knowledgeSeries.labels, counts: knowledgeSeries.values },
+            recentAlerts: { labels: alertSeries.labels, counts: alertSeries.values }
         }, 'User stats fetched');
     } catch (error: any) {
         return sendError(res, error.message, 500);
@@ -121,13 +251,7 @@ export const getWorkspaceStats = async (req: Request, res: Response) => {
         ]);
 
         // Top Queries (using Cited Documents)
-        const topQueries = await UsageLog.aggregate([
-            { $match: { workspaceId } },
-            { $unwind: "$citedDocuments" },
-            { $group: { _id: "$citedDocuments", count: { $sum: 1 }, lastUsed: { $max: "$createdAt" } } },
-            { $sort: { count: -1 } },
-            { $limit: 5 }
-        ]);
+        const topQueries = await buildTopTopics({ workspaceId });
 
         // Usage by User (Top 5 Users)
         const topUsers = await UsageLog.aggregate([
@@ -155,15 +279,50 @@ export const getWorkspaceStats = async (req: Request, res: Response) => {
             { $sort: { _id: 1 } }
         ]);
 
-        // Format dates to simple labels like "Jan 01"
-        const labels = chartDataRaw.map(d => new Date(d._id).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-        const tokens = chartDataRaw.map(d => d.tokens);
+        const usageSeries = buildDailySeries(
+            chartDataRaw.map(item => ({ _id: item._id, value: item.tokens })),
+            30
+        );
+
+        const [recentKnowledgeRaw, recentAlertsRaw] = await Promise.all([
+            Document.aggregate([
+                { $match: { workspaceId, createdAt: { $gte: thirtyDaysAgo } } },
+                {
+                    $group: {
+                        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                        count: { $sum: 1 }
+                    }
+                },
+                { $sort: { _id: 1 } }
+            ]),
+            Alert.aggregate([
+                { $match: { workspaceId, createdAt: { $gte: thirtyDaysAgo } } },
+                {
+                    $group: {
+                        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                        count: { $sum: 1 }
+                    }
+                },
+                { $sort: { _id: 1 } }
+            ])
+        ]);
+
+        const knowledgeSeries = buildDailySeries(
+            recentKnowledgeRaw.map(item => ({ _id: item._id, value: item.count })),
+            30
+        );
+        const alertSeries = buildDailySeries(
+            recentAlertsRaw.map(item => ({ _id: item._id, value: item.count })),
+            30
+        );
 
         return sendSuccess(res, {
             totalTokens: totalTokens[0]?.total || 0,
             topQueries: topQueries.map(q => ({ query: q._id, count: q.count, lastUsed: q.lastUsed })),
             topUsers,
-            chartData: { labels, tokens }
+            chartData: { labels: usageSeries.labels, tokens: usageSeries.values },
+            recentKnowledgeBase: { labels: knowledgeSeries.labels, counts: knowledgeSeries.values },
+            recentAlerts: { labels: alertSeries.labels, counts: alertSeries.values }
         }, 'Workspace stats fetched');
     } catch (error: any) {
         return sendError(res, error.message, 500);
