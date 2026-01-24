@@ -127,6 +127,160 @@ export default function Dashboard() {
                 </div>
             </div>
 
+            {/* Admin Workspace Stats Section */}
+            {(userRole === 'admin' || userRole === 'owner') && workspaceStats && (
+                <div className="space-y-6 pt-8 border-t-2 border-dashed border-border-light">
+                    <h2 className="text-lg font-black tracking-tight text-text-primary flex items-center gap-2">
+                        <LayoutDashboard className="h-5 w-5 text-indigo-600" /> Workspace Overview
+                    </h2>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="card p-5 border-l-4 border-l-indigo-500">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-1">Total Workspace Tokens</div>
+                            <div className="text-3xl font-black text-text-primary">{workspaceStats?.totalTokens?.toLocaleString() || 0}</div>
+                        </div>
+                        <div className="lg:col-span-3 card p-5 relative min-h-[120px] flex flex-col justify-between">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-1">Workspace Activity</div>
+                            <div className="h-[100px] w-full">
+                                {wsChartData.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={wsChartData}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                            <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={6} />
+                                            <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                                            <Tooltip
+                                                cursor={{ fill: '#f1f5f9' }}
+                                                contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                                            />
+                                            <Bar dataKey="tokens" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex h-full items-center justify-center text-xs text-text-muted italic">No data available</div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Top Topics */}
+                        <div className="card p-6">
+                            <h3 className="text-sm font-black text-text-primary mb-4 uppercase tracking-wide">Most Popular Topics</h3>
+                            <div className="h-[180px]">
+                                {workspaceTopQueriesData.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={workspaceTopQueriesData} margin={{ top: 10, right: 16, left: -10, bottom: 0 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                            <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-15} textAnchor="end" height={50} />
+                                            <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                                            <Tooltip
+                                                cursor={{ fill: '#f1f5f9' }}
+                                                contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                                            />
+                                            <Bar dataKey="count" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex h-full items-center justify-center text-xs text-text-muted italic">No activity recorded.</div>
+                                )}
+                            </div>
+                            {workspaceStats?.topQueries?.length > 0 && (
+                                <div className="mt-4 space-y-2">
+                                    {workspaceStats.topQueries.map((q: any, i: number) => (
+                                        <div key={i} className="flex justify-between items-center py-2 border-b border-border-light last:border-0">
+                                            <span className="text-sm font-medium text-text-secondary truncate max-w-[70%]">{q.query}</span>
+                                            <span className="text-[10px] font-black bg-indigo-50 text-indigo-700 px-2 py-1 rounded">{q.count} queries</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Top Users */}
+                        <div className="card p-6">
+                            <h3 className="text-sm font-black text-text-primary mb-4 uppercase tracking-wide">Top Contributors</h3>
+                            {workspaceStats?.topUsers?.length > 0 ? (
+                                <div className="space-y-3">
+                                    {workspaceStats.topUsers.map((u: any, i: number) => (
+                                        <div key={i} className="flex justify-between items-center py-2 border-b border-border-light last:border-0">
+                                            <div>
+                                                <div className="text-sm font-bold text-text-primary">{u.name}</div>
+                                                <div className="text-[10px] text-text-muted">{u.email}</div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-sm font-black text-indigo-600">{u.totalTokens.toLocaleString()}</div>
+                                                <div className="text-[8px] uppercase tracking-wider text-text-muted">Tokens</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-text-muted italic">No user activity.</p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className="card p-6">
+                            <h3 className="text-sm font-black text-text-primary mb-4 uppercase tracking-wide flex items-center gap-2">
+                                <FileText className="h-4 w-4 text-emerald-600" /> Recently Added Knowledge Base
+                            </h3>
+                            <div className="h-[180px]">
+                                {workspaceRecentKnowledgeSeries.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={workspaceRecentKnowledgeSeries}>
+                                            <defs>
+                                                <linearGradient id="workspaceKnowledgeGradient" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
+                                                    <stop offset="100%" stopColor="#10b981" stopOpacity={0.05} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                            <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={6} />
+                                            <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                                            <Tooltip
+                                                contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                                            />
+                                            <Area type="monotone" dataKey="count" stroke="#10b981" fill="url(#workspaceKnowledgeGradient)" strokeWidth={2} />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex h-full items-center justify-center text-xs text-text-muted italic">No recent knowledge base activity.</div>
+                                )}
+                            </div>
+                        </div>
+                        <div className="card p-6">
+                            <h3 className="text-sm font-black text-text-primary mb-4 uppercase tracking-wide flex items-center gap-2">
+                                <Bell className="h-4 w-4 text-amber-600" /> Recently Added Alerts
+                            </h3>
+                            <div className="h-[180px]">
+                                {workspaceRecentAlertSeries.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={workspaceRecentAlertSeries}>
+                                            <defs>
+                                                <linearGradient id="workspaceAlertGradient" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} />
+                                                    <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.05} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                            <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={6} />
+                                            <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                                            <Tooltip
+                                                contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                                            />
+                                            <Area type="monotone" dataKey="count" stroke="#f59e0b" fill="url(#workspaceAlertGradient)" strokeWidth={2} />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex h-full items-center justify-center text-xs text-text-muted italic">No recent alerts activity.</div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* User Stats Section */}
             <div className="space-y-6">
                 <h2 className="text-lg font-black tracking-tight text-text-primary flex items-center gap-2">
@@ -301,159 +455,6 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* Admin Workspace Stats Section */}
-            {(userRole === 'admin' || userRole === 'owner') && workspaceStats && (
-                <div className="space-y-6 pt-8 border-t-2 border-dashed border-border-light">
-                    <h2 className="text-lg font-black tracking-tight text-text-primary flex items-center gap-2">
-                        <LayoutDashboard className="h-5 w-5 text-indigo-600" /> Workspace Overview
-                    </h2>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="card p-5 border-l-4 border-l-indigo-500">
-                            <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-1">Total Workspace Tokens</div>
-                            <div className="text-3xl font-black text-text-primary">{workspaceStats?.totalTokens?.toLocaleString() || 0}</div>
-                        </div>
-                        <div className="lg:col-span-3 card p-5 relative min-h-[120px] flex flex-col justify-between">
-                            <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-1">Workspace Activity</div>
-                            <div className="h-[100px] w-full">
-                                {wsChartData.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={wsChartData}>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                                            <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={6} />
-                                            <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-                                            <Tooltip
-                                                cursor={{ fill: '#f1f5f9' }}
-                                                contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
-                                            />
-                                            <Bar dataKey="tokens" fill="#4f46e5" radius={[4, 4, 0, 0]} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                    <div className="flex h-full items-center justify-center text-xs text-text-muted italic">No data available</div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Top Topics */}
-                        <div className="card p-6">
-                            <h3 className="text-sm font-black text-text-primary mb-4 uppercase tracking-wide">Most Popular Topics</h3>
-                            <div className="h-[180px]">
-                                {workspaceTopQueriesData.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={workspaceTopQueriesData} margin={{ top: 10, right: 16, left: -10, bottom: 0 }}>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                                            <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-15} textAnchor="end" height={50} />
-                                            <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-                                            <Tooltip
-                                                cursor={{ fill: '#f1f5f9' }}
-                                                contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
-                                            />
-                                            <Bar dataKey="count" fill="#4f46e5" radius={[4, 4, 0, 0]} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                    <div className="flex h-full items-center justify-center text-xs text-text-muted italic">No activity recorded.</div>
-                                )}
-                            </div>
-                            {workspaceStats?.topQueries?.length > 0 && (
-                                <div className="mt-4 space-y-2">
-                                    {workspaceStats.topQueries.map((q: any, i: number) => (
-                                        <div key={i} className="flex justify-between items-center py-2 border-b border-border-light last:border-0">
-                                            <span className="text-sm font-medium text-text-secondary truncate max-w-[70%]">{q.query}</span>
-                                            <span className="text-[10px] font-black bg-indigo-50 text-indigo-700 px-2 py-1 rounded">{q.count} queries</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Top Users */}
-                        <div className="card p-6">
-                            <h3 className="text-sm font-black text-text-primary mb-4 uppercase tracking-wide">Top Contributors</h3>
-                            {workspaceStats?.topUsers?.length > 0 ? (
-                                <div className="space-y-3">
-                                    {workspaceStats.topUsers.map((u: any, i: number) => (
-                                        <div key={i} className="flex justify-between items-center py-2 border-b border-border-light last:border-0">
-                                            <div>
-                                                <div className="text-sm font-bold text-text-primary">{u.name}</div>
-                                                <div className="text-[10px] text-text-muted">{u.email}</div>
-                                            </div>
-                                            <div className="text-right">
-                                                <div className="text-sm font-black text-indigo-600">{u.totalTokens.toLocaleString()}</div>
-                                                <div className="text-[8px] uppercase tracking-wider text-text-muted">Tokens</div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-sm text-text-muted italic">No user activity.</p>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div className="card p-6">
-                            <h3 className="text-sm font-black text-text-primary mb-4 uppercase tracking-wide flex items-center gap-2">
-                                <FileText className="h-4 w-4 text-emerald-600" /> Recently Added Knowledge Base
-                            </h3>
-                            <div className="h-[180px]">
-                                {workspaceRecentKnowledgeSeries.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={workspaceRecentKnowledgeSeries}>
-                                            <defs>
-                                                <linearGradient id="workspaceKnowledgeGradient" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
-                                                    <stop offset="100%" stopColor="#10b981" stopOpacity={0.05} />
-                                                </linearGradient>
-                                            </defs>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                                            <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={6} />
-                                            <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-                                            <Tooltip
-                                                contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
-                                            />
-                                            <Area type="monotone" dataKey="count" stroke="#10b981" fill="url(#workspaceKnowledgeGradient)" strokeWidth={2} />
-                                        </AreaChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                    <div className="flex h-full items-center justify-center text-xs text-text-muted italic">No recent knowledge base activity.</div>
-                                )}
-                            </div>
-                        </div>
-                        <div className="card p-6">
-                            <h3 className="text-sm font-black text-text-primary mb-4 uppercase tracking-wide flex items-center gap-2">
-                                <Bell className="h-4 w-4 text-amber-600" /> Recently Added Alerts
-                            </h3>
-                            <div className="h-[180px]">
-                                {workspaceRecentAlertSeries.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={workspaceRecentAlertSeries}>
-                                            <defs>
-                                                <linearGradient id="workspaceAlertGradient" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} />
-                                                    <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.05} />
-                                                </linearGradient>
-                                            </defs>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                                            <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={6} />
-                                            <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-                                            <Tooltip
-                                                contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
-                                            />
-                                            <Area type="monotone" dataKey="count" stroke="#f59e0b" fill="url(#workspaceAlertGradient)" strokeWidth={2} />
-                                        </AreaChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                    <div className="flex h-full items-center justify-center text-xs text-text-muted italic">No recent alerts activity.</div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

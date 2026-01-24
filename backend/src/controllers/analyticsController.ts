@@ -8,10 +8,10 @@ const buildDailySeries = (
     raw: Array<{ _id: string; value: number }>,
     days: number
 ) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const start = new Date(today);
-    start.setDate(today.getDate() - (days - 1));
+    const now = new Date();
+    const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const start = new Date(todayUtc);
+    start.setUTCDate(todayUtc.getUTCDate() - (days - 1));
 
     const valuesByDate = new Map(raw.map(item => [item._id, item.value]));
     const labels: string[] = [];
@@ -19,9 +19,9 @@ const buildDailySeries = (
 
     for (let i = 0; i < days; i += 1) {
         const current = new Date(start);
-        current.setDate(start.getDate() + i);
-        const key = current.toISOString().split('T')[0];
-        labels.push(current.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+        current.setUTCDate(start.getUTCDate() + i);
+        const key = current.toISOString().slice(0, 10);
+        labels.push(current.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }));
         values.push(valuesByDate.get(key) || 0);
     }
 
@@ -33,19 +33,20 @@ const buildTopTopics = async (match: Record<string, unknown>) => {
         { $match: match },
         {
             $project: {
-                topics: {
-                    $cond: [
-                        { $gt: [{ $size: { $ifNull: ["$citedDocuments", []] } }, 0] },
-                        "$citedDocuments",
-                        ["$query"]
-                    ]
-                },
+                normalizedQuery: { $toLower: { $trim: { input: "$query" } } },
+                displayQuery: { $trim: { input: "$query" } },
                 createdAt: 1
             }
         },
-        { $unwind: "$topics" },
-        { $match: { topics: { $ne: null, $ne: "" } } },
-        { $group: { _id: "$topics", count: { $sum: 1 }, lastUsed: { $max: "$createdAt" } } },
+        { $match: { normalizedQuery: { $ne: "" } } },
+        {
+            $group: {
+                _id: "$normalizedQuery",
+                query: { $first: "$displayQuery" },
+                count: { $sum: 1 },
+                lastUsed: { $max: "$createdAt" }
+            }
+        },
         { $sort: { count: -1 } },
         { $limit: 5 }
     ]);
@@ -225,7 +226,7 @@ export const getUserStats = async (req: Request, res: Response) => {
 
         return sendSuccess(res, {
             totalTokens: totalTokens[0]?.total || 0,
-            topQueries: topQueries.map(q => ({ query: q._id, count: q.count, lastUsed: q.lastUsed })),
+            topQueries: topQueries.map(q => ({ query: q.query ?? q._id, count: q.count, lastUsed: q.lastUsed })),
             chartData: { labels: usageSeries.labels, tokens: usageSeries.values },
             recentItem,
             recentKnowledgeBase: { labels: knowledgeSeries.labels, counts: knowledgeSeries.values },
@@ -318,7 +319,7 @@ export const getWorkspaceStats = async (req: Request, res: Response) => {
 
         return sendSuccess(res, {
             totalTokens: totalTokens[0]?.total || 0,
-            topQueries: topQueries.map(q => ({ query: q._id, count: q.count, lastUsed: q.lastUsed })),
+            topQueries: topQueries.map(q => ({ query: q.query ?? q._id, count: q.count, lastUsed: q.lastUsed })),
             topUsers,
             chartData: { labels: usageSeries.labels, tokens: usageSeries.values },
             recentKnowledgeBase: { labels: knowledgeSeries.labels, counts: knowledgeSeries.values },
