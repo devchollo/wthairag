@@ -264,6 +264,114 @@ export default function AdminDashboard() {
         return `${hours}h ${minutes}m`;
     }, [systemConfig?.server.uptimeSeconds]);
 
+    const fetchTestimonials = async () => {
+        setLoadingTestimonials(true);
+        try {
+            const res = await fetch(`${apiUrl}/api/admin/testimonials?status=pending`, { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                setTestimonials(data.data || []);
+            }
+        } catch (error) {
+            console.error('Failed to load testimonials', error);
+        } finally {
+            setLoadingTestimonials(false);
+        }
+    };
+
+    const fetchTenants = async (term = '') => {
+        setLoadingTenants(true);
+        try {
+            const searchQuery = term ? `?search=${encodeURIComponent(term)}` : '';
+            const res = await fetch(`${apiUrl}/api/admin/tenants${searchQuery}`, { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                setTenants(data.data || []);
+            }
+        } catch (error) {
+            console.error('Failed to load tenants', error);
+        } finally {
+            setLoadingTenants(false);
+        }
+    };
+
+    const handleApprove = async (id: string) => {
+        setActionBusyId(id);
+        try {
+            const res = await fetch(`${apiUrl}/api/admin/testimonials/${id}/approve`, {
+                method: 'PUT',
+                credentials: 'include'
+            });
+            if (res.ok) {
+                setTestimonials((prev) => prev.filter((item) => item._id !== id));
+                fetchOverview();
+            }
+        } catch (error) {
+            console.error('Failed to approve testimonial', error);
+        } finally {
+            setActionBusyId(null);
+        }
+    };
+
+    const handleReject = async (id: string) => {
+        setActionBusyId(id);
+        try {
+            const res = await fetch(`${apiUrl}/api/admin/testimonials/${id}/reject`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+            if (res.ok) {
+                setTestimonials((prev) => prev.filter((item) => item._id !== id));
+                fetchOverview();
+            }
+        } catch (error) {
+            console.error('Failed to reject testimonial', error);
+        } finally {
+            setActionBusyId(null);
+        }
+    };
+
+    useEffect(() => {
+        fetchOverview();
+        fetchTestimonials();
+        fetchTenants();
+    }, []);
+
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            fetchTenants(searchTerm);
+        }, 300);
+        return () => clearTimeout(timeout);
+    }, [searchTerm]);
+
+    const formattedUptime = useMemo(() => {
+        const uptime = overview?.uptimeSeconds ?? 0;
+        const days = Math.floor(uptime / 86400);
+        const hours = Math.floor((uptime % 86400) / 3600);
+        if (days > 0) {
+            return `${days}d ${hours}h`;
+        }
+        const minutes = Math.floor((uptime % 3600) / 60);
+        return `${hours}h ${minutes}m`;
+    }, [overview?.uptimeSeconds]);
+
+    const usageChartData = useMemo(() => {
+        if (!charts) return [];
+        return charts.labels.map((label, index) => ({
+            date: new Date(label).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            tokens: charts.usageTokens[index] || 0
+        }));
+    }, [charts]);
+
+    const growthChartData = useMemo(() => {
+        if (!charts) return [];
+        return charts.labels.map((label, index) => ({
+            date: new Date(label).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            users: charts.newUsers[index] || 0,
+            workspaces: charts.newWorkspaces[index] || 0
+        }));
+    }, [charts]);
+
     return (
         <div className="flex min-h-screen bg-zinc-50">
             {/* Sidebar */}
@@ -445,6 +553,66 @@ export default function AdminDashboard() {
                                     ) : (
                                         <div className="flex h-full items-center justify-center text-sm text-zinc-400">No workspace usage yet.</div>
                                     )}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                                <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div>
+                                            <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Platform Usage</div>
+                                            <div className="text-lg font-black text-zinc-900">Token Consumption (30 Days)</div>
+                                        </div>
+                                        <div className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                                            {overview?.totalTokens?.toLocaleString() || 0} total
+                                        </div>
+                                    </div>
+                                    <div className="h-[260px]">
+                                        {loadingOverview ? (
+                                            <div className="flex h-full items-center justify-center text-sm text-zinc-400">Loading analytics…</div>
+                                        ) : usageChartData.length > 0 ? (
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <LineChart data={usageChartData}>
+                                                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                                                    <YAxis tick={{ fontSize: 11 }} />
+                                                    <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }} />
+                                                    <Line type="monotone" dataKey="tokens" stroke="#2563eb" strokeWidth={2} dot={false} />
+                                                </LineChart>
+                                            </ResponsiveContainer>
+                                        ) : (
+                                            <div className="flex h-full items-center justify-center text-sm text-zinc-400">No usage data yet.</div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div>
+                                            <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Growth</div>
+                                            <div className="text-lg font-black text-zinc-900">New Users & Workspaces</div>
+                                        </div>
+                                        <div className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
+                                            Last 30 days
+                                        </div>
+                                    </div>
+                                    <div className="h-[260px]">
+                                        {loadingOverview ? (
+                                            <div className="flex h-full items-center justify-center text-sm text-zinc-400">Loading analytics…</div>
+                                        ) : growthChartData.length > 0 ? (
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart data={growthChartData}>
+                                                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                                                    <YAxis tick={{ fontSize: 11 }} />
+                                                    <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }} />
+                                                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                                                    <Bar dataKey="users" name="Users" fill="#10b981" radius={[4, 4, 0, 0]} />
+                                                    <Bar dataKey="workspaces" name="Workspaces" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        ) : (
+                                            <div className="flex h-full items-center justify-center text-sm text-zinc-400">No growth data yet.</div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </>
