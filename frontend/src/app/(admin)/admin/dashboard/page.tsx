@@ -267,7 +267,7 @@ export default function AdminDashboard() {
     return (
         <div className="flex min-h-screen bg-zinc-50">
             {/* Sidebar */}
-            <aside className="w-64 bg-zinc-900 text-white flex flex-col fixed h-full z-20">
+            <aside className="w-64 bg-zinc-900 text-white flex flex-col sticky top-0 h-screen z-20">
                 <div className="p-6 border-b border-white/10">
                     <div className="flex items-center gap-3">
                         <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center">
@@ -318,7 +318,7 @@ export default function AdminDashboard() {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 ml-64 p-8">
+            <main className="flex-1 p-8">
                 {/* Header */}
                 <header className="flex justify-between items-center mb-10">
                     <div>
