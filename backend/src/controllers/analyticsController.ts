@@ -35,7 +35,8 @@ const buildTopTopics = async (match: Record<string, unknown>) => {
             $project: {
                 normalizedQuery: { $toLower: { $trim: { input: "$query" } } },
                 displayQuery: { $trim: { input: "$query" } },
-                createdAt: 1
+                createdAt: 1,
+                citedDocuments: 1
             }
         },
         { $match: { normalizedQuery: { $ne: "" } } },
@@ -44,12 +45,99 @@ const buildTopTopics = async (match: Record<string, unknown>) => {
                 _id: "$normalizedQuery",
                 query: { $first: "$displayQuery" },
                 count: { $sum: 1 },
-                lastUsed: { $max: "$createdAt" }
+                lastUsed: { $max: "$createdAt" },
+                citedDocuments: { $first: "$citedDocuments" }
             }
         },
         { $sort: { count: -1 } },
         { $limit: 5 }
     ]);
+};
+
+const stopWords = new Set([
+    'a',
+    'about',
+    'after',
+    'all',
+    'am',
+    'an',
+    'and',
+    'are',
+    'as',
+    'at',
+    'be',
+    'been',
+    'but',
+    'by',
+    'can',
+    'could',
+    'do',
+    'does',
+    'for',
+    'from',
+    'get',
+    'had',
+    'has',
+    'have',
+    'how',
+    'i',
+    'if',
+    'in',
+    'is',
+    'it',
+    'like',
+    'me',
+    'my',
+    'of',
+    'on',
+    'or',
+    'our',
+    'please',
+    'the',
+    'their',
+    'to',
+    'we',
+    'what',
+    'when',
+    'where',
+    'who',
+    'why',
+    'with',
+    'you',
+    'your'
+]);
+
+const toTitleCase = (value: string) =>
+    value
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+
+const deriveTopicFromQuery = (query: string, citedDocuments?: string[]) => {
+    const citedTopic = citedDocuments?.find(Boolean);
+    if (citedTopic) {
+        return citedTopic;
+    }
+
+    const cleaned = query
+        .replace(/[^\w\s-]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+
+    if (!cleaned) {
+        return query;
+    }
+
+    const keywords = cleaned
+        .split(' ')
+        .filter(word => !stopWords.has(word) && word.length > 2);
+
+    if (!keywords.length) {
+        return query.trim();
+    }
+
+    return toTitleCase(keywords.slice(0, 4).join(' '));
 };
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -192,7 +280,7 @@ export const getUserStats = async (req: Request, res: Response) => {
             }
         }
 
-        const [recentKnowledgeRaw, recentAlertsRaw] = await Promise.all([
+        const [recentKnowledgeRaw, recentAlertsRaw, recentKnowledgeItems, recentAlertItems] = await Promise.all([
             Document.aggregate([
                 { $match: { workspaceId, createdAt: { $gte: thirtyDaysAgo } } },
                 {
@@ -212,7 +300,17 @@ export const getUserStats = async (req: Request, res: Response) => {
                     }
                 },
                 { $sort: { _id: 1 } }
-            ])
+            ]),
+            Document.find({ workspaceId })
+                .sort('-createdAt')
+                .limit(5)
+                .select('title createdAt')
+                .lean(),
+            Alert.find({ workspaceId })
+                .sort('-createdAt')
+                .limit(5)
+                .select('title createdAt severity status')
+                .lean()
         ]);
 
         const knowledgeSeries = buildDailySeries(
@@ -226,11 +324,16 @@ export const getUserStats = async (req: Request, res: Response) => {
 
         return sendSuccess(res, {
             totalTokens: totalTokens[0]?.total || 0,
-            topQueries: topQueries.map(q => ({ query: q.query ?? q._id, count: q.count, lastUsed: q.lastUsed })),
+            topQueries: topQueries.map(q => ({
+                query: q.query ?? q._id,
+                topic: deriveTopicFromQuery(q.query ?? q._id, q.citedDocuments),
+                count: q.count,
+                lastUsed: q.lastUsed
+            })),
             chartData: { labels: usageSeries.labels, tokens: usageSeries.values },
             recentItem,
-            recentKnowledgeBase: { labels: knowledgeSeries.labels, counts: knowledgeSeries.values },
-            recentAlerts: { labels: alertSeries.labels, counts: alertSeries.values }
+            recentKnowledgeBase: { labels: knowledgeSeries.labels, counts: knowledgeSeries.values, items: recentKnowledgeItems },
+            recentAlerts: { labels: alertSeries.labels, counts: alertSeries.values, items: recentAlertItems }
         }, 'User stats fetched');
     } catch (error: any) {
         return sendError(res, error.message, 500);
@@ -285,7 +388,7 @@ export const getWorkspaceStats = async (req: Request, res: Response) => {
             30
         );
 
-        const [recentKnowledgeRaw, recentAlertsRaw] = await Promise.all([
+        const [recentKnowledgeRaw, recentAlertsRaw, recentKnowledgeItems, recentAlertItems] = await Promise.all([
             Document.aggregate([
                 { $match: { workspaceId, createdAt: { $gte: thirtyDaysAgo } } },
                 {
@@ -305,7 +408,17 @@ export const getWorkspaceStats = async (req: Request, res: Response) => {
                     }
                 },
                 { $sort: { _id: 1 } }
-            ])
+            ]),
+            Document.find({ workspaceId })
+                .sort('-createdAt')
+                .limit(5)
+                .select('title createdAt')
+                .lean(),
+            Alert.find({ workspaceId })
+                .sort('-createdAt')
+                .limit(5)
+                .select('title createdAt severity status')
+                .lean()
         ]);
 
         const knowledgeSeries = buildDailySeries(
@@ -319,11 +432,16 @@ export const getWorkspaceStats = async (req: Request, res: Response) => {
 
         return sendSuccess(res, {
             totalTokens: totalTokens[0]?.total || 0,
-            topQueries: topQueries.map(q => ({ query: q.query ?? q._id, count: q.count, lastUsed: q.lastUsed })),
+            topQueries: topQueries.map(q => ({
+                query: q.query ?? q._id,
+                topic: deriveTopicFromQuery(q.query ?? q._id, q.citedDocuments),
+                count: q.count,
+                lastUsed: q.lastUsed
+            })),
             topUsers,
             chartData: { labels: usageSeries.labels, tokens: usageSeries.values },
-            recentKnowledgeBase: { labels: knowledgeSeries.labels, counts: knowledgeSeries.values },
-            recentAlerts: { labels: alertSeries.labels, counts: alertSeries.values }
+            recentKnowledgeBase: { labels: knowledgeSeries.labels, counts: knowledgeSeries.values, items: recentKnowledgeItems },
+            recentAlerts: { labels: alertSeries.labels, counts: alertSeries.values, items: recentAlertItems }
         }, 'Workspace stats fetched');
     } catch (error: any) {
         return sendError(res, error.message, 500);

@@ -79,12 +79,12 @@ export default function Dashboard() {
     })) || [];
 
     const userTopQueriesData = userStats?.topQueries?.map((query: any) => ({
-        name: query.query,
+        name: query.topic ?? query.query,
         count: query.count
     })) || [];
 
     const workspaceTopQueriesData = workspaceStats?.topQueries?.map((query: any) => ({
-        name: query.query,
+        name: query.topic ?? query.query,
         count: query.count
     })) || [];
 
@@ -187,9 +187,14 @@ export default function Dashboard() {
                             {workspaceStats?.topQueries?.length > 0 && (
                                 <div className="mt-4 space-y-2">
                                     {workspaceStats.topQueries.map((q: any, i: number) => (
-                                        <div key={i} className="flex justify-between items-center py-2 border-b border-border-light last:border-0">
-                                            <span className="text-sm font-medium text-text-secondary truncate max-w-[70%]">{q.query}</span>
-                                            <span className="text-[10px] font-black bg-indigo-50 text-indigo-700 px-2 py-1 rounded">{q.count} queries</span>
+                                        <div key={i} className="flex justify-between items-start py-2 border-b border-border-light last:border-0 gap-4">
+                                            <div className="min-w-0">
+                                                <div className="text-sm font-medium text-text-secondary truncate max-w-[70%]">{q.topic ?? q.query}</div>
+                                                {q.topic && q.query && q.topic !== q.query && (
+                                                    <div className="text-[10px] text-text-muted truncate max-w-[70%]">“{q.query}”</div>
+                                                )}
+                                            </div>
+                                            <span className="text-[10px] font-black bg-indigo-50 text-indigo-700 px-2 py-1 rounded whitespace-nowrap">{q.count} queries</span>
                                         </div>
                                     ))}
                                 </div>
@@ -248,6 +253,18 @@ export default function Dashboard() {
                                     <div className="flex h-full items-center justify-center text-xs text-text-muted italic">No recent knowledge base activity.</div>
                                 )}
                             </div>
+                            {workspaceStats?.recentKnowledgeBase?.items?.length > 0 && (
+                                <div className="mt-4 space-y-2">
+                                    {workspaceStats.recentKnowledgeBase.items.map((item: any, i: number) => (
+                                        <div key={i} className="flex items-center justify-between gap-4 border-b border-border-light pb-2 last:border-0 last:pb-0">
+                                            <span className="text-sm font-medium text-text-secondary truncate">{item.title}</span>
+                                            <span className="text-[10px] text-text-muted whitespace-nowrap">
+                                                {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ''}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                         <div className="card p-6">
                             <h3 className="text-sm font-black text-text-primary mb-4 uppercase tracking-wide flex items-center gap-2">
@@ -276,6 +293,18 @@ export default function Dashboard() {
                                     <div className="flex h-full items-center justify-center text-xs text-text-muted italic">No recent alerts activity.</div>
                                 )}
                             </div>
+                            {workspaceStats?.recentAlerts?.items?.length > 0 && (
+                                <div className="mt-4 space-y-2">
+                                    {workspaceStats.recentAlerts.items.map((item: any, i: number) => (
+                                        <div key={i} className="flex items-center justify-between gap-4 border-b border-border-light pb-2 last:border-0 last:pb-0">
+                                            <span className="text-sm font-medium text-text-secondary truncate">{item.title}</span>
+                                            <span className="text-[10px] text-text-muted whitespace-nowrap">
+                                                {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ''}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -340,11 +369,16 @@ export default function Dashboard() {
                         {userStats?.topQueries?.length > 0 && (
                             <div className="mt-4 space-y-2">
                                 {userStats.topQueries.map((q: any, i: number) => (
-                                    <div key={i} className="flex justify-between items-center py-2 border-b border-border-light last:border-0">
-                                        <span className="text-sm font-medium text-text-secondary truncate max-w-[70%]">{q.query}</span>
-                                        <div className="flex items-center gap-4">
-                                            <span className="text-[10px] font-black bg-surface-light px-2 py-1 rounded text-text-muted">{q.count} queries</span>
-                                            <span className="text-[10px] text-text-muted">{new Date(q.lastUsed).toLocaleDateString()}</span>
+                                    <div key={i} className="flex justify-between items-start py-2 border-b border-border-light last:border-0 gap-4">
+                                        <div className="min-w-0">
+                                            <div className="text-sm font-medium text-text-secondary truncate max-w-[70%]">{q.topic ?? q.query}</div>
+                                            {q.topic && q.query && q.topic !== q.query && (
+                                                <div className="text-[10px] text-text-muted truncate max-w-[70%]">“{q.query}”</div>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-4 shrink-0">
+                                            <span className="text-[10px] font-black bg-surface-light px-2 py-1 rounded text-text-muted whitespace-nowrap">{q.count} queries</span>
+                                            <span className="text-[10px] text-text-muted whitespace-nowrap">{new Date(q.lastUsed).toLocaleDateString()}</span>
                                         </div>
                                     </div>
                                 ))}
@@ -423,6 +457,18 @@ export default function Dashboard() {
                                 <div className="flex h-full items-center justify-center text-xs text-text-muted italic">No recent knowledge base activity.</div>
                             )}
                         </div>
+                        {userStats?.recentKnowledgeBase?.items?.length > 0 && (
+                            <div className="mt-4 space-y-2">
+                                {userStats.recentKnowledgeBase.items.map((item: any, i: number) => (
+                                    <div key={i} className="flex items-center justify-between gap-4 border-b border-border-light pb-2 last:border-0 last:pb-0">
+                                        <span className="text-sm font-medium text-text-secondary truncate">{item.title}</span>
+                                        <span className="text-[10px] text-text-muted whitespace-nowrap">
+                                            {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ''}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                     <div className="card p-6">
                         <h3 className="text-sm font-black text-text-primary mb-4 uppercase tracking-wide flex items-center gap-2">
@@ -451,6 +497,18 @@ export default function Dashboard() {
                                 <div className="flex h-full items-center justify-center text-xs text-text-muted italic">No recent alerts activity.</div>
                             )}
                         </div>
+                        {userStats?.recentAlerts?.items?.length > 0 && (
+                            <div className="mt-4 space-y-2">
+                                {userStats.recentAlerts.items.map((item: any, i: number) => (
+                                    <div key={i} className="flex items-center justify-between gap-4 border-b border-border-light pb-2 last:border-0 last:pb-0">
+                                        <span className="text-sm font-medium text-text-secondary truncate">{item.title}</span>
+                                        <span className="text-[10px] text-text-muted whitespace-nowrap">
+                                            {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ''}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
