@@ -3,8 +3,9 @@
 import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
-import { LayoutDashboard, BookOpen, MessageSquare, Bell, Settings, LogOut, Terminal } from 'lucide-react';
+import { LayoutDashboard, BookOpen, MessageSquare, Bell, Settings, LogOut } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
+import PageLoader from '@/components/PageLoader';
 
 const navItems = [
     { name: 'Dashboard', href: '/workspace/dashboard', icon: LayoutDashboard, adminOnly: false },
@@ -36,9 +37,10 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
 
     if (loading) {
         return (
-            <div className="flex h-screen w-screen items-center justify-center bg-white">
-                <Terminal className="h-8 w-8 animate-spin text-blue-600" />
-            </div>
+            <PageLoader
+                title="Loading workspace"
+                subtitle="Syncing your latest resources..."
+            />
         );
     }
 
