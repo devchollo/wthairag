@@ -47,8 +47,8 @@ export default function AdminLayout({
     if (loading) {
         return (
             <PageLoader
-                title="Validating admin access"
-                subtitle="Confirming elevated permissions..."
+                label="Validating admin access"
+                hint="Confirming elevated permissions..."
             />
         );
     }

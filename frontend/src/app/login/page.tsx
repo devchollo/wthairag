@@ -28,8 +28,8 @@ export default function LoginPage() {
     if (loading) {
         return (
             <PageLoader
-                title="Checking session"
-                subtitle="Verifying your access credentials..."
+                label="Checking session"
+                hint="Verifying your access credentials..."
             />
         );
     }
