@@ -1,32 +1,202 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
     LayoutDashboard, Users, MessageSquare, Settings,
-    BarChart3, CheckCircle, XCircle, Trash2,
-    Search, Shield, LogOut, ChevronRight
+    CheckCircle, XCircle, Trash2,
+    Search, Shield, LogOut
 } from 'lucide-react';
+import {
+    ResponsiveContainer,
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    Tooltip,
+    BarChart,
+    Bar,
+    Legend
+} from 'recharts';
+
+type OverviewStats = {
+    totalUsers: number;
+    activeTenants: number;
+    pendingReviews: number;
+    totalTokens: number;
+    uptimeSeconds: number;
+    systemStatus: string;
+};
+
+type OverviewCharts = {
+    labels: string[];
+    usageTokens: number[];
+    newUsers: number[];
+    newWorkspaces: number[];
+};
+
+type TenantRow = {
+    _id: string;
+    role: string;
+    createdAt: string;
+    user: {
+        _id: string;
+        name: string;
+        email: string;
+        isVerified: boolean;
+    };
+    workspace: {
+        _id: string;
+        name: string;
+    };
+};
+
+type TestimonialRow = {
+    _id: string;
+    name: string;
+    role: string;
+    text: string;
+    rating: number;
+    createdAt: string;
+    isApproved: boolean;
+};
 
 export default function AdminDashboard() {
     const [activeTab, setActiveTab] = useState('overview');
+    const [overview, setOverview] = useState<OverviewStats | null>(null);
+    const [charts, setCharts] = useState<OverviewCharts | null>(null);
+    const [tenants, setTenants] = useState<TenantRow[]>([]);
+    const [testimonials, setTestimonials] = useState<TestimonialRow[]>([]);
+    const [loadingOverview, setLoadingOverview] = useState(true);
+    const [loadingTenants, setLoadingTenants] = useState(false);
+    const [loadingTestimonials, setLoadingTestimonials] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [actionBusyId, setActionBusyId] = useState<string | null>(null);
 
-    // Mock Data (To be replaced with API calls)
-    const stats = {
-        totalUsers: 1248,
-        activeTenants: 86,
-        pendingReviews: 14,
-        systemHealth: '99.99%'
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+    const fetchOverview = async () => {
+        setLoadingOverview(true);
+        try {
+            const res = await fetch(`${apiUrl}/api/admin/overview`, { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                setOverview(data.data.overview);
+                setCharts(data.data.charts);
+            }
+        } catch (error) {
+            console.error('Failed to load admin overview', error);
+        } finally {
+            setLoadingOverview(false);
+        }
     };
 
-    const testimonials = [
-        { id: 1, name: 'John Doe', role: 'Dev', text: 'Great tool!', rating: 5, status: 'pending' },
-        { id: 2, name: 'Jane Smith', role: 'CTO', text: 'Saved us time.', rating: 5, status: 'pending' }
-    ];
+    const fetchTestimonials = async () => {
+        setLoadingTestimonials(true);
+        try {
+            const res = await fetch(`${apiUrl}/api/admin/testimonials?status=pending`, { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                setTestimonials(data.data || []);
+            }
+        } catch (error) {
+            console.error('Failed to load testimonials', error);
+        } finally {
+            setLoadingTestimonials(false);
+        }
+    };
 
-    const users = [
-        { id: 1, name: 'Alice', email: 'alice@corp.com', role: 'Owner', workspace: 'Corp Inc.' },
-        { id: 2, name: 'Bob', email: 'bob@startup.io', role: 'Member', workspace: 'StartupIO' }
-    ];
+    const fetchTenants = async (term = '') => {
+        setLoadingTenants(true);
+        try {
+            const searchQuery = term ? `?search=${encodeURIComponent(term)}` : '';
+            const res = await fetch(`${apiUrl}/api/admin/tenants${searchQuery}`, { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                setTenants(data.data || []);
+            }
+        } catch (error) {
+            console.error('Failed to load tenants', error);
+        } finally {
+            setLoadingTenants(false);
+        }
+    };
+
+    const handleApprove = async (id: string) => {
+        setActionBusyId(id);
+        try {
+            const res = await fetch(`${apiUrl}/api/admin/testimonials/${id}/approve`, {
+                method: 'PUT',
+                credentials: 'include'
+            });
+            if (res.ok) {
+                setTestimonials((prev) => prev.filter((item) => item._id !== id));
+                fetchOverview();
+            }
+        } catch (error) {
+            console.error('Failed to approve testimonial', error);
+        } finally {
+            setActionBusyId(null);
+        }
+    };
+
+    const handleReject = async (id: string) => {
+        setActionBusyId(id);
+        try {
+            const res = await fetch(`${apiUrl}/api/admin/testimonials/${id}/reject`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+            if (res.ok) {
+                setTestimonials((prev) => prev.filter((item) => item._id !== id));
+                fetchOverview();
+            }
+        } catch (error) {
+            console.error('Failed to reject testimonial', error);
+        } finally {
+            setActionBusyId(null);
+        }
+    };
+
+    useEffect(() => {
+        fetchOverview();
+        fetchTestimonials();
+        fetchTenants();
+    }, []);
+
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            fetchTenants(searchTerm);
+        }, 300);
+        return () => clearTimeout(timeout);
+    }, [searchTerm]);
+
+    const formattedUptime = useMemo(() => {
+        const uptime = overview?.uptimeSeconds ?? 0;
+        const days = Math.floor(uptime / 86400);
+        const hours = Math.floor((uptime % 86400) / 3600);
+        if (days > 0) {
+            return `${days}d ${hours}h`;
+        }
+        const minutes = Math.floor((uptime % 3600) / 60);
+        return `${hours}h ${minutes}m`;
+    }, [overview?.uptimeSeconds]);
+
+    const usageChartData = useMemo(() => {
+        if (!charts) return [];
+        return charts.labels.map((label, index) => ({
+            date: new Date(label).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            tokens: charts.usageTokens[index] || 0
+        }));
+    }, [charts]);
+
+    const growthChartData = useMemo(() => {
+        if (!charts) return [];
+        return charts.labels.map((label, index) => ({
+            date: new Date(label).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            users: charts.newUsers[index] || 0,
+            workspaces: charts.newWorkspaces[index] || 0
+        }));
+    }, [charts]);
 
     return (
         <div className="flex min-h-screen bg-zinc-50">
@@ -60,7 +230,11 @@ export default function AdminDashboard() {
                     >
                         <MessageSquare className="h-4 w-4" />
                         Reviews
-                        {stats.pendingReviews > 0 && <span className="ml-auto bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-full">{stats.pendingReviews}</span>}
+                        {(overview?.pendingReviews || 0) > 0 && (
+                            <span className="ml-auto bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-full">
+                                {overview?.pendingReviews || 0}
+                            </span>
+                        )}
                     </button>
                     <button
                         onClick={() => setActiveTab('settings')}
@@ -88,7 +262,7 @@ export default function AdminDashboard() {
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2 px-4 py-2 bg-white border border-zinc-200 rounded-full text-xs font-bold text-emerald-600 shadow-sm">
                             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                            System Operational
+                            {overview?.systemStatus || 'Checking Status'}
                         </div>
                     </div>
                 </header>
@@ -101,27 +275,80 @@ export default function AdminDashboard() {
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                                 <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
                                     <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Total Users</div>
-                                    <div className="text-3xl font-black text-zinc-900">{stats.totalUsers}</div>
+                                    <div className="text-3xl font-black text-zinc-900">{overview?.totalUsers?.toLocaleString() || 0}</div>
                                 </div>
                                 <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
                                     <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Active Tenants</div>
-                                    <div className="text-3xl font-black text-zinc-900">{stats.activeTenants}</div>
+                                    <div className="text-3xl font-black text-zinc-900">{overview?.activeTenants?.toLocaleString() || 0}</div>
                                 </div>
                                 <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
                                     <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Pending Reviews</div>
-                                    <div className="text-3xl font-black text-zinc-900">{stats.pendingReviews}</div>
+                                    <div className="text-3xl font-black text-zinc-900">{overview?.pendingReviews?.toLocaleString() || 0}</div>
                                 </div>
                                 <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
                                     <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Uptime</div>
-                                    <div className="text-3xl font-black text-zinc-900">{stats.systemHealth}</div>
+                                    <div className="text-3xl font-black text-zinc-900">{formattedUptime}</div>
+                                    <div className="text-[11px] text-zinc-400 font-semibold mt-1">Since last restart</div>
                                 </div>
                             </div>
 
-                            {/* Chart Placeholder */}
-                            <div className="bg-white p-8 rounded-2xl border border-zinc-200 shadow-sm min-h-[400px] flex items-center justify-center">
-                                <div className="text-center opacity-50">
-                                    <BarChart3 className="h-16 w-16 mx-auto mb-4 text-zinc-300" />
-                                    <p className="font-bold text-zinc-400">Activity Analytics Visualization Loading...</p>
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                                <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div>
+                                            <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Platform Usage</div>
+                                            <div className="text-lg font-black text-zinc-900">Token Consumption (30 Days)</div>
+                                        </div>
+                                        <div className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                                            {overview?.totalTokens?.toLocaleString() || 0} total
+                                        </div>
+                                    </div>
+                                    <div className="h-[260px]">
+                                        {loadingOverview ? (
+                                            <div className="flex h-full items-center justify-center text-sm text-zinc-400">Loading analytics…</div>
+                                        ) : usageChartData.length > 0 ? (
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <LineChart data={usageChartData}>
+                                                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                                                    <YAxis tick={{ fontSize: 11 }} />
+                                                    <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }} />
+                                                    <Line type="monotone" dataKey="tokens" stroke="#2563eb" strokeWidth={2} dot={false} />
+                                                </LineChart>
+                                            </ResponsiveContainer>
+                                        ) : (
+                                            <div className="flex h-full items-center justify-center text-sm text-zinc-400">No usage data yet.</div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div>
+                                            <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Growth</div>
+                                            <div className="text-lg font-black text-zinc-900">New Users & Workspaces</div>
+                                        </div>
+                                        <div className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
+                                            Last 30 days
+                                        </div>
+                                    </div>
+                                    <div className="h-[260px]">
+                                        {loadingOverview ? (
+                                            <div className="flex h-full items-center justify-center text-sm text-zinc-400">Loading analytics…</div>
+                                        ) : growthChartData.length > 0 ? (
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart data={growthChartData}>
+                                                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                                                    <YAxis tick={{ fontSize: 11 }} />
+                                                    <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }} />
+                                                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                                                    <Bar dataKey="users" name="Users" fill="#10b981" radius={[4, 4, 0, 0]} />
+                                                    <Bar dataKey="workspaces" name="Workspaces" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        ) : (
+                                            <div className="flex h-full items-center justify-center text-sm text-zinc-400">No growth data yet.</div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </>
@@ -132,30 +359,51 @@ export default function AdminDashboard() {
                         <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
                             <div className="p-6 border-b border-zinc-200 flex justify-between items-center bg-zinc-50/50">
                                 <h3 className="font-bold text-lg text-zinc-900">Review Moderation Queue</h3>
+                                <div className="text-xs font-semibold text-zinc-400">
+                                    {loadingTestimonials ? 'Refreshing…' : `${testimonials.length} pending`}
+                                </div>
                             </div>
                             <div className="divide-y divide-zinc-100">
-                                {testimonials.map(review => (
-                                    <div key={review.id} className="p-6 flex items-start gap-6 hover:bg-zinc-50 transition-colors">
-                                        <div className="h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-black">
-                                            {review.rating}
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="flex justify-between mb-1">
-                                                <h4 className="font-bold text-zinc-900">{review.name}</h4>
-                                                <span className="text-xs font-bold text-zinc-400">{review.role}</span>
+                                {loadingTestimonials ? (
+                                    <div className="p-6 text-sm text-zinc-500">Loading reviews…</div>
+                                ) : testimonials.length === 0 ? (
+                                    <div className="p-6 text-sm text-zinc-500">No pending reviews. 🎉</div>
+                                ) : (
+                                    testimonials.map((review) => (
+                                        <div key={review._id} className="p-6 flex items-start gap-6 hover:bg-zinc-50 transition-colors">
+                                            <div className="h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-black">
+                                                {review.rating}
                                             </div>
-                                            <p className="text-sm text-zinc-600 mb-4">"{review.text}"</p>
-                                            <div className="flex gap-2">
-                                                <button className="btn-sm bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2">
-                                                    <CheckCircle className="h-3 w-3" /> Approve
-                                                </button>
-                                                <button className="btn-sm bg-red-100 text-red-700 hover:bg-red-200 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2">
-                                                    <XCircle className="h-3 w-3" /> Reject
-                                                </button>
+                                            <div className="flex-1">
+                                                <div className="flex justify-between mb-1">
+                                                    <h4 className="font-bold text-zinc-900">{review.name}</h4>
+                                                    <span className="text-xs font-bold text-zinc-400">{review.role}</span>
+                                                </div>
+                                                <p className="text-sm text-zinc-600 mb-4">"{review.text}"</p>
+                                                <div className="flex flex-wrap items-center gap-3 text-[10px] font-bold text-zinc-400 mb-4">
+                                                    <span>{new Date(review.createdAt).toLocaleDateString()}</span>
+                                                    <span className="uppercase tracking-widest">Pending</span>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => handleApprove(review._id)}
+                                                        disabled={actionBusyId === review._id}
+                                                        className="btn-sm bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                                                    >
+                                                        <CheckCircle className="h-3 w-3" /> Approve
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleReject(review._id)}
+                                                        disabled={actionBusyId === review._id}
+                                                        className="btn-sm bg-red-100 text-red-700 hover:bg-red-200 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                                                    >
+                                                        <XCircle className="h-3 w-3" /> Reject
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))
+                                )}
                             </div>
                         </div>
                     )}
@@ -167,7 +415,13 @@ export default function AdminDashboard() {
                                 <h3 className="font-bold text-lg text-zinc-900">Tenant Directory</h3>
                                 <div className="relative">
                                     <Search className="h-4 w-4 absolute left-3 top-3 text-zinc-400" />
-                                    <input type="text" placeholder="Search tenants..." className="pl-9 pr-4 py-2 rounded-lg border border-zinc-200 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" />
+                                    <input
+                                        type="text"
+                                        value={searchTerm}
+                                        onChange={(event) => setSearchTerm(event.target.value)}
+                                        placeholder="Search tenants..."
+                                        className="pl-9 pr-4 py-2 rounded-lg border border-zinc-200 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                                    />
                                 </div>
                             </div>
                             <div className="overflow-x-auto">
@@ -182,24 +436,45 @@ export default function AdminDashboard() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-zinc-100">
-                                        {users.map(user => (
-                                            <tr key={user.id} className="hover:bg-zinc-50 transition-colors">
-                                                <td className="px-6 py-4 font-bold text-zinc-900">
-                                                    <div>{user.name}</div>
-                                                    <div className="text-zinc-500 font-medium text-xs">{user.email}</div>
-                                                </td>
-                                                <td className="px-6 py-4 font-medium text-zinc-600">{user.workspace}</td>
-                                                <td className="px-6 py-4">
-                                                    <span className="px-2 py-1 rounded bg-blue-50 text-blue-600 text-xs font-bold border border-blue-100">{user.role}</span>
-                                                </td>
-                                                <td className="px-6 py-4 text-emerald-600 font-bold text-xs">Active</td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <button className="text-zinc-400 hover:text-red-500 transition-colors">
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </button>
+                                        {loadingTenants ? (
+                                            <tr>
+                                                <td colSpan={5} className="px-6 py-8 text-center text-sm text-zinc-400">
+                                                    Loading tenants…
                                                 </td>
                                             </tr>
-                                        ))}
+                                        ) : tenants.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={5} className="px-6 py-8 text-center text-sm text-zinc-400">
+                                                    No tenant matches found.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            tenants.map((tenant) => (
+                                                <tr key={tenant._id} className="hover:bg-zinc-50 transition-colors">
+                                                    <td className="px-6 py-4 font-bold text-zinc-900">
+                                                        <div>{tenant.user.name}</div>
+                                                        <div className="text-zinc-500 font-medium text-xs">{tenant.user.email}</div>
+                                                        <div className="text-[10px] font-semibold text-zinc-400 mt-1">
+                                                            Joined {new Date(tenant.createdAt).toLocaleDateString()}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 font-medium text-zinc-600">{tenant.workspace.name}</td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="px-2 py-1 rounded bg-blue-50 text-blue-600 text-xs font-bold border border-blue-100 capitalize">
+                                                            {tenant.role}
+                                                        </span>
+                                                    </td>
+                                                    <td className={`px-6 py-4 font-bold text-xs ${tenant.user.isVerified ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                                        {tenant.user.isVerified ? 'Verified' : 'Pending'}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <button className="text-zinc-400 hover:text-red-500 transition-colors" disabled>
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
                                     </tbody>
                                 </table>
                             </div>

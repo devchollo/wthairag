@@ -101,6 +101,7 @@ import filesRoutes from './routes/files';
 import testimonialRoutes from './routes/testimonials';
 import membershipRoutes from './routes/membership';
 import analyticsRoutes from './routes/analytics';
+import adminRoutes from './routes/admin';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/tools', toolsRoutes);
@@ -112,6 +113,7 @@ app.use('/api/files', filesRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/memberships', membershipRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Initialize Keep-Alive & Cleanup Workers
 import { initCleanupWorker } from './cleanupWorker';
