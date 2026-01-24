@@ -299,7 +299,7 @@ IMPORTANT GUIDELINES:
                 tokens: aiResponse.tokensUsed || 0,
                 query: query.substring(0, 500),
                 citedDocuments: citedTitles,
-                aiModel: 'gpt-4o-mini'
+                aiModel: aiResponse.modelUsed
             }).catch(err => console.error('Failed to log usage:', err));
         }
 
