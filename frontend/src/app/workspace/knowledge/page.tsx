@@ -28,7 +28,7 @@ export default function KnowledgeBase() {
     const [manualContent, setManualContent] = useState('');
     const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [showTip, setShowTip] = useState(false);
+    const [showTip, setShowTip] = useState(true);
 
     const isAdmin = userRole === 'owner' || userRole === 'admin';
 
