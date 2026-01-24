@@ -247,19 +247,23 @@ export default function AlertsPage() {
                                             </span>
                                         )}
                                     </div>
-                                    <div className="col-span-2 flex items-center justify-end gap-2">
+                                    <div className="col-span-2 flex items-center justify-end gap-2 flex-wrap">
                                         <button
                                             onClick={() => handleView(alert)}
-                                            className="btn-secondary h-9 px-3 text-[10px] font-black uppercase tracking-widest flex items-center gap-2"
+                                            className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-light text-text-muted hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-colors"
+                                            aria-label="View alert"
+                                            title="View alert"
                                         >
-                                            <Eye className="h-3.5 w-3.5" /> View
+                                            <Eye className="h-4 w-4" />
                                         </button>
                                         {alert.status === 'open' && isAdmin && (
                                             <button
-                                                className="btn-secondary h-9 px-3 text-[10px] font-black uppercase tracking-widest border-2 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-600"
+                                                className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-light text-text-muted hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 transition-colors"
                                                 onClick={() => handleResolve(alert._id)}
+                                                aria-label="Resolve alert"
+                                                title="Resolve alert"
                                             >
-                                                Resolve
+                                                <CheckCircle className="h-4 w-4" />
                                             </button>
                                         )}
                                         {alert.status !== 'open' && (
@@ -272,6 +276,8 @@ export default function AlertsPage() {
                                             <button
                                                 onClick={() => handleDelete(alert._id)}
                                                 className="h-9 w-9 flex items-center justify-center rounded-lg text-text-muted hover:text-red-500 hover:bg-red-50 transition-colors"
+                                                aria-label="Delete alert"
+                                                title="Delete alert"
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </button>

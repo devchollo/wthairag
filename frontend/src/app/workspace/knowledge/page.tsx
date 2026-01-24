@@ -146,6 +146,7 @@ export default function KnowledgeBase() {
                 document.body.appendChild(link);
                 link.click();
                 link.remove();
+                await recordKnowledgeView(id);
             } else {
                 alert(data.message || 'Download failed');
             }
@@ -154,9 +155,27 @@ export default function KnowledgeBase() {
         }
     };
 
+    const recordKnowledgeView = async (id: string) => {
+        if (!currentWorkspace?._id) return;
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            await fetch(`${apiUrl}/api/workspace-data/knowledge/${id}/view`, {
+                method: 'POST',
+                headers: {
+                    'x-workspace-id': currentWorkspace._id,
+                    'x-workspace-slug': currentWorkspace.slug || ''
+                },
+                credentials: 'include'
+            });
+        } catch (e) {
+            console.error('Failed to record knowledge view', e);
+        }
+    };
+
     const handleView = (doc: Document) => {
         setSelectedDoc(doc);
         setIsModalOpen(true);
+        recordKnowledgeView(doc._id);
     };
 
     const closeModal = () => {

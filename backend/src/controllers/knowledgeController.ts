@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Document from '../models/Document';
 import DocumentChunk from '../models/DocumentChunk';
+import UsageLog from '../models/UsageLog';
 import { sendSuccess, sendError } from '../utils/response';
 import { uploadFile, deleteFile, getDownloadUrl } from '../services/s3Service';
 import { AIService } from '../services/aiService';
@@ -246,6 +247,36 @@ export const deleteDocument = async (req: Request, res: Response) => {
         await DocumentChunk.deleteMany({ documentId: doc._id });
 
         return sendSuccess(res, null, 'Document deleted');
+    } catch (error: any) {
+        return sendError(res, error.message, 500);
+    }
+};
+
+export const recordKnowledgeView = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const doc = await Document.findOne({ _id: id, workspaceId: (req as any).workspace?._id })
+            .select('title')
+            .lean();
+
+        if (!doc) {
+            return sendError(res, 'Document not found', 404);
+        }
+
+        if (!req.user?._id) {
+            return sendError(res, 'User context missing', 400);
+        }
+
+        await UsageLog.create({
+            workspaceId: (req as any).workspace?._id,
+            userId: req.user?._id,
+            tokens: 0,
+            query: doc.title,
+            citedDocuments: [doc.title],
+            eventType: 'view'
+        });
+
+        return sendSuccess(res, null, 'Knowledge view recorded');
     } catch (error: any) {
         return sendError(res, error.message, 500);
     }
