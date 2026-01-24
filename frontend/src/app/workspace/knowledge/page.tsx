@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FileText, Trash2, Upload, Terminal, BookOpen, Clock, Activity, Search, Filter, Download, X } from 'lucide-react';
+import { FileText, Trash2, Upload, Terminal, BookOpen, Clock, Activity, Search, Filter, Download, X, Lightbulb } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 import { KnowledgeSkeleton } from '@/components/Skeleton';
@@ -28,6 +28,7 @@ export default function KnowledgeBase() {
     const [manualContent, setManualContent] = useState('');
     const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showTip, setShowTip] = useState(false);
 
     const isAdmin = userRole === 'owner' || userRole === 'admin';
 
@@ -208,6 +209,13 @@ export default function KnowledgeBase() {
                         >
                             {showManualForm ? 'Cancel Entry' : 'Manual Entry'}
                         </button>
+                        <button
+                            onClick={() => setShowTip((prev) => !prev)}
+                            className="bg-surface-light text-text-primary border-2 border-border-light rounded-xl h-10 px-4 font-mono text-[10px] font-black uppercase tracking-widest hover:border-blue-600/30 transition-all flex items-center gap-2"
+                        >
+                            <Lightbulb className="h-3.5 w-3.5" />
+                            {showTip ? 'Hide Tips' : 'Tip'}
+                        </button>
                         <label className="btn-primary gap-2 h-10 px-4 cursor-pointer">
                             <Upload className="h-4 w-4" />
                             {uploading ? 'Processing...' : 'Upload Data'}
@@ -224,34 +232,68 @@ export default function KnowledgeBase() {
                 </div>
             )}
 
-            {showManualForm && isAdmin && (
-                <div className="card p-6 bg-white border-2 border-blue-600/20">
-                    <h3 className="text-sm font-black text-text-primary mb-4 flex items-center gap-2 uppercase tracking-tight">
-                        <Activity className="h-4 w-4 text-blue-600" /> New Knowledge Record
-                    </h3>
-                    <div className="space-y-4">
-                        <input
-                            type="text"
-                            placeholder="Record Title (e.g. Infrastructure Handbook)"
-                            value={manualTitle}
-                            onChange={(e) => setManualTitle(e.target.value)}
-                            className="w-full h-11 bg-surface-light border-2 border-border-light rounded-xl px-4 text-xs font-bold outline-none focus:border-blue-600 transition-all"
-                        />
-                        <textarea
-                            placeholder="Enter the full text content here for AI indexing..."
-                            value={manualContent}
-                            onChange={(e) => setManualContent(e.target.value)}
-                            rows={8}
-                            className="w-full bg-surface-light border-2 border-border-light rounded-xl p-4 text-xs font-bold outline-none focus:border-blue-600 transition-all resize-none"
-                        />
-                        <button
-                            onClick={handleManualSubmit}
-                            disabled={!manualTitle || !manualContent || uploading}
-                            className="btn-primary w-full h-11"
-                        >
-                            {uploading ? 'Vaulting...' : 'Vault Record'}
-                        </button>
-                    </div>
+            {isAdmin && (showManualForm || showTip) && (
+                <div
+                    className={`grid gap-6 ${showManualForm && showTip ? 'lg:grid-cols-[minmax(0,2fr),minmax(0,1fr)]' : 'grid-cols-1'}`}
+                >
+                    {showManualForm && (
+                        <div className="card p-6 bg-white border-2 border-blue-600/20">
+                            <h3 className="text-sm font-black text-text-primary mb-4 flex items-center gap-2 uppercase tracking-tight">
+                                <Activity className="h-4 w-4 text-blue-600" /> New Knowledge Record
+                            </h3>
+                            <div className="space-y-4">
+                                <input
+                                    type="text"
+                                    placeholder="Record Title (e.g. Infrastructure Handbook)"
+                                    value={manualTitle}
+                                    onChange={(e) => setManualTitle(e.target.value)}
+                                    className="w-full h-11 bg-surface-light border-2 border-border-light rounded-xl px-4 text-xs font-bold outline-none focus:border-blue-600 transition-all"
+                                />
+                                <textarea
+                                    placeholder="Enter the full text content here for AI indexing..."
+                                    value={manualContent}
+                                    onChange={(e) => setManualContent(e.target.value)}
+                                    rows={8}
+                                    className="w-full bg-surface-light border-2 border-border-light rounded-xl p-4 text-xs font-bold outline-none focus:border-blue-600 transition-all resize-none"
+                                />
+                                <button
+                                    onClick={handleManualSubmit}
+                                    disabled={!manualTitle || !manualContent || uploading}
+                                    className="btn-primary w-full h-11"
+                                >
+                                    {uploading ? 'Vaulting...' : 'Vault Record'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    {showTip && (
+                        <div className="card p-6 bg-white border-2 border-blue-600/10">
+                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-600 mb-3">
+                                <Lightbulb className="h-3.5 w-3.5" />
+                                Writing Tips
+                            </div>
+                            <h3 className="text-base font-black text-text-primary mb-3">
+                                Write Records So AI Can Reason, Not Guess
+                            </h3>
+                            <p className="text-xs font-bold text-text-secondary mb-3">
+                                When adding records, aim for complete context:
+                            </p>
+                            <ul className="text-xs font-bold text-text-secondary space-y-2 mb-4">
+                                <li>What is this about? Be specific.</li>
+                                <li>Why does it exist or matter?</li>
+                                <li>Who is involved or affected?</li>
+                                <li>When does it apply? (date, version, timeframe)</li>
+                                <li>How does it work or get used?</li>
+                                <li>Edge cases / exceptions, if any</li>
+                            </ul>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-3">
+                                Clear structure → better answers.
+                            </p>
+                            <div className="rounded-lg bg-blue-50/70 border border-blue-100 px-3 py-2 text-[11px] font-bold text-blue-700 leading-relaxed">
+                                Tip: Records with clear what, why, who, when, and how produce more accurate AI answers. Vague notes = vague results.
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
