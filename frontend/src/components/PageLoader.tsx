@@ -1,33 +1,31 @@
-'use client';
-
 import { Terminal } from 'lucide-react';
 
-type PageLoaderProps = {
-    title?: string;
-    subtitle?: string;
-};
+interface PageLoaderProps {
+    label?: string;
+    hint?: string;
+}
 
 export default function PageLoader({
-    title = 'Loading your workspace',
-    subtitle = 'Preparing secure session and navigation...',
+    label = 'Loading your workspace',
+    hint = 'Checking your session and preparing the dashboard.',
 }: PageLoaderProps) {
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-white via-blue-50 to-white px-6">
-            <div className="w-full max-w-sm rounded-2xl border border-blue-100 bg-white/80 p-8 text-center shadow-xl shadow-blue-100/70 backdrop-blur">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/30">
-                    <Terminal className="h-6 w-6 animate-pulse" />
+        <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-white via-white to-blue-50 px-6">
+            <div className="flex w-full max-w-sm flex-col items-center gap-4 rounded-2xl border border-blue-100 bg-white/90 px-6 py-8 text-center shadow-xl shadow-blue-200/30 backdrop-blur">
+                <div className="relative">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/30">
+                        <Terminal className="h-6 w-6" />
+                    </div>
+                    <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-white animate-pulse" />
                 </div>
-                <h1 className="mt-4 text-lg font-black text-text-primary">{title}</h1>
-                <p className="mt-2 text-xs font-semibold text-text-muted">{subtitle}</p>
-                <div className="mt-6">
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-blue-100">
-                        <div className="loading-bar h-full w-1/2 rounded-full bg-blue-600" />
-                    </div>
-                    <div className="mt-4 flex items-center justify-center gap-1">
-                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-blue-600 [animation-delay:-0.3s]" />
-                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-blue-400 [animation-delay:-0.15s]" />
-                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-blue-300" />
-                    </div>
+                <div className="space-y-1">
+                    <p className="text-sm font-black tracking-tight text-text-primary">{label}</p>
+                    <p className="text-xs font-semibold text-text-muted">{hint}</p>
+                </div>
+                <div className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-blue-600/80 animate-bounce [animation-delay:-0.2s]" />
+                    <span className="h-2 w-2 rounded-full bg-blue-600/70 animate-bounce [animation-delay:-0.1s]" />
+                    <span className="h-2 w-2 rounded-full bg-blue-600/60 animate-bounce" />
                 </div>
             </div>
         </div>
