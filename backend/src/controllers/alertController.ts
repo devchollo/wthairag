@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Alert from '../models/Alert';
 import UsageLog from '../models/UsageLog';
 import { sendSuccess, sendError } from '../utils/response';
+import { recordUsageSummaryForView } from '../services/usageSummaryService';
 
 export const createAlert = async (req: Request, res: Response) => {
     try {
@@ -82,7 +83,7 @@ export const recordAlertView = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const alert = await Alert.findOne({ _id: id, workspaceId: req.workspace?._id })
-            .select('title')
+            .select('title updatedAt severity status')
             .lean();
 
         if (!alert) {
@@ -100,6 +101,18 @@ export const recordAlertView = async (req: Request, res: Response) => {
             query: alert.title,
             citedDocuments: [alert.title],
             eventType: 'view'
+        });
+        await recordUsageSummaryForView({
+            workspaceId: req.workspace?._id.toString(),
+            userId: req.user?._id.toString(),
+            lastViewed: {
+                type: 'alert',
+                title: alert.title,
+                updatedAt: alert.updatedAt,
+                link: '/workspace/alerts',
+                severity: alert.severity,
+                status: alert.status
+            }
         });
 
         return sendSuccess(res, null, 'Alert view recorded');

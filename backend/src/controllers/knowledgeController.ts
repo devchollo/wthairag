@@ -5,6 +5,7 @@ import UsageLog from '../models/UsageLog';
 import { sendSuccess, sendError } from '../utils/response';
 import { uploadFile, deleteFile, getDownloadUrl } from '../services/s3Service';
 import { AIService } from '../services/aiService';
+import { recordUsageSummaryForView } from '../services/usageSummaryService';
 
 const buildSummary = (text: string, maxLength: number) => {
     const normalized = text.replace(/\s+/g, ' ').trim();
@@ -256,7 +257,7 @@ export const recordKnowledgeView = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const doc = await Document.findOne({ _id: id, workspaceId: (req as any).workspace?._id })
-            .select('title')
+            .select('title updatedAt')
             .lean();
 
         if (!doc) {
@@ -274,6 +275,16 @@ export const recordKnowledgeView = async (req: Request, res: Response) => {
             query: doc.title,
             citedDocuments: [doc.title],
             eventType: 'view'
+        });
+        await recordUsageSummaryForView({
+            workspaceId: (req as any).workspace?._id.toString(),
+            userId: req.user?._id.toString(),
+            lastViewed: {
+                type: 'knowledge',
+                title: doc.title,
+                updatedAt: doc.updatedAt,
+                link: '/workspace/knowledge'
+            }
         });
 
         return sendSuccess(res, null, 'Knowledge view recorded');

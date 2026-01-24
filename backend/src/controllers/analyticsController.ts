@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import UsageLog from '../models/UsageLog';
 import Document from '../models/Document';
 import Alert from '../models/Alert';
+import User from '../models/User';
+import UsageSummary from '../models/UsageSummary';
 import { sendSuccess, sendError } from '../utils/response';
 
 const buildDailySeries = (
@@ -52,6 +54,21 @@ const buildTopTopics = async (match: Record<string, unknown>) => {
         { $sort: { count: -1 } },
         { $limit: 5 }
     ]);
+};
+
+const toDailyEntries = (
+    dailyTokens?: Map<string, number> | Record<string, number> | null
+) => {
+    if (!dailyTokens) {
+        return [];
+    }
+    if (dailyTokens instanceof Map) {
+        return Array.from(dailyTokens.entries()).map(([key, value]) => ({ _id: key, value }));
+    }
+    return Object.entries(dailyTokens).map(([key, value]) => ({
+        _id: key,
+        value: typeof value === 'number' ? value : Number(value) || 0
+    }));
 };
 
 const stopWords = new Set([
@@ -199,48 +216,60 @@ export const getUserStats = async (req: Request, res: Response) => {
             return sendError(res, 'User or Workspace context missing', 400);
         }
 
+        const usageSummary = await UsageSummary.findOne({ userId, workspaceId });
+
         // Total Tokens
-        const totalTokens = await UsageLog.aggregate([
-            { $match: { userId, workspaceId, eventType: 'query' } },
-            { $group: { _id: null, total: { $sum: "$tokens" } } }
-        ]);
+        const totalTokens = usageSummary
+            ? [{ total: usageSummary.totalTokens }]
+            : await UsageLog.aggregate([
+                { $match: { userId, workspaceId, eventType: 'query' } },
+                { $group: { _id: null, total: { $sum: "$tokens" } } }
+            ]);
 
         // Most Queried Topics (using Cited Documents now)
-        const topQueries = await buildTopTopics({ userId, workspaceId, eventType: 'query' });
+        const topQueries = usageSummary
+            ? usageSummary.topQueries.slice(0, 5)
+            : await buildTopTopics({ userId, workspaceId, eventType: 'query' });
 
         // Chart Data (Daily Tokens for last 30 days)
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-        const chartDataRaw = await UsageLog.aggregate([
-            { $match: { userId, workspaceId, eventType: 'query', createdAt: { $gte: thirtyDaysAgo } } },
-            {
-                $group: {
-                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-                    tokens: { $sum: "$tokens" }
-                }
-            },
-            { $sort: { _id: 1 } }
-        ]);
+        const chartDataRaw = usageSummary
+            ? toDailyEntries(usageSummary.dailyTokens)
+            : await UsageLog.aggregate([
+                { $match: { userId, workspaceId, eventType: 'query', createdAt: { $gte: thirtyDaysAgo } } },
+                {
+                    $group: {
+                        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                        tokens: { $sum: "$tokens" }
+                    }
+                },
+                { $sort: { _id: 1 } }
+            ]).then(raw => raw.map(item => ({ _id: item._id, value: item.tokens })));
 
         const usageSeries = buildDailySeries(
-            chartDataRaw.map(item => ({ _id: item._id, value: item.tokens })),
+            chartDataRaw,
             30
         );
 
-        const recentUsage = await UsageLog.findOne({
-            userId,
-            workspaceId,
-            eventType: { $in: ['query', 'view'] }
-        })
-            .sort('-createdAt')
-            .select('citedDocuments createdAt query')
-            .lean();
+        const recentUsage = !usageSummary?.lastViewed
+            ? await UsageLog.findOne({
+                userId,
+                workspaceId,
+                eventType: { $in: ['query', 'view'] }
+            })
+                .sort('-createdAt')
+                .select('citedDocuments createdAt query')
+                .lean()
+            : null;
 
-        let recentItem = null;
+        let recentItem = usageSummary?.lastViewed ?? null;
 
         const citedTitles = recentUsage?.citedDocuments?.filter(Boolean) || [];
-        recentItem = await findRecentItemByTitles(workspaceId.toString(), citedTitles);
+        if (!recentItem) {
+            recentItem = await findRecentItemByTitles(workspaceId.toString(), citedTitles);
+        }
 
         if (!recentItem && recentUsage?.query) {
             const queryTitle = recentUsage.query.trim();
@@ -326,10 +355,10 @@ export const getUserStats = async (req: Request, res: Response) => {
         return sendSuccess(res, {
             totalTokens: totalTokens[0]?.total || 0,
             topQueries: topQueries.map(q => ({
-                query: q.query ?? q._id,
-                topic: deriveTopicFromQuery(q.query ?? q._id, q.citedDocuments),
-                count: q.count,
-                lastUsed: q.lastUsed
+                query: (q as any).query ?? (q as any)._id,
+                topic: deriveTopicFromQuery((q as any).query ?? (q as any)._id, (q as any).citedDocuments),
+                count: (q as any).count,
+                lastUsed: (q as any).lastUsed
             })),
             chartData: { labels: usageSeries.labels, tokens: usageSeries.values },
             recentItem,
@@ -349,43 +378,73 @@ export const getWorkspaceStats = async (req: Request, res: Response) => {
             return sendError(res, 'Workspace context missing', 400);
         }
 
+        const usageSummary = await UsageSummary.findOne({ workspaceId, userId: null });
+
         // Total Tokens
-        const totalTokens = await UsageLog.aggregate([
-            { $match: { workspaceId, eventType: 'query' } },
-            { $group: { _id: null, total: { $sum: "$tokens" } } }
-        ]);
+        const totalTokens = usageSummary
+            ? [{ total: usageSummary.totalTokens }]
+            : await UsageLog.aggregate([
+                { $match: { workspaceId, eventType: 'query' } },
+                { $group: { _id: null, total: { $sum: "$tokens" } } }
+            ]);
 
         // Top Queries (using Cited Documents)
-        const topQueries = await buildTopTopics({ workspaceId, eventType: 'query' });
+        const topQueries = usageSummary
+            ? usageSummary.topQueries.slice(0, 5)
+            : await buildTopTopics({ workspaceId, eventType: 'query' });
 
         // Usage by User (Top 5 Users)
-        const topUsers = await UsageLog.aggregate([
-            { $match: { workspaceId, eventType: 'query' } },
-            { $group: { _id: "$userId", totalTokens: { $sum: "$tokens" }, requestCount: { $sum: 1 } } },
-            { $sort: { totalTokens: -1 } },
-            { $limit: 10 },
-            { $lookup: { from: "users", localField: "_id", foreignField: "_id", as: "user" } },
-            { $unwind: "$user" },
-            { $project: { _id: 1, totalTokens: 1, requestCount: 1, name: "$user.name", email: "$user.email" } }
-        ]);
+        const topUsers = usageSummary
+            ? await UsageSummary.find({ workspaceId, userId: { $ne: null } })
+                .sort({ totalTokens: -1 })
+                .limit(10)
+                .then(async summaries => {
+                    const userIds = summaries.map(summary => summary.userId).filter(Boolean) as any[];
+                    const users = await User.find({ _id: { $in: userIds } })
+                        .select('name email')
+                        .lean();
+                    const userMap = new Map(users.map(user => [user._id.toString(), user]));
+
+                    return summaries.map(summary => {
+                        const user = summary.userId ? userMap.get(summary.userId.toString()) : null;
+                        return {
+                            _id: summary.userId,
+                            totalTokens: summary.totalTokens,
+                            requestCount: summary.totalQueries,
+                            name: user?.name,
+                            email: user?.email
+                        };
+                    });
+                })
+            : await UsageLog.aggregate([
+                { $match: { workspaceId, eventType: 'query' } },
+                { $group: { _id: "$userId", totalTokens: { $sum: "$tokens" }, requestCount: { $sum: 1 } } },
+                { $sort: { totalTokens: -1 } },
+                { $limit: 10 },
+                { $lookup: { from: "users", localField: "_id", foreignField: "_id", as: "user" } },
+                { $unwind: "$user" },
+                { $project: { _id: 1, totalTokens: 1, requestCount: 1, name: "$user.name", email: "$user.email" } }
+            ]);
 
         // Chart Data (Daily Tokens for last 30 days)
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-        const chartDataRaw = await UsageLog.aggregate([
-            { $match: { workspaceId, eventType: 'query', createdAt: { $gte: thirtyDaysAgo } } },
-            {
-                $group: {
-                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-                    tokens: { $sum: "$tokens" }
-                }
-            },
-            { $sort: { _id: 1 } }
-        ]);
+        const chartDataRaw = usageSummary
+            ? toDailyEntries(usageSummary.dailyTokens)
+            : await UsageLog.aggregate([
+                { $match: { workspaceId, eventType: 'query', createdAt: { $gte: thirtyDaysAgo } } },
+                {
+                    $group: {
+                        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                        tokens: { $sum: "$tokens" }
+                    }
+                },
+                { $sort: { _id: 1 } }
+            ]).then(raw => raw.map(item => ({ _id: item._id, value: item.tokens })));
 
         const usageSeries = buildDailySeries(
-            chartDataRaw.map(item => ({ _id: item._id, value: item.tokens })),
+            chartDataRaw,
             30
         );
 
@@ -434,10 +493,10 @@ export const getWorkspaceStats = async (req: Request, res: Response) => {
         return sendSuccess(res, {
             totalTokens: totalTokens[0]?.total || 0,
             topQueries: topQueries.map(q => ({
-                query: q.query ?? q._id,
-                topic: deriveTopicFromQuery(q.query ?? q._id, q.citedDocuments),
-                count: q.count,
-                lastUsed: q.lastUsed
+                query: (q as any).query ?? (q as any)._id,
+                topic: deriveTopicFromQuery((q as any).query ?? (q as any)._id, (q as any).citedDocuments),
+                count: (q as any).count,
+                lastUsed: (q as any).lastUsed
             })),
             topUsers,
             chartData: { labels: usageSeries.labels, tokens: usageSeries.values },

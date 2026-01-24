@@ -8,6 +8,7 @@ import UsageLog from '../models/UsageLog';
 import ResponseCache from '../models/ResponseCache';
 import { sendSuccess, sendError } from '../utils/response';
 import { AIService } from '../services/aiService';
+import { recordUsageSummaryForQuery } from '../services/usageSummaryService';
 
 const normalizeQuery = (query: string) => query.trim().toLowerCase().replace(/\s+/g, ' ');
 const hashText = (value: string) => crypto.createHash('sha256').update(value).digest('hex');
@@ -201,6 +202,13 @@ export const queryChat = async (req: Request, res: Response) => {
                     aiModel: 'cache',
                     eventType: 'query'
                 }).catch(err => console.error('Failed to log usage:', err));
+                await recordUsageSummaryForQuery({
+                    workspaceId: workspaceId.toString(),
+                    userId: req.user._id.toString(),
+                    tokens: 0,
+                    query: query.substring(0, 500),
+                    citedDocuments: cachedResponse.citations.map(c => c.title || c.documentId).filter(Boolean)
+                }).catch(err => console.error('Failed to update usage summary:', err));
             }
 
             return sendSuccess(res, { chat, response: assistantMessage }, 'Query processed (cached)');
@@ -303,6 +311,13 @@ IMPORTANT GUIDELINES:
                 aiModel: aiResponse.modelUsed,
                 eventType: 'query'
             }).catch(err => console.error('Failed to log usage:', err));
+            await recordUsageSummaryForQuery({
+                workspaceId: workspaceId.toString(),
+                userId: req.user._id.toString(),
+                tokens: aiResponse.tokensUsed || 0,
+                query: query.substring(0, 500),
+                citedDocuments: citedTitles
+            }).catch(err => console.error('Failed to update usage summary:', err));
         }
 
         await ResponseCache.findOneAndUpdate(
