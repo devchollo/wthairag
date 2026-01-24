@@ -1,6 +1,4 @@
 import axios from 'axios';
-import fs from 'fs/promises';
-import path from 'path';
 
 interface EmailOptions {
     to: string;
@@ -49,34 +47,13 @@ export const sendEmail = async ({ to, subject, html, text }: EmailOptions) => {
     }
 };
 
-const logoPath = path.resolve(__dirname, '../../../frontend/src/app/WorkToolsHub.png');
-let logoDataUri: string | null = null;
+const logoUrl = 'https://ksevillejo.s3.us-east-005.backblazeb2.com/WorkToolsHub+Logo.png';
 
-const getLogoSection = async () => {
-    if (logoDataUri === null) {
-        try {
-            const file = await fs.readFile(logoPath);
-            logoDataUri = `data:image/png;base64,${file.toString('base64')}`;
-        } catch (error) {
-            console.warn('[EmailService] Unable to load logo for email templates.', error);
-            logoDataUri = '';
-        }
-    }
-
-    if (!logoDataUri) {
-        return `
-            <div style="text-align: center; margin-bottom: 24px;">
-                <div style="font-size: 20px; font-weight: bold; color: #111827;">WorkToolsHub</div>
-            </div>
-        `;
-    }
-
-    return `
-        <div style="text-align: center; margin-bottom: 24px;">
-            <img src="${logoDataUri}" alt="WorkToolsHub" width="160" style="display: inline-block; max-width: 100%; height: auto;" />
-        </div>
-    `;
-};
+const getLogoSection = async () => `
+    <div style="text-align: center; margin-bottom: 24px;">
+        <img src="${logoUrl}" alt="WorkToolsHub" width="160" style="display: inline-block; max-width: 100%; height: auto;" />
+    </div>
+`;
 
 export const sendVerificationEmail = async (email: string, code: string) => {
     const subject = `Your WorkToolsHub verification code: ${code}`;
