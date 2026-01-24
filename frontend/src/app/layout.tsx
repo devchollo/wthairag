@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import { Github, Twitter, Linkedin, Terminal } from "lucide-react";
 import CookieBanner from "@/components/CookieBanner";
 import { Analytics } from "@vercel/analytics/next";
+import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,6 +17,19 @@ export const metadata: Metadata = {
   keywords: ["developer tools", "dns lookup", "ssl checker", "seo analysis", "ai rag", "engineering workspace"],
   authors: [{ name: "WorkToolsHub Engineering" }],
   creator: "WorkToolsHub",
+  applicationName: "WorkToolsHub",
+  manifest: "/manifest.webmanifest",
+  themeColor: "#0f172a",
+  icons: {
+    icon: [{ url: "/icons/icon.svg", type: "image/svg+xml" }],
+    shortcut: ["/icons/icon.svg"],
+    apple: [{ url: "/icons/icon.svg", type: "image/svg+xml" }],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "WorkToolsHub",
+  },
   alternates: {
     canonical: "/",
   },
@@ -139,6 +153,7 @@ export default function RootLayout({
             </div>
           </footer>
         </AuthProvider>
+        <ServiceWorkerRegistration />
         <Analytics />
       </body>
     </html>

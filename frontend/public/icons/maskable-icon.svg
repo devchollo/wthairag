@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="WorkToolsHub">
+  <defs>
+    <linearGradient id="wth-mask" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#111827" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#wth-mask)" />
+  <circle cx="256" cy="256" r="180" fill="rgba(255,255,255,0.1)" />
+  <g fill="#ffffff" font-family="Inter, system-ui, -apple-system, sans-serif" font-weight="700">
+    <text x="50%" y="48%" text-anchor="middle" font-size="120">WTH</text>
+    <text x="50%" y="68%" text-anchor="middle" font-size="40" letter-spacing="6">TOOLS</text>
+  </g>
+</svg>
