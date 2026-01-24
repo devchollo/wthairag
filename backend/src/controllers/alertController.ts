@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Alert from '../models/Alert';
+import UsageLog from '../models/UsageLog';
 import { sendSuccess, sendError } from '../utils/response';
 
 export const createAlert = async (req: Request, res: Response) => {
@@ -72,6 +73,36 @@ export const deleteAlert = async (req: Request, res: Response) => {
         const alert = await Alert.findOneAndDelete({ _id: id, workspaceId: req.workspace?._id });
         if (!alert) return sendError(res, 'Alert not found', 404);
         return sendSuccess(res, null, 'Alert deleted');
+    } catch (error: any) {
+        return sendError(res, error.message, 500);
+    }
+};
+
+export const recordAlertView = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const alert = await Alert.findOne({ _id: id, workspaceId: req.workspace?._id })
+            .select('title')
+            .lean();
+
+        if (!alert) {
+            return sendError(res, 'Alert not found', 404);
+        }
+
+        if (!req.user?._id) {
+            return sendError(res, 'User context missing', 400);
+        }
+
+        await UsageLog.create({
+            workspaceId: req.workspace?._id,
+            userId: req.user?._id,
+            tokens: 0,
+            query: alert.title,
+            citedDocuments: [alert.title],
+            eventType: 'view'
+        });
+
+        return sendSuccess(res, null, 'Alert view recorded');
     } catch (error: any) {
         return sendError(res, error.message, 500);
     }

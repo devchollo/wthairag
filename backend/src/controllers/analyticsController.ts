@@ -201,19 +201,19 @@ export const getUserStats = async (req: Request, res: Response) => {
 
         // Total Tokens
         const totalTokens = await UsageLog.aggregate([
-            { $match: { userId, workspaceId } },
+            { $match: { userId, workspaceId, eventType: 'query' } },
             { $group: { _id: null, total: { $sum: "$tokens" } } }
         ]);
 
         // Most Queried Topics (using Cited Documents now)
-        const topQueries = await buildTopTopics({ userId, workspaceId });
+        const topQueries = await buildTopTopics({ userId, workspaceId, eventType: 'query' });
 
         // Chart Data (Daily Tokens for last 30 days)
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
         const chartDataRaw = await UsageLog.aggregate([
-            { $match: { userId, workspaceId, createdAt: { $gte: thirtyDaysAgo } } },
+            { $match: { userId, workspaceId, eventType: 'query', createdAt: { $gte: thirtyDaysAgo } } },
             {
                 $group: {
                     _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
@@ -230,7 +230,8 @@ export const getUserStats = async (req: Request, res: Response) => {
 
         const recentUsage = await UsageLog.findOne({
             userId,
-            workspaceId
+            workspaceId,
+            eventType: { $in: ['query', 'view'] }
         })
             .sort('-createdAt')
             .select('citedDocuments createdAt query')
@@ -350,16 +351,16 @@ export const getWorkspaceStats = async (req: Request, res: Response) => {
 
         // Total Tokens
         const totalTokens = await UsageLog.aggregate([
-            { $match: { workspaceId } },
+            { $match: { workspaceId, eventType: 'query' } },
             { $group: { _id: null, total: { $sum: "$tokens" } } }
         ]);
 
         // Top Queries (using Cited Documents)
-        const topQueries = await buildTopTopics({ workspaceId });
+        const topQueries = await buildTopTopics({ workspaceId, eventType: 'query' });
 
         // Usage by User (Top 5 Users)
         const topUsers = await UsageLog.aggregate([
-            { $match: { workspaceId } },
+            { $match: { workspaceId, eventType: 'query' } },
             { $group: { _id: "$userId", totalTokens: { $sum: "$tokens" }, requestCount: { $sum: 1 } } },
             { $sort: { totalTokens: -1 } },
             { $limit: 10 },
@@ -373,7 +374,7 @@ export const getWorkspaceStats = async (req: Request, res: Response) => {
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
         const chartDataRaw = await UsageLog.aggregate([
-            { $match: { workspaceId, createdAt: { $gte: thirtyDaysAgo } } },
+            { $match: { workspaceId, eventType: 'query', createdAt: { $gte: thirtyDaysAgo } } },
             {
                 $group: {
                     _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
