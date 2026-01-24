@@ -38,8 +38,8 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
     if (loading) {
         return (
             <PageLoader
-                title="Loading workspace"
-                subtitle="Syncing your latest resources..."
+                label="Loading workspace"
+                hint="Syncing your latest resources..."
             />
         );
     }
