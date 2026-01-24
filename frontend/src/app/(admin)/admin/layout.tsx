@@ -3,6 +3,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import PageLoader from '@/components/PageLoader';
 
 export default function AdminLayout({
     children,
@@ -41,6 +42,15 @@ export default function AdminLayout({
 
     if (isLoginRoute) {
         return <>{children}</>;
+    }
+
+    if (loading) {
+        return (
+            <PageLoader
+                title="Validating admin access"
+                subtitle="Confirming elevated permissions..."
+            />
+        );
     }
 
     if (!user || !user.isOwner) {

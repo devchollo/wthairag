@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Lock, Mail, ArrowRight, Terminal, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import PageLoader from '@/components/PageLoader';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -26,9 +27,10 @@ export default function LoginPage() {
 
     if (loading) {
         return (
-            <div className="flex h-screen items-center justify-center bg-white">
-                <Terminal className="h-8 w-8 animate-spin text-blue-600" />
-            </div>
+            <PageLoader
+                title="Checking session"
+                subtitle="Verifying your access credentials..."
+            />
         );
     }
 
