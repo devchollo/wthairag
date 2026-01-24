@@ -4,6 +4,7 @@ import Workspace from '../models/Workspace';
 import Testimonial from '../models/Testimonial';
 import UsageLog from '../models/UsageLog';
 import Membership from '../models/Membership';
+import Alert from '../models/Alert';
 import { sendError, sendSuccess } from '../utils/response';
 
 const DAYS_BACK = 30;
@@ -31,6 +32,33 @@ const mapAggregateToSeries = (labels: string[], data: { _id: string; value: numb
 
 export const getAdminOverview = async (_req: Request, res: Response) => {
     try {
+        const [totalUsers, activeTenants, pendingReviews, totalTokens, workspaceUsage] = await Promise.all([
+            User.countDocuments({}),
+            Workspace.countDocuments({}),
+            Testimonial.countDocuments({ isApproved: false }),
+            UsageLog.aggregate([{ $group: { _id: null, total: { $sum: '$tokens' } } }]),
+            UsageLog.aggregate([
+                { $group: { _id: '$workspaceId', totalTokens: { $sum: '$tokens' }, requestCount: { $sum: 1 } } },
+                { $sort: { totalTokens: -1 } },
+                { $limit: 5 },
+                {
+                    $lookup: {
+                        from: 'workspaces',
+                        localField: '_id',
+                        foreignField: '_id',
+                        as: 'workspace'
+                    }
+                },
+                { $unwind: '$workspace' },
+                {
+                    $project: {
+                        _id: 1,
+                        totalTokens: 1,
+                        requestCount: 1,
+                        workspaceName: '$workspace.name'
+                    }
+                }
+            ])
         const [totalUsers, activeTenants, pendingReviews, totalTokens] = await Promise.all([
             User.countDocuments({}),
             Workspace.countDocuments({}),
@@ -80,7 +108,8 @@ export const getAdminOverview = async (_req: Request, res: Response) => {
             pendingReviews,
             totalTokens: totalTokens[0]?.total || 0,
             uptimeSeconds: Math.floor(process.uptime()),
-            systemStatus: 'Operational'
+            systemStatus: 'Operational',
+            workspaceUsage: workspaceUsage || []
         };
 
         const charts = {
@@ -205,6 +234,42 @@ export const rejectTestimonial = async (req: Request, res: Response) => {
         }
 
         return sendSuccess(res, testimonial, 'Testimonial rejected');
+    } catch (error: any) {
+        return sendError(res, error.message, 500);
+    }
+};
+
+export const getSystemConfig = async (_req: Request, res: Response) => {
+    try {
+        const [totalUsers, totalWorkspaces, totalAlerts, pendingReviews] = await Promise.all([
+            User.countDocuments({}),
+            Workspace.countDocuments({}),
+            Alert.countDocuments({}),
+            Testimonial.countDocuments({ isApproved: false })
+        ]);
+
+        const config = {
+            environment: process.env.NODE_ENV || 'development',
+            frontendUrl: process.env.FRONTEND_URL || null,
+            apiBaseUrl: process.env.API_URL || null,
+            rateLimits: {
+                global: '300 requests / 15 min',
+                auth: '50 requests / hour',
+                ai: '20 requests / hour'
+            },
+            totals: {
+                users: totalUsers,
+                workspaces: totalWorkspaces,
+                alerts: totalAlerts,
+                pendingReviews
+            },
+            server: {
+                uptimeSeconds: Math.floor(process.uptime()),
+                nodeVersion: process.version
+            }
+        };
+
+        return sendSuccess(res, config, 'System config fetched');
     } catch (error: any) {
         return sendError(res, error.message, 500);
     }

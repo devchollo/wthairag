@@ -25,6 +25,12 @@ type OverviewStats = {
     totalTokens: number;
     uptimeSeconds: number;
     systemStatus: string;
+    workspaceUsage: {
+        _id: string;
+        totalTokens: number;
+        requestCount: number;
+        workspaceName: string;
+    }[];
 };
 
 type OverviewCharts = {
@@ -60,6 +66,27 @@ type TestimonialRow = {
     isApproved: boolean;
 };
 
+type SystemConfig = {
+    environment: string;
+    frontendUrl: string | null;
+    apiBaseUrl: string | null;
+    rateLimits: {
+        global: string;
+        auth: string;
+        ai: string;
+    };
+    totals: {
+        users: number;
+        workspaces: number;
+        alerts: number;
+        pendingReviews: number;
+    };
+    server: {
+        uptimeSeconds: number;
+        nodeVersion: string;
+    };
+};
+
 export default function AdminDashboard() {
     const [activeTab, setActiveTab] = useState('overview');
     const [overview, setOverview] = useState<OverviewStats | null>(null);
@@ -71,6 +98,8 @@ export default function AdminDashboard() {
     const [loadingTestimonials, setLoadingTestimonials] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [actionBusyId, setActionBusyId] = useState<string | null>(null);
+    const [systemConfig, setSystemConfig] = useState<SystemConfig | null>(null);
+    const [loadingSystemConfig, setLoadingSystemConfig] = useState(false);
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -89,6 +118,151 @@ export default function AdminDashboard() {
             setLoadingOverview(false);
         }
     };
+
+    const fetchTestimonials = async () => {
+        setLoadingTestimonials(true);
+        try {
+            const res = await fetch(`${apiUrl}/api/admin/testimonials?status=pending`, { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                setTestimonials(data.data || []);
+            }
+        } catch (error) {
+            console.error('Failed to load testimonials', error);
+        } finally {
+            setLoadingTestimonials(false);
+        }
+    };
+
+    const fetchTenants = async (term = '') => {
+        setLoadingTenants(true);
+        try {
+            const searchQuery = term ? `?search=${encodeURIComponent(term)}` : '';
+            const res = await fetch(`${apiUrl}/api/admin/tenants${searchQuery}`, { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                setTenants(data.data || []);
+            }
+        } catch (error) {
+            console.error('Failed to load tenants', error);
+        } finally {
+            setLoadingTenants(false);
+        }
+    };
+
+    const handleApprove = async (id: string) => {
+        setActionBusyId(id);
+        try {
+            const res = await fetch(`${apiUrl}/api/admin/testimonials/${id}/approve`, {
+                method: 'PUT',
+                credentials: 'include'
+            });
+            if (res.ok) {
+                setTestimonials((prev) => prev.filter((item) => item._id !== id));
+                fetchOverview();
+            }
+        } catch (error) {
+            console.error('Failed to approve testimonial', error);
+        } finally {
+            setActionBusyId(null);
+        }
+    };
+
+    const handleReject = async (id: string) => {
+        setActionBusyId(id);
+        try {
+            const res = await fetch(`${apiUrl}/api/admin/testimonials/${id}/reject`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+            if (res.ok) {
+                setTestimonials((prev) => prev.filter((item) => item._id !== id));
+                fetchOverview();
+            }
+        } catch (error) {
+            console.error('Failed to reject testimonial', error);
+        } finally {
+            setActionBusyId(null);
+        }
+    };
+
+    const fetchSystemConfig = async () => {
+        setLoadingSystemConfig(true);
+        try {
+            const res = await fetch(`${apiUrl}/api/admin/system-config`, { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                setSystemConfig(data.data);
+            }
+        } catch (error) {
+            console.error('Failed to load system config', error);
+        } finally {
+            setLoadingSystemConfig(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchOverview();
+        fetchTestimonials();
+        fetchTenants();
+        fetchSystemConfig();
+    }, []);
+
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            fetchTenants(searchTerm);
+        }, 300);
+        return () => clearTimeout(timeout);
+    }, [searchTerm]);
+
+    const formattedUptime = useMemo(() => {
+        const uptime = overview?.uptimeSeconds ?? 0;
+        const days = Math.floor(uptime / 86400);
+        const hours = Math.floor((uptime % 86400) / 3600);
+        if (days > 0) {
+            return `${days}d ${hours}h`;
+        }
+        const minutes = Math.floor((uptime % 3600) / 60);
+        return `${hours}h ${minutes}m`;
+    }, [overview?.uptimeSeconds]);
+
+    const usageChartData = useMemo(() => {
+        if (!charts) return [];
+        return charts.labels.map((label, index) => ({
+            date: new Date(label).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            tokens: charts.usageTokens[index] || 0
+        }));
+    }, [charts]);
+
+    const growthChartData = useMemo(() => {
+        if (!charts) return [];
+        return charts.labels.map((label, index) => ({
+            date: new Date(label).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            users: charts.newUsers[index] || 0,
+            workspaces: charts.newWorkspaces[index] || 0
+        }));
+    }, [charts]);
+
+    const workspaceUsageData = useMemo(() => {
+        return (
+            overview?.workspaceUsage?.map((workspace) => ({
+                name: workspace.workspaceName,
+                tokens: workspace.totalTokens,
+                requests: workspace.requestCount
+            })) || []
+        );
+    }, [overview?.workspaceUsage]);
+
+    const formattedSystemUptime = useMemo(() => {
+        const uptime = systemConfig?.server.uptimeSeconds ?? 0;
+        const days = Math.floor(uptime / 86400);
+        const hours = Math.floor((uptime % 86400) / 3600);
+        const minutes = Math.floor((uptime % 3600) / 60);
+        if (days > 0) {
+            return `${days}d ${hours}h`;
+        }
+        return `${hours}h ${minutes}m`;
+    }, [systemConfig?.server.uptimeSeconds]);
 
     const fetchTestimonials = async () => {
         setLoadingTestimonials(true);
@@ -351,6 +525,96 @@ export default function AdminDashboard() {
                                     </div>
                                 </div>
                             </div>
+
+                            <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div>
+                                        <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Workspace Consumption</div>
+                                        <div className="text-lg font-black text-zinc-900">Top Workspaces by Tokens</div>
+                                    </div>
+                                    <div className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                                        {overview?.workspaceUsage?.length || 0} tracked
+                                    </div>
+                                </div>
+                                <div className="h-[260px]">
+                                    {loadingOverview ? (
+                                        <div className="flex h-full items-center justify-center text-sm text-zinc-400">Loading analytics…</div>
+                                    ) : workspaceUsageData.length > 0 ? (
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={workspaceUsageData} layout="vertical" margin={{ left: 20 }}>
+                                                <XAxis type="number" tick={{ fontSize: 11 }} />
+                                                <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={120} />
+                                                <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }} />
+                                                <Legend wrapperStyle={{ fontSize: 11 }} />
+                                                <Bar dataKey="tokens" name="Tokens" fill="#4f46e5" radius={[0, 4, 4, 0]} />
+                                                <Bar dataKey="requests" name="Requests" fill="#0ea5e9" radius={[0, 4, 4, 0]} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    ) : (
+                                        <div className="flex h-full items-center justify-center text-sm text-zinc-400">No workspace usage yet.</div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                                <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div>
+                                            <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Platform Usage</div>
+                                            <div className="text-lg font-black text-zinc-900">Token Consumption (30 Days)</div>
+                                        </div>
+                                        <div className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                                            {overview?.totalTokens?.toLocaleString() || 0} total
+                                        </div>
+                                    </div>
+                                    <div className="h-[260px]">
+                                        {loadingOverview ? (
+                                            <div className="flex h-full items-center justify-center text-sm text-zinc-400">Loading analytics…</div>
+                                        ) : usageChartData.length > 0 ? (
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <LineChart data={usageChartData}>
+                                                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                                                    <YAxis tick={{ fontSize: 11 }} />
+                                                    <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }} />
+                                                    <Line type="monotone" dataKey="tokens" stroke="#2563eb" strokeWidth={2} dot={false} />
+                                                </LineChart>
+                                            </ResponsiveContainer>
+                                        ) : (
+                                            <div className="flex h-full items-center justify-center text-sm text-zinc-400">No usage data yet.</div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div>
+                                            <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Growth</div>
+                                            <div className="text-lg font-black text-zinc-900">New Users & Workspaces</div>
+                                        </div>
+                                        <div className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
+                                            Last 30 days
+                                        </div>
+                                    </div>
+                                    <div className="h-[260px]">
+                                        {loadingOverview ? (
+                                            <div className="flex h-full items-center justify-center text-sm text-zinc-400">Loading analytics…</div>
+                                        ) : growthChartData.length > 0 ? (
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart data={growthChartData}>
+                                                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                                                    <YAxis tick={{ fontSize: 11 }} />
+                                                    <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }} />
+                                                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                                                    <Bar dataKey="users" name="Users" fill="#10b981" radius={[4, 4, 0, 0]} />
+                                                    <Bar dataKey="workspaces" name="Workspaces" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        ) : (
+                                            <div className="flex h-full items-center justify-center text-sm text-zinc-400">No growth data yet.</div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         </>
                     )}
 
@@ -477,6 +741,62 @@ export default function AdminDashboard() {
                                         )}
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* System Config Tab */}
+                    {activeTab === 'settings' && (
+                        <div className="space-y-6">
+                            <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div>
+                                        <h3 className="font-bold text-lg text-zinc-900">System Configuration</h3>
+                                        <p className="text-sm text-zinc-500">Live configuration and platform status.</p>
+                                    </div>
+                                    <div className="text-xs font-semibold text-zinc-400">
+                                        {loadingSystemConfig ? 'Refreshing…' : 'Live'}
+                                    </div>
+                                </div>
+
+                                {loadingSystemConfig ? (
+                                    <div className="text-sm text-zinc-500">Loading system configuration…</div>
+                                ) : systemConfig ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                        <div className="border border-zinc-200 rounded-xl p-4">
+                                            <div className="text-[11px] text-zinc-400 uppercase tracking-widest font-bold">Environment</div>
+                                            <div className="text-lg font-black text-zinc-900 mt-2">{systemConfig.environment}</div>
+                                            <div className="text-xs text-zinc-500 mt-2">Node {systemConfig.server.nodeVersion}</div>
+                                        </div>
+                                        <div className="border border-zinc-200 rounded-xl p-4">
+                                            <div className="text-[11px] text-zinc-400 uppercase tracking-widest font-bold">Frontend URL</div>
+                                            <div className="text-sm font-semibold text-zinc-900 mt-2 break-all">
+                                                {systemConfig.frontendUrl || 'Not configured'}
+                                            </div>
+                                            <div className="text-xs text-zinc-500 mt-2">API: {systemConfig.apiBaseUrl || apiUrl}</div>
+                                        </div>
+                                        <div className="border border-zinc-200 rounded-xl p-4">
+                                            <div className="text-[11px] text-zinc-400 uppercase tracking-widest font-bold">Server Uptime</div>
+                                            <div className="text-lg font-black text-zinc-900 mt-2">{formattedSystemUptime}</div>
+                                            <div className="text-xs text-zinc-500 mt-2">Since last restart</div>
+                                        </div>
+                                        <div className="border border-zinc-200 rounded-xl p-4">
+                                            <div className="text-[11px] text-zinc-400 uppercase tracking-widest font-bold">Rate Limits</div>
+                                            <div className="text-sm font-semibold text-zinc-900 mt-2">Global: {systemConfig.rateLimits.global}</div>
+                                            <div className="text-sm font-semibold text-zinc-900 mt-1">Auth: {systemConfig.rateLimits.auth}</div>
+                                            <div className="text-sm font-semibold text-zinc-900 mt-1">AI: {systemConfig.rateLimits.ai}</div>
+                                        </div>
+                                        <div className="border border-zinc-200 rounded-xl p-4">
+                                            <div className="text-[11px] text-zinc-400 uppercase tracking-widest font-bold">Totals</div>
+                                            <div className="text-sm font-semibold text-zinc-900 mt-2">Users: {systemConfig.totals.users.toLocaleString()}</div>
+                                            <div className="text-sm font-semibold text-zinc-900 mt-1">Workspaces: {systemConfig.totals.workspaces.toLocaleString()}</div>
+                                            <div className="text-sm font-semibold text-zinc-900 mt-1">Alerts: {systemConfig.totals.alerts.toLocaleString()}</div>
+                                            <div className="text-sm font-semibold text-zinc-900 mt-1">Pending Reviews: {systemConfig.totals.pendingReviews.toLocaleString()}</div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-sm text-zinc-500">Unable to load system configuration.</div>
+                                )}
                             </div>
                         </div>
                     )}

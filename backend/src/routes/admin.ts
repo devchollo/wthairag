@@ -6,6 +6,7 @@ import {
     getAdminOverview,
     getAdminTenants,
     getAdminTestimonials,
+    getSystemConfig,
     rejectTestimonial
 } from '../controllers/adminController';
 
@@ -16,6 +17,7 @@ router.use(protect, requireOwner);
 router.get('/overview', getAdminOverview);
 router.get('/tenants', getAdminTenants);
 router.get('/testimonials', getAdminTestimonials);
+router.get('/system-config', getSystemConfig);
 router.put('/testimonials/:id/approve', approveTestimonial);
 router.delete('/testimonials/:id/reject', rejectTestimonial);
 
