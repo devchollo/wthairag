@@ -79,7 +79,7 @@ export default function RootLayout({
                   <p className="text-xs font-bold text-text-muted leading-relaxed max-w-[200px]">
                     Engineering-grade utilities for modern dev teams. Stateless, private, and high-performance.
                   </p>
-                  <div className="flex gap-4 mt-6">
+                  <div className="flex gap-4 mt-6 hidden">
                     <Github className="h-4 w-4 text-text-muted hover:text-blue-600 cursor-pointer transition-colors" />
                     <Twitter className="h-4 w-4 text-text-muted hover:text-blue-600 cursor-pointer transition-colors" />
                     <Linkedin className="h-4 w-4 text-text-muted hover:text-blue-600 cursor-pointer transition-colors" />
