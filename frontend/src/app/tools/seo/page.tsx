@@ -7,7 +7,6 @@ import {
     Search,
     FileText,
     Image,
-    Link2,
     AlertCircle,
     CheckCircle,
     Activity,
@@ -82,14 +81,6 @@ interface SEOResults {
         semanticSuggestions: string[];
         competitorBenchmarks: Array<{ url: string; wordCount: number; keywordCoverage: number }>;
         gapAnalysis: number;
-    };
-    backlinks: {
-        status: string;
-        reason: string | null;
-        totalBacklinks: number | null;
-        referringDomains: number | null;
-        authorityScore: number | null;
-        toxicLinks: number | null;
     };
     rankTracking: {
         status: string;
@@ -617,18 +608,6 @@ export default function SEOChecker() {
                             </div>
                         </section>
 
-                        {/* Backlinks */}
-                        <section>
-                            <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
-                                <Link2 className="h-3 w-3" /> Backlink Analysis
-                            </div>
-                            <div className="rounded-xl border border-border-light bg-white p-4 text-sm font-bold text-text-muted">
-                                {results.backlinks.status === 'available'
-                                    ? 'Backlink data connected. Metrics will appear here.'
-                                    : results.backlinks.reason || 'Backlink data unavailable. Configure BACKLINKS_API_URL to enable.'}
-                            </div>
-                        </section>
-
                         {/* Rank Tracking */}
                         <section>
                             <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
@@ -826,7 +805,7 @@ export default function SEOChecker() {
                 items={[
                     {
                         question: "What is a good SEO score?",
-                        answer: "A score above 80 is generally considered good, indicating that your page follows most technical best practices. Content quality, backlinks, and user engagement are also critical factors, which you can now connect via the enhanced modules."
+                        answer: "A score above 80 is generally considered good, indicating that your page follows most technical best practices. Content quality and user engagement remain critical factors alongside technical signals."
                     },
                     {
                         question: "Why are my meta tags important?",

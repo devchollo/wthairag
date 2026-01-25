@@ -96,7 +96,7 @@ const getPageSpeedMetrics = async (targetUrl: string) => {
                 strategy: 'mobile',
                 key: apiKey
             },
-            timeout: 15000
+            timeout: 30000
         });
         const audits = response.data?.lighthouseResult?.audits || {};
         const lcp = audits['largest-contentful-paint'];
@@ -112,7 +112,21 @@ const getPageSpeedMetrics = async (targetUrl: string) => {
             score: response.data?.lighthouseResult?.categories?.performance?.score ?? null
         };
     } catch (error: any) {
-        return { status: 'error', reason: error.message };
+        let reason = 'PageSpeed request failed.';
+        if (axios.isAxiosError(error)) {
+            if (error.code === 'ECONNABORTED') {
+                reason = 'PageSpeed request timed out. Try again or reduce the crawl scope.';
+            } else if (error.response?.status === 429) {
+                reason = 'PageSpeed API quota exceeded. Try again later.';
+            } else if (error.response?.status) {
+                reason = `PageSpeed API responded with ${error.response.status}.`;
+            } else if (error.message) {
+                reason = error.message;
+            }
+        } else if (error?.message) {
+            reason = error.message;
+        }
+        return { status: 'unavailable', reason };
     }
 };
 
@@ -399,14 +413,6 @@ export const seoChecker = async (req: Request, res: Response) => {
                 gapAnalysis: avgCompetitorWords > 0
                     ? Math.round(avgCompetitorWords - keywordInsights.totalWords)
                     : 0
-            },
-            backlinks: {
-                status: process.env.BACKLINKS_API_URL ? 'available' : 'unavailable',
-                reason: process.env.BACKLINKS_API_URL ? null : 'BACKLINKS_API_URL not configured',
-                totalBacklinks: null,
-                referringDomains: null,
-                authorityScore: null,
-                toxicLinks: null
             },
             rankTracking: {
                 status: serpInsights.status,
