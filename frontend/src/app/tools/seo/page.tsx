@@ -7,7 +7,7 @@ import {
     Search,
     FileText,
     Image,
-    Link2,
+    Link as LinkIcon,
     AlertCircle,
     CheckCircle,
     Activity,
@@ -82,14 +82,6 @@ interface SEOResults {
         semanticSuggestions: string[];
         competitorBenchmarks: Array<{ url: string; wordCount: number; keywordCoverage: number }>;
         gapAnalysis: number;
-    };
-    backlinks: {
-        status: string;
-        reason: string | null;
-        totalBacklinks: number | null;
-        referringDomains: number | null;
-        authorityScore: number | null;
-        toxicLinks: number | null;
     };
     rankTracking: {
         status: string;
@@ -411,7 +403,7 @@ export default function SEOChecker() {
                                 </div>
                                 <div className="flex items-center justify-between gap-3 min-w-0">
                                     <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
-                                        <Link2 className="h-4 w-4 text-amber-600" /> Total Links
+                                        <LinkIcon className="h-4 w-4 text-amber-600" /> Total Links
                                     </div>
                                     <div className="text-lg font-black text-text-primary">{results.links.total}</div>
                                 </div>
@@ -617,18 +609,6 @@ export default function SEOChecker() {
                             </div>
                         </section>
 
-                        {/* Backlinks */}
-                        <section>
-                            <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
-                                <Link2 className="h-3 w-3" /> Backlink Analysis
-                            </div>
-                            <div className="rounded-xl border border-border-light bg-white p-4 text-sm font-bold text-text-muted">
-                                {results.backlinks.status === 'available'
-                                    ? 'Backlink data connected. Metrics will appear here.'
-                                    : results.backlinks.reason || 'Backlink data unavailable. Configure BACKLINKS_API_URL to enable.'}
-                            </div>
-                        </section>
-
                         {/* Rank Tracking */}
                         <section>
                             <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
@@ -826,7 +806,7 @@ export default function SEOChecker() {
                 items={[
                     {
                         question: "What is a good SEO score?",
-                        answer: "A score above 80 is generally considered good, indicating that your page follows most technical best practices. Content quality, backlinks, and user engagement are also critical factors, which you can now connect via the enhanced modules."
+                        answer: "A score above 80 is generally considered good, indicating that your page follows most technical best practices. Content quality and user engagement are also critical factors for long-term rankings."
                     },
                     {
                         question: "Why are my meta tags important?",

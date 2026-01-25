@@ -96,7 +96,7 @@ const getPageSpeedMetrics = async (targetUrl: string) => {
                 strategy: 'mobile',
                 key: apiKey
             },
-            timeout: 15000
+            timeout: 25000
         });
         const audits = response.data?.lighthouseResult?.audits || {};
         const lcp = audits['largest-contentful-paint'];
@@ -112,7 +112,11 @@ const getPageSpeedMetrics = async (targetUrl: string) => {
             score: response.data?.lighthouseResult?.categories?.performance?.score ?? null
         };
     } catch (error: any) {
-        return { status: 'error', reason: error.message };
+        const isTimeout = error?.code === 'ECONNABORTED' || `${error?.message || ''}`.toLowerCase().includes('timeout');
+        if (isTimeout) {
+            return { status: 'unavailable', reason: 'Performance data timed out. Try again in a moment.' };
+        }
+        return { status: 'error', reason: 'Performance data unavailable due to a PageSpeed request error.' };
     }
 };
 
@@ -399,14 +403,6 @@ export const seoChecker = async (req: Request, res: Response) => {
                 gapAnalysis: avgCompetitorWords > 0
                     ? Math.round(avgCompetitorWords - keywordInsights.totalWords)
                     : 0
-            },
-            backlinks: {
-                status: process.env.BACKLINKS_API_URL ? 'available' : 'unavailable',
-                reason: process.env.BACKLINKS_API_URL ? null : 'BACKLINKS_API_URL not configured',
-                totalBacklinks: null,
-                referringDomains: null,
-                authorityScore: null,
-                toxicLinks: null
             },
             rankTracking: {
                 status: serpInsights.status,
