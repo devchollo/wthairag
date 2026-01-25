@@ -80,18 +80,32 @@ export default function Dashboard() {
         tokens: workspaceStats.chartData.tokens[i]
     })) || [];
 
-    const userTopQueriesData = userStats?.topQueries?.map((query: any) => ({
-        name: query.topic ?? query.query,
-        count: query.count
-    })) || [];
+    const aggregateTopQueries = (queries: any[] = []) => {
+        const grouped = new Map<string, { topic: string; count: number }>();
 
-    const workspaceTopQueriesData = workspaceStats?.topQueries?.map((query: any) => ({
-        name: query.topic ?? query.query,
-        count: query.count
-    })) || [];
+        queries.forEach((query) => {
+            const topicLabel = (query?.topic ?? query?.query ?? 'Unknown topic').trim();
+            const key = topicLabel.length > 0 ? topicLabel : 'Unknown topic';
+            const existing = grouped.get(key) ?? { topic: key, count: 0 };
+            existing.count += query?.count ?? 0;
+            grouped.set(key, existing);
+        });
 
-    const userTopQueryList = userStats?.topQueries || [];
-    const workspaceTopQueryList = workspaceStats?.topQueries || [];
+        return Array.from(grouped.values()).sort((a, b) => b.count - a.count);
+    };
+
+    const userTopQueryList = aggregateTopQueries(userStats?.topQueries);
+    const workspaceTopQueryList = aggregateTopQueries(workspaceStats?.topQueries);
+
+    const userTopQueriesData = userTopQueryList.map((query) => ({
+        name: query.topic,
+        count: query.count
+    }));
+
+    const workspaceTopQueriesData = workspaceTopQueryList.map((query) => ({
+        name: query.topic,
+        count: query.count
+    }));
 
     const visibleUserTopQueries = userTopQueryList.slice(0, userTopQueryVisible);
     const visibleWorkspaceTopQueries = workspaceTopQueryList.slice(0, workspaceTopQueryVisible);
@@ -201,10 +215,7 @@ export default function Dashboard() {
                                     {visibleWorkspaceTopQueries.map((q: any, i: number) => (
                                         <div key={i} className="flex justify-between items-start py-2 border-b border-border-light last:border-0 gap-4">
                                             <div className="min-w-0">
-                                                <div className="text-sm font-medium text-text-secondary truncate max-w-[70%]">{q.topic ?? q.query}</div>
-                                                {q.topic && q.query && q.topic !== q.query && (
-                                                    <div className="text-[10px] text-text-muted truncate max-w-[70%]">“{q.query}”</div>
-                                                )}
+                                                <div className="text-sm font-medium text-text-secondary truncate max-w-[70%]">{q.topic}</div>
                                             </div>
                                             <span className="text-[10px] font-black bg-indigo-50 text-indigo-700 px-2 py-1 rounded whitespace-nowrap">{q.count} queries</span>
                                         </div>
@@ -399,25 +410,9 @@ export default function Dashboard() {
                                 {visibleUserTopQueries.map((q: any, i: number) => (
                                     <div key={i} className="flex justify-between items-start py-2 border-b border-border-light last:border-0 gap-4">
                                         <div className="min-w-0">
-                                            <div className="text-sm font-medium text-text-secondary truncate max-w-[70%]">{q.topic ?? q.query}</div>
-                                            {q.topic && q.query && q.topic !== q.query && (
-                                                <div className="text-[10px] text-text-muted truncate max-w-[70%]">“{q.query}”</div>
-                                            )}
+                                            <div className="text-sm font-medium text-text-secondary truncate max-w-[70%]">{q.topic}</div>
                                         </div>
-                                        <div className="flex items-center gap-4 shrink-0">
-                                            <span className="text-[10px] font-black bg-surface-light px-2 py-1 rounded text-text-muted whitespace-nowrap">{q.count} queries</span>
-                                            <span className="text-[10px] text-text-muted whitespace-nowrap">
-                                                Input 
-                                                <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
-                                                {Number(q.inputTokens || 0).toLocaleString()}
-                                                </span> • 
-                                                Output 
-                                                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
-                                                {Number(q.outputTokens || 0).toLocaleString()}
-                                                </span>
-                                            </span>
-                                            <span className="text-[10px] text-text-muted whitespace-nowrap">{new Date(q.lastUsed).toLocaleDateString()}</span>
-                                        </div>
+                                        <span className="text-[10px] font-black bg-surface-light px-2 py-1 rounded text-text-muted whitespace-nowrap">{q.count} queries</span>
                                     </div>
                                 ))}
                                 {userTopQueryList.length > userTopQueryVisible && (
