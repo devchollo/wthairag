@@ -264,17 +264,6 @@ export default function AdminDashboard() {
         );
     }, [overview?.workspaceUsage]);
 
-    const isInitialLoading = loadingOverview && !overview && !charts;
-
-    if (isInitialLoading) {
-        return (
-            <PageLoader
-                label="Loading admin dashboard"
-                hint="Fetching the latest system signals..."
-            />
-        );
-    }
-
     const formattedSystemUptime = useMemo(() => {
         const uptime = systemConfig?.server.uptimeSeconds ?? 0;
         const days = Math.floor(uptime / 86400);
@@ -285,6 +274,17 @@ export default function AdminDashboard() {
         }
         return `${hours}h ${minutes}m`;
     }, [systemConfig?.server.uptimeSeconds]);
+
+    const isInitialLoading = loadingOverview && !overview && !charts;
+
+    if (isInitialLoading) {
+        return (
+            <PageLoader
+                label="Loading admin dashboard"
+                hint="Fetching the latest system signals..."
+            />
+        );
+    }
 
     const activeTestimonials = reviewStatus === 'pending' ? pendingTestimonials : approvedTestimonials;
     const pendingCount = pendingTestimonials.length;

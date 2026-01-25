@@ -599,7 +599,7 @@ export default function Dashboard() {
                                             {new Date(selectedRecentItem.viewedAt || selectedRecentItem.updatedAt).toLocaleString()}
                                         </div>
                                         {selectedRecentItem.type === 'alert' && (
-                                            <div className="space-y-4 text-sm text-text-secondary">
+                                            <div className="space-y-3 text-sm text-text-secondary">
                                                 <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-widest">
                                                     <span className="rounded-full bg-amber-50 px-2 py-1 text-amber-700">
                                                         {selectedRecentDetails.status || 'open'}
@@ -608,43 +608,36 @@ export default function Dashboard() {
                                                         {selectedRecentDetails.severity || selectedRecentItem.severity || 'unknown'}
                                                     </span>
                                                 </div>
-                                                <div className="rounded-xl border border-border-light bg-surface-light p-4">
-                                                    <p className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Details</p>
-                                                    <p className="whitespace-pre-line">{selectedRecentDetails.description || 'No description available.'}</p>
+                                                <div>
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">Details</p>
+                                                    <p>{selectedRecentDetails.description || 'No description available.'}</p>
                                                 </div>
-                                                <div className="grid gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
-                                                    <span>Created by {formatUser(selectedRecentDetails.createdBy)}</span>
-                                                    <span>Updated by {formatUser(selectedRecentDetails.updatedBy)}</span>
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-text-muted">
+                                                    Created by {formatUser(selectedRecentDetails.createdBy)} · Updated by {formatUser(selectedRecentDetails.updatedBy)}
                                                 </div>
                                             </div>
                                         )}
                                         {selectedRecentItem.type === 'knowledge' && (
                                             <div className="space-y-3 text-sm text-text-secondary">
-                                                <div className="grid gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
-                                                    <span>Added by {formatUser(selectedRecentDetails.createdBy)}</span>
-                                                    <span>Edited by {formatUser(selectedRecentDetails.updatedBy)}</span>
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-text-muted">
+                                                    Added by {formatUser(selectedRecentDetails.createdBy)} · Edited by {formatUser(selectedRecentDetails.updatedBy)}
                                                 </div>
                                                 <div className="max-h-[60vh] overflow-y-auto pr-2">
                                                     {selectedRecentDetails.content ? (
                                                         <div
-                                                            className="ql-editor text-sm text-text-secondary leading-relaxed p-0 prose prose-sm max-w-none"
+                                                            className="ql-editor text-sm text-text-secondary leading-relaxed p-0"
                                                             dangerouslySetInnerHTML={{ __html: selectedRecentDetails.content }}
                                                         />
                                                     ) : (
-                                                        <div className="rounded-xl border border-border-light bg-surface-light p-4">
-                                                            <p className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Summary</p>
-                                                            <p>{selectedRecentDetails.summary || 'No content available for this record.'}</p>
-                                                        </div>
+                                                        <p>{selectedRecentDetails.summary || 'No content available for this record.'}</p>
                                                     )}
                                                 </div>
                                             </div>
                                         )}
                                         {selectedRecentItem.type === 'query' && (
-                                            <div className="text-sm text-text-secondary space-y-3">
-                                                <div className="rounded-xl border border-border-light bg-surface-light p-4">
-                                                    <p className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Query Details</p>
-                                                    <p className="whitespace-pre-line">{selectedRecentDetails.title || selectedRecentItem.title}</p>
-                                                </div>
+                                            <div className="text-sm text-text-secondary">
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Query Details</p>
+                                                <p>{selectedRecentDetails.title || selectedRecentItem.title}</p>
                                             </div>
                                         )}
                                     </>
