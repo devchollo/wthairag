@@ -556,13 +556,11 @@ export default function SEOChecker() {
                                     <div className="min-w-0 border border-border-light bg-white p-3">
                                         <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-3">Top Terms</div>
                                         {results.content.topTerms.length > 0 ? (
-                                            <ul className="list-disc space-y-2 pl-4 text-xs font-bold text-text-primary leading-relaxed">
+                                            <ul className="grid grid-cols-1 gap-1 text-xs font-bold text-text-primary sm:grid-cols-2">
                                                 {results.content.topTerms.map((term) => (
-                                                    <li key={term.term} className="break-words">
-                                                        <span className="whitespace-normal">{term.term}</span>
-                                                        <span className="ml-2 text-[10px] font-black uppercase tracking-widest text-blue-600">
-                                                            {term.count}
-                                                        </span>
+                                                    <li key={term.term} className="flex items-center justify-between gap-3">
+                                                        <span className="break-words">{term.term}</span>
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">{term.count}</span>
                                                     </li>
                                                 ))}
                                             </ul>
@@ -573,9 +571,9 @@ export default function SEOChecker() {
                                     <div className="min-w-0 border border-border-light bg-white p-3">
                                         <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-3">Semantic Suggestions</div>
                                         {results.content.semanticSuggestions.length > 0 ? (
-                                            <ul className="list-disc space-y-2 pl-4 text-xs font-bold text-text-primary leading-relaxed">
+                                            <ul className="grid grid-cols-1 gap-1 text-xs font-bold text-text-primary sm:grid-cols-2">
                                                 {results.content.semanticSuggestions.map((term) => (
-                                                    <li key={term} className="break-words whitespace-normal">{term}</li>
+                                                    <li key={term} className="break-words">{term}</li>
                                                 ))}
                                             </ul>
                                         ) : (
