@@ -8,6 +8,8 @@ export interface IAlert extends Document {
     status: 'open' | 'resolved';
     resolvedAt?: Date;
     resolvedBy?: mongoose.Types.ObjectId;
+    createdBy?: mongoose.Types.ObjectId;
+    updatedBy?: mongoose.Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -21,6 +23,8 @@ const AlertSchema: Schema = new Schema(
         status: { type: String, enum: ['open', 'resolved'], default: 'open' },
         resolvedAt: { type: Date },
         resolvedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+        createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+        updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     },
     { timestamps: true }
 );

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ShieldAlert, CheckCircle, Clock, Plus, Trash2, Terminal, Eye } from 'lucide-react';
+import { ShieldAlert, CheckCircle, Clock, Plus, Trash2, Terminal, Eye, Search, Filter, Pencil } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { AlertsSkeleton } from '@/components/Skeleton';
 
@@ -12,6 +12,9 @@ interface Alert {
     severity: 'high' | 'medium' | 'low';
     status: 'open' | 'resolved';
     createdAt: string;
+    updatedAt?: string;
+    createdBy?: { name?: string; email?: string };
+    updatedBy?: { name?: string; email?: string };
 }
 
 export default function AlertsPage() {
@@ -21,6 +24,11 @@ export default function AlertsPage() {
     const [showCreate, setShowCreate] = useState(false);
     const [newAlert, setNewAlert] = useState({ title: '', description: '', severity: 'low' as const });
     const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
+    const [search, setSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [severityFilter, setSeverityFilter] = useState('all');
+    const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
+    const [editAlert, setEditAlert] = useState({ title: '', description: '', severity: 'low' as const });
 
     const isAdmin = userRole === 'owner' || userRole === 'admin';
 
@@ -135,11 +143,58 @@ export default function AlertsPage() {
         recordAlertView(alert._id);
     };
 
+    const handleEditOpen = (alert: Alert) => {
+        setEditingAlert(alert);
+        setEditAlert({
+            title: alert.title,
+            description: alert.description || '',
+            severity: alert.severity as any
+        });
+    };
+
+    const handleEditClose = () => {
+        setEditingAlert(null);
+        setEditAlert({ title: '', description: '', severity: 'low' });
+    };
+
+    const handleEditSubmit = async () => {
+        if (!editingAlert || !currentWorkspace?._id) return;
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${apiUrl}/api/alerts/${editingAlert._id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-workspace-id': currentWorkspace._id,
+                    'x-workspace-slug': currentWorkspace.slug || ''
+                },
+                body: JSON.stringify(editAlert),
+                credentials: 'include'
+            });
+            if (res.ok) {
+                await fetchAlerts();
+                handleEditClose();
+            }
+        } catch (e) {
+            console.error("Update failed", e);
+        }
+    };
+
     const truncateDetails = (value?: string, maxLength = 140) => {
         if (!value) return 'No details provided.';
         if (value.length <= maxLength) return value;
         return `${value.slice(0, maxLength).trimEnd()}…`;
     };
+
+    const filteredAlerts = alerts.filter(alert => {
+        const matchesSearch = alert.title.toLowerCase().includes(search.toLowerCase()) ||
+            (alert.description || '').toLowerCase().includes(search.toLowerCase());
+        const matchesStatus = statusFilter === 'all' || alert.status === statusFilter;
+        const matchesSeverity = severityFilter === 'all' || alert.severity === severityFilter;
+        return matchesSearch && matchesStatus && matchesSeverity;
+    });
+
+    const formatUser = (user?: { name?: string; email?: string }) => user?.name || user?.email || 'Unknown';
 
     if (loading && alerts.length === 0) {
         return <AlertsSkeleton />;
@@ -198,8 +253,46 @@ export default function AlertsPage() {
                 </div>
             )}
 
+            <div className="flex flex-col md:flex-row gap-4">
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-text-muted" />
+                    <input
+                        type="text"
+                        placeholder="Search alerts..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full h-10 bg-surface-light border-2 border-border-light rounded-xl pl-10 pr-4 text-xs font-bold outline-none focus:border-blue-600 transition-all"
+                    />
+                </div>
+                <div className="flex items-center gap-2 bg-surface-light border-2 border-border-light rounded-xl px-3 h-10">
+                    <Filter className="h-3.5 w-3.5 text-text-muted" />
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="bg-transparent text-[10px] font-black uppercase tracking-widest text-text-primary outline-none cursor-pointer"
+                    >
+                        <option value="all">All Statuses</option>
+                        <option value="open">Open</option>
+                        <option value="resolved">Resolved</option>
+                    </select>
+                </div>
+                <div className="flex items-center gap-2 bg-surface-light border-2 border-border-light rounded-xl px-3 h-10">
+                    <Filter className="h-3.5 w-3.5 text-text-muted" />
+                    <select
+                        value={severityFilter}
+                        onChange={(e) => setSeverityFilter(e.target.value)}
+                        className="bg-transparent text-[10px] font-black uppercase tracking-widest text-text-primary outline-none cursor-pointer"
+                    >
+                        <option value="all">All Severities</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+            </div>
+
             <div className="space-y-4">
-                {alerts.length > 0 && (
+                {filteredAlerts.length > 0 && (
                     <div className="card overflow-hidden">
                         <div className="grid grid-cols-12 gap-4 bg-surface-light px-6 py-3 text-[10px] font-black uppercase tracking-widest text-text-muted">
                             <div className="col-span-4">Title</div>
@@ -209,7 +302,7 @@ export default function AlertsPage() {
                             <div className="col-span-2 text-right">Actions</div>
                         </div>
                         <div className="divide-y divide-border-light">
-                            {alerts.map(alert => (
+                            {filteredAlerts.map(alert => (
                                 <div key={alert._id} className="grid grid-cols-12 gap-4 px-6 py-5 items-start">
                                     <div className="col-span-4 flex gap-3">
                                         <div className={`mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg ${alert.severity === 'high' ? 'bg-red-500/10 text-red-500' :
@@ -228,6 +321,10 @@ export default function AlertsPage() {
                                                 </span>
                                             </div>
                                             <h3 className="text-sm font-black text-text-primary tracking-tight truncate">{alert.title}</h3>
+                                            <div className="mt-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
+                                                Added by {formatUser(alert.createdBy)} · Edited by {formatUser(alert.updatedBy)}
+                                                {alert.updatedAt && ` · Modified ${new Date(alert.updatedAt).toLocaleDateString()}`}
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="col-span-2 text-xs font-bold text-text-muted flex items-center gap-1">
@@ -256,6 +353,16 @@ export default function AlertsPage() {
                                         >
                                             <Eye className="h-4 w-4" />
                                         </button>
+                                        {isAdmin && (
+                                            <button
+                                                onClick={() => handleEditOpen(alert)}
+                                                className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-light text-text-muted hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-colors"
+                                                aria-label="Edit alert"
+                                                title="Edit alert"
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                            </button>
+                                        )}
                                         {alert.status === 'open' && isAdmin && (
                                             <button
                                                 className="h-9 w-9 flex items-center justify-center rounded-lg border border-border-light text-text-muted hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 transition-colors"
@@ -289,10 +396,14 @@ export default function AlertsPage() {
                     </div>
                 )}
 
-                {alerts.length === 0 && !loading && (
+                {filteredAlerts.length === 0 && !loading && (
                     <div className="p-12 bg-surface-light rounded-xl border border-dashed border-border-light text-center">
                         <CheckCircle className="h-8 w-8 text-emerald-500 mx-auto mb-3 opacity-50" />
-                        <p className="text-xs font-bold text-text-secondary uppercase tracking-widest">Protocol Nominal. No active alerts.</p>
+                        <p className="text-xs font-bold text-text-secondary uppercase tracking-widest">
+                            {search || statusFilter !== 'all' || severityFilter !== 'all'
+                                ? 'No alerts match your filters.'
+                                : 'Protocol Nominal. No active alerts.'}
+                        </p>
                     </div>
                 )}
             </div>
@@ -334,6 +445,10 @@ export default function AlertsPage() {
                         <div className="text-sm font-bold text-text-secondary whitespace-pre-wrap">
                             {selectedAlert.description || 'No details provided.'}
                         </div>
+                        <div className="mt-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
+                            Added by {formatUser(selectedAlert.createdBy)} · Edited by {formatUser(selectedAlert.updatedBy)}
+                            {selectedAlert.updatedAt && ` · Modified ${new Date(selectedAlert.updatedAt).toLocaleString()}`}
+                        </div>
                         <div className="mt-6 flex justify-end gap-3">
                             {selectedAlert.status === 'open' && isAdmin && (
                                 <button
@@ -348,6 +463,57 @@ export default function AlertsPage() {
                                 className="btn-primary h-9 px-4 text-[10px] font-black uppercase tracking-widest"
                             >
                                 Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {editingAlert && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+                    <div className="card w-full max-w-2xl p-6 relative">
+                        <button
+                            onClick={handleEditClose}
+                            className="absolute right-4 top-4 text-text-muted hover:text-text-primary"
+                            aria-label="Close edit alert"
+                        >
+                            ✕
+                        </button>
+                        <h2 className="text-lg font-black text-text-primary mb-4">Edit Alert</h2>
+                        <div className="space-y-4">
+                            <input
+                                type="text"
+                                className="w-full h-10 bg-surface-light border-2 border-border-light rounded-xl px-4 text-xs font-bold outline-none"
+                                value={editAlert.title}
+                                onChange={e => setEditAlert({ ...editAlert, title: e.target.value })}
+                            />
+                            <select
+                                className="w-full h-10 bg-surface-light border-2 border-border-light rounded-xl px-4 text-xs font-bold outline-none"
+                                value={editAlert.severity}
+                                onChange={e => setEditAlert({ ...editAlert, severity: e.target.value as any })}
+                            >
+                                <option value="low">Low Priority</option>
+                                <option value="medium">Medium Priority</option>
+                                <option value="high">High Priority</option>
+                            </select>
+                            <textarea
+                                className="w-full bg-surface-light border-2 border-border-light rounded-xl p-4 text-xs font-bold outline-none min-h-[120px]"
+                                value={editAlert.description}
+                                onChange={e => setEditAlert({ ...editAlert, description: e.target.value })}
+                            />
+                        </div>
+                        <div className="mt-6 flex justify-end gap-3">
+                            <button
+                                onClick={handleEditClose}
+                                className="btn-secondary h-9 px-4 text-xs font-black uppercase"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleEditSubmit}
+                                className="btn-primary h-9 px-4 text-xs font-black uppercase"
+                                disabled={!editAlert.title}
+                            >
+                                Save Changes
                             </button>
                         </div>
                     </div>

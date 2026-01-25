@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FileText, Trash2, Upload, Terminal, BookOpen, Clock, Activity, Search, Filter, Download, X, Lightbulb } from 'lucide-react';
+import { FileText, Trash2, Upload, Terminal, BookOpen, Clock, Activity, Search, Filter, Download, X, Lightbulb, Pencil } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 import { KnowledgeSkeleton } from '@/components/Skeleton';
@@ -11,9 +11,12 @@ interface Document {
     title: string;
     mimeType: string;
     createdAt: string;
+    updatedAt?: string;
     size?: string;
     content?: string;
     fileKey?: string;
+    createdBy?: { name?: string; email?: string };
+    updatedBy?: { name?: string; email?: string };
 }
 
 export default function KnowledgeBase() {
@@ -29,6 +32,9 @@ export default function KnowledgeBase() {
     const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [showTip, setShowTip] = useState(true);
+    const [editingDoc, setEditingDoc] = useState<Document | null>(null);
+    const [editTitle, setEditTitle] = useState('');
+    const [editContent, setEditContent] = useState('');
 
     const isAdmin = userRole === 'owner' || userRole === 'admin';
 
@@ -183,6 +189,42 @@ export default function KnowledgeBase() {
         setSelectedDoc(null);
     };
 
+    const handleEditOpen = (doc: Document) => {
+        setEditingDoc(doc);
+        setEditTitle(doc.title);
+        setEditContent(doc.content || '');
+    };
+
+    const handleEditClose = () => {
+        setEditingDoc(null);
+        setEditTitle('');
+        setEditContent('');
+    };
+
+    const handleEditSubmit = async () => {
+        if (!editingDoc || !currentWorkspace?._id || !isAdmin) return;
+        if (!editTitle || !editContent) return;
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${apiUrl}/api/workspace-data/knowledge/${editingDoc._id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-workspace-id': currentWorkspace._id,
+                    'x-workspace-slug': currentWorkspace.slug || ''
+                },
+                body: JSON.stringify({ title: editTitle, content: editContent }),
+                credentials: 'include'
+            });
+            if (res.ok) {
+                await fetchDocuments();
+                handleEditClose();
+            }
+        } catch (e) {
+            console.error("Update failed", e);
+        }
+    };
+
     const handleDelete = async (id: string) => {
         if (!currentWorkspace?._id || !isAdmin) return;
         try {
@@ -206,6 +248,8 @@ export default function KnowledgeBase() {
         const matchesFilter = filter === 'all' || doc.mimeType.includes(filter);
         return matchesSearch && matchesFilter;
     });
+
+    const formatUser = (user?: { name?: string; email?: string }) => user?.name || user?.email || 'Unknown';
 
     if (loading && documents.length === 0) {
         return <KnowledgeSkeleton />;
@@ -355,10 +399,29 @@ export default function KnowledgeBase() {
                                     <span className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> {new Date(doc.createdAt).toLocaleDateString()}</span>
                                     <span className="h-1 w-1 rounded-full bg-border-light"></span>
                                     <span className="text-blue-600">{doc.mimeType.split('/')[1]?.toUpperCase() || 'FILE'}</span>
+                                    <span className="h-1 w-1 rounded-full bg-border-light"></span>
+                                    <span>Added by {formatUser(doc.createdBy)}</span>
+                                    <span className="h-1 w-1 rounded-full bg-border-light"></span>
+                                    <span>Edited by {formatUser(doc.updatedBy)}</span>
+                                    {doc.updatedAt && (
+                                        <>
+                                            <span className="h-1 w-1 rounded-full bg-border-light"></span>
+                                            <span>Modified {new Date(doc.updatedAt).toLocaleDateString()}</span>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
+                            {isAdmin && !doc.fileKey && (
+                                <button
+                                    onClick={() => handleEditOpen(doc)}
+                                    className="h-9 w-9 flex items-center justify-center rounded-lg text-text-muted hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                    title="Edit Record"
+                                >
+                                    <Pencil className="h-4 w-4" />
+                                </button>
+                            )}
                             {doc.fileKey ? (
                                 <button
                                     onClick={() => handleDownload(doc._id, doc.title)}
@@ -418,9 +481,61 @@ export default function KnowledgeBase() {
                                 <Clock className="h-3 w-3" />
                                 {new Date(selectedDoc.createdAt).toLocaleString()}
                             </div>
+                            <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-3">
+                                Added by {formatUser(selectedDoc.createdBy)} · Edited by {formatUser(selectedDoc.updatedBy)}
+                                {selectedDoc.updatedAt && ` · Modified ${new Date(selectedDoc.updatedAt).toLocaleString()}`}
+                            </div>
                             <div className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap text-sm text-text-secondary leading-relaxed pr-2">
                                 {selectedDoc.content || 'No content available for this record.'}
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {editingDoc && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+                    <div className="bg-white w-full max-w-3xl rounded-2xl border border-border-light shadow-xl">
+                        <div className="flex items-center justify-between border-b border-border-light px-6 py-4">
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">Edit Manual Record</p>
+                                <h2 className="text-lg font-black text-text-primary">{editingDoc.title}</h2>
+                            </div>
+                            <button
+                                onClick={handleEditClose}
+                                className="h-9 w-9 flex items-center justify-center rounded-lg text-text-muted hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                aria-label="Close edit modal"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+                        <div className="px-6 py-5 space-y-4">
+                            <input
+                                type="text"
+                                value={editTitle}
+                                onChange={(e) => setEditTitle(e.target.value)}
+                                className="w-full h-11 bg-surface-light border-2 border-border-light rounded-xl px-4 text-xs font-bold outline-none focus:border-blue-600 transition-all"
+                            />
+                            <textarea
+                                value={editContent}
+                                onChange={(e) => setEditContent(e.target.value)}
+                                rows={10}
+                                className="w-full bg-surface-light border-2 border-border-light rounded-xl p-4 text-xs font-bold outline-none focus:border-blue-600 transition-all resize-none"
+                            />
+                        </div>
+                        <div className="flex justify-end gap-3 px-6 pb-6">
+                            <button
+                                onClick={handleEditClose}
+                                className="btn-secondary h-9 px-4 text-[10px] font-black uppercase tracking-widest"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleEditSubmit}
+                                className="btn-primary h-9 px-4 text-[10px] font-black uppercase tracking-widest"
+                                disabled={!editTitle || !editContent}
+                            >
+                                Save Changes
+                            </button>
                         </div>
                     </div>
                 </div>

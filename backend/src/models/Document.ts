@@ -11,6 +11,8 @@ export interface IDocument extends Document {
     metadata: Record<string, any>;
     embeddingId?: string; // Reference to vector DB if needed
     expiresAt?: Date; // For temporary files
+    createdBy?: mongoose.Types.ObjectId;
+    updatedBy?: mongoose.Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -27,6 +29,8 @@ const DocumentSchema: Schema = new Schema(
         metadata: { type: Schema.Types.Mixed, default: {} },
         embeddingId: { type: String },
         expiresAt: { type: Date },
+        createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+        updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     },
     { timestamps: true }
 );

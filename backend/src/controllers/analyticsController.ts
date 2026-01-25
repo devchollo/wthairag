@@ -30,7 +30,7 @@ const buildDailySeries = (
     return { labels, values };
 };
 
-const buildTopTopics = async (match: Record<string, unknown>) => {
+const buildTopTopics = async (match: Record<string, unknown>, limit = 20) => {
     return UsageLog.aggregate([
         { $match: match },
         {
@@ -52,7 +52,7 @@ const buildTopTopics = async (match: Record<string, unknown>) => {
             }
         },
         { $sort: { count: -1 } },
-        { $limit: 5 }
+        { $limit: limit }
     ]);
 };
 
@@ -210,6 +210,63 @@ const findRecentItemByTitles = async (
     return null;
 };
 
+const buildRecentViewedItems = async (
+    workspaceId: string,
+    titles: string[],
+    viewedAtByTitle: Map<string, Date>
+): Promise<Array<IUsageSummaryLastViewed & { viewedAt?: Date }>> => {
+    if (!titles.length) {
+        return [];
+    }
+
+    const [documents, alerts] = await Promise.all([
+        Document.find({ workspaceId, title: { $in: titles } })
+            .select('title updatedAt')
+            .lean(),
+        Alert.find({ workspaceId, title: { $in: titles } })
+            .select('title updatedAt severity status')
+            .lean()
+    ]);
+
+    const documentMap = new Map(documents.map(doc => [doc.title, doc]));
+    const alertMap = new Map(alerts.map(alert => [alert.title, alert]));
+
+    return titles.map(title => {
+        const viewedAt = viewedAtByTitle.get(title);
+        const document = documentMap.get(title);
+        const alert = alertMap.get(title);
+
+        if (document) {
+            return {
+                type: 'knowledge',
+                title: document.title,
+                updatedAt: document.updatedAt,
+                link: '/workspace/knowledge',
+                viewedAt
+            };
+        }
+
+        if (alert) {
+            return {
+                type: 'alert',
+                title: alert.title,
+                updatedAt: alert.updatedAt,
+                link: '/workspace/alerts',
+                severity: alert.severity,
+                status: alert.status,
+                viewedAt
+            };
+        }
+
+        return {
+            type: 'query',
+            title,
+            updatedAt: viewedAt,
+            viewedAt
+        };
+    });
+};
+
 export const getUserStats = async (req: Request, res: Response) => {
     try {
         const userId = req.user?._id;
@@ -231,8 +288,8 @@ export const getUserStats = async (req: Request, res: Response) => {
 
         // Most Queried Topics (using Cited Documents now)
         const topQueries = usageSummary
-            ? usageSummary.topQueries.slice(0, 5)
-            : await buildTopTopics({ userId, workspaceId, eventType: 'query' });
+            ? usageSummary.topQueries.slice(0, 20)
+            : await buildTopTopics({ userId, workspaceId, eventType: 'query' }, 20);
 
         // Chart Data (Daily Tokens for last 30 days)
         const thirtyDaysAgo = new Date();
@@ -313,6 +370,26 @@ export const getUserStats = async (req: Request, res: Response) => {
             }
         }
 
+        const recentViews = await UsageLog.find({
+            userId,
+            workspaceId,
+            eventType: 'view'
+        })
+            .sort('-createdAt')
+            .limit(10)
+            .select('query createdAt')
+            .lean();
+
+        const recentViewTitles = recentViews.map(view => view.query).filter(Boolean);
+        const viewedAtByTitle = new Map(
+            recentViews.map(view => [view.query, view.createdAt])
+        );
+        const recentItems = await buildRecentViewedItems(
+            workspaceId.toString(),
+            recentViewTitles,
+            viewedAtByTitle
+        );
+
         const [recentKnowledgeRaw, recentAlertsRaw, recentKnowledgeItems, recentAlertItems] = await Promise.all([
             Document.aggregate([
                 { $match: { workspaceId, createdAt: { $gte: thirtyDaysAgo } } },
@@ -365,6 +442,7 @@ export const getUserStats = async (req: Request, res: Response) => {
             })),
             chartData: { labels: usageSeries.labels, tokens: usageSeries.values },
             recentItem,
+            recentItems,
             recentKnowledgeBase: { labels: knowledgeSeries.labels, counts: knowledgeSeries.values, items: recentKnowledgeItems },
             recentAlerts: { labels: alertSeries.labels, counts: alertSeries.values, items: recentAlertItems }
         }, 'User stats fetched');
@@ -393,8 +471,8 @@ export const getWorkspaceStats = async (req: Request, res: Response) => {
 
         // Top Queries (using Cited Documents)
         const topQueries = usageSummary
-            ? usageSummary.topQueries.slice(0, 5)
-            : await buildTopTopics({ workspaceId, eventType: 'query' });
+            ? usageSummary.topQueries.slice(0, 20)
+            : await buildTopTopics({ workspaceId, eventType: 'query' }, 20);
 
         // Usage by User (Top 5 Users)
         const topUsers = usageSummary
