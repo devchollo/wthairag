@@ -21,7 +21,12 @@ import {
     Users,
     Network,
     ShieldAlert,
-    BarChart3
+    BarChart3,
+    FileJson,
+    FileSpreadsheet,
+    Printer,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import FAQ from '@/components/FAQ';
 
@@ -158,6 +163,9 @@ export default function SEOChecker() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [history, setHistory] = useState<Array<{ url: string; keywords: string; score: number; date: string }>>([]);
+    const [crawlPage, setCrawlPage] = useState(1);
+    const [historyPage, setHistoryPage] = useState(1);
+    const itemsPerPage = 5;
 
     useEffect(() => {
         const stored = localStorage.getItem('seo-history');
@@ -182,6 +190,21 @@ export default function SEOChecker() {
             .map(normalizeUrl)
             .slice(0, 5);
     }, [competitors]);
+
+    const crawlPages = useMemo(() => {
+        if (!results) return [];
+        const start = (crawlPage - 1) * itemsPerPage;
+        return results.crawl.pages.slice(start, start + itemsPerPage);
+    }, [crawlPage, itemsPerPage, results]);
+
+    const crawlTotalPages = results ? Math.max(1, Math.ceil(results.crawl.pages.length / itemsPerPage)) : 1;
+
+    const historyPages = useMemo(() => {
+        const start = (historyPage - 1) * itemsPerPage;
+        return history.slice(start, start + itemsPerPage);
+    }, [history, historyPage, itemsPerPage]);
+
+    const historyTotalPages = Math.max(1, Math.ceil(history.length / itemsPerPage));
 
     const handleAnalyze = async () => {
         let target = url;
@@ -210,6 +233,7 @@ export default function SEOChecker() {
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || 'Analysis failed');
             setResults(data.data);
+            setCrawlPage(1);
             setHistory((prev) => {
                 const updated = [
                     { url: target, keywords, score: data.data.report.score, date: new Date().toISOString() },
@@ -218,6 +242,7 @@ export default function SEOChecker() {
                 localStorage.setItem('seo-history', JSON.stringify(updated));
                 return updated;
             });
+            setHistoryPage(1);
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -289,37 +314,48 @@ export default function SEOChecker() {
             </div>
 
             <div className="card border border-border-light bg-white p-6 shadow-sm">
-                <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 mb-8">
-                    <div className="space-y-3">
-                        <input
-                            type="url"
-                            placeholder="Enter full URL (https://example.com)"
-                            value={url}
-                            onChange={(e) => setUrl(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
-                            className="h-10 w-full rounded-lg border border-border-light bg-surface-light px-4 text-sm font-bold outline-none focus:border-blue-600 transition-all"
-                        />
-                        <input
-                            type="text"
-                            placeholder="Target keywords (comma-separated)"
-                            value={keywords}
-                            onChange={(e) => setKeywords(e.target.value)}
-                            className="h-10 w-full rounded-lg border border-border-light bg-surface-light px-4 text-sm font-bold outline-none focus:border-blue-600 transition-all"
-                        />
-                        <textarea
-                            placeholder="Competitor URLs (one per line)"
-                            value={competitors}
-                            onChange={(e) => setCompetitors(e.target.value)}
-                            rows={3}
-                            className="w-full rounded-lg border border-border-light bg-surface-light px-4 py-3 text-sm font-bold outline-none focus:border-blue-600 transition-all"
-                        />
+                <div className="grid grid-cols-1 xl:grid-cols-[3fr_2fr] gap-6 mb-8">
+                    <div className="rounded-xl border border-border-light bg-surface-light p-4 space-y-4">
+                        <div>
+                            <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Target URL</div>
+                            <input
+                                type="url"
+                                placeholder="Enter full URL (https://example.com)"
+                                value={url}
+                                onChange={(e) => setUrl(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
+                                className="h-11 w-full rounded-lg border border-border-light bg-white px-4 text-sm font-bold outline-none focus:border-blue-600 transition-all"
+                            />
+                        </div>
+                        <div>
+                            <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Primary Keywords</div>
+                            <input
+                                type="text"
+                                placeholder="Target keywords (comma-separated)"
+                                value={keywords}
+                                onChange={(e) => setKeywords(e.target.value)}
+                                className="h-11 w-full rounded-lg border border-border-light bg-white px-4 text-sm font-bold outline-none focus:border-blue-600 transition-all"
+                            />
+                        </div>
                     </div>
-                    <div className="flex flex-col gap-3 justify-between">
-                        <button onClick={handleAnalyze} className="btn-primary h-10 px-6 gap-2" disabled={loading || !url}>
-                            {loading ? <Activity className="h-4 w-4 animate-spin" /> : 'Analyze'}
-                        </button>
-                        <div className="rounded-lg border border-border-light bg-surface-light p-4 text-xs font-semibold text-text-muted">
-                            Add keywords to unlock density, intent, and competitor gap insights.
+                    <div className="rounded-xl border border-border-light bg-white p-4 flex flex-col gap-4">
+                        <div>
+                            <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Competitor URLs</div>
+                            <textarea
+                                placeholder="One per line (max 5)"
+                                value={competitors}
+                                onChange={(e) => setCompetitors(e.target.value)}
+                                rows={4}
+                                className="w-full rounded-lg border border-border-light bg-surface-light px-4 py-3 text-sm font-bold outline-none focus:border-blue-600 transition-all"
+                            />
+                        </div>
+                        <div className="flex flex-col gap-3">
+                            <button onClick={handleAnalyze} className="btn-primary h-11 px-6 gap-2" disabled={loading || !url}>
+                                {loading ? <Activity className="h-4 w-4 animate-spin" /> : 'Analyze'}
+                            </button>
+                            <div className="rounded-lg border border-border-light bg-surface-light p-3 text-xs font-semibold text-text-muted">
+                                Add keywords to unlock density, intent, and competitor gap insights.
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -413,7 +449,7 @@ export default function SEOChecker() {
                                 </dl>
                             </div>
                             <div className="mt-4 rounded-xl border border-border-light bg-white divide-y divide-border-light">
-                                {results.crawl.pages.map((page) => (
+                                {crawlPages.map((page) => (
                                     <div key={page.url} className="flex flex-col gap-2 p-4">
                                         <div className="flex flex-wrap items-start justify-between gap-2">
                                             <div className="text-sm font-black text-text-primary break-words min-w-0">{page.title || page.url}</div>
@@ -431,6 +467,32 @@ export default function SEOChecker() {
                                         )}
                                     </div>
                                 ))}
+                                {results.crawl.pages.length === 0 && (
+                                    <div className="bg-surface-light p-4 text-sm font-bold text-text-muted">
+                                        No crawl results available yet.
+                                    </div>
+                                )}
+                            </div>
+                            <div className="mt-3 flex items-center justify-between text-xs font-bold text-text-muted">
+                                <span>Page {crawlPage} of {crawlTotalPages}</span>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setCrawlPage((prev) => Math.max(1, prev - 1))}
+                                        disabled={crawlPage === 1}
+                                        className="inline-flex items-center gap-1 rounded-full border border-border-light px-3 py-1 text-[10px] font-black uppercase tracking-widest text-text-muted disabled:opacity-50"
+                                    >
+                                        <ChevronLeft className="h-3 w-3" /> Prev
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setCrawlPage((prev) => Math.min(crawlTotalPages, prev + 1))}
+                                        disabled={crawlPage === crawlTotalPages}
+                                        className="inline-flex items-center gap-1 rounded-full border border-border-light px-3 py-1 text-[10px] font-black uppercase tracking-widest text-text-muted disabled:opacity-50"
+                                    >
+                                        Next <ChevronRight className="h-3 w-3" />
+                                    </button>
+                                </div>
                             </div>
                         </section>
 
@@ -472,9 +534,9 @@ export default function SEOChecker() {
                             <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
                                 <BarChart3 className="h-3 w-3" /> Keyword & Content Optimization
                             </div>
-                            <div className="rounded-xl border border-border-light bg-white p-4">
+                            <div className="rounded-xl border border-border-light bg-white p-4 space-y-4">
                                 <dl className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                                    <div className="min-w-0">
+                                    <div className="min-w-0 rounded-lg border border-border-light bg-surface-light p-3">
                                         <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Word Count</div>
                                         <div className="text-2xl font-black text-text-primary">{results.content.wordCount}</div>
                                         {results.content.gapAnalysis !== 0 && (
@@ -483,33 +545,42 @@ export default function SEOChecker() {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="min-w-0">
+                                    <div className="min-w-0 rounded-lg border border-border-light bg-surface-light p-3">
                                         <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Content Quality</div>
                                         <div className="text-2xl font-black text-text-primary">{results.content.qualityScore}</div>
                                         <div className="text-xs font-bold text-text-muted">Based on depth & keyword coverage</div>
                                     </div>
-                                    <div className="min-w-0">
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Top Terms</div>
-                                        <div className="text-xs font-bold text-text-primary space-y-1">
-                                            {results.content.topTerms.length > 0 ? results.content.topTerms.map((term) => (
-                                                <div key={term.term} className="flex items-center justify-between gap-2">
-                                                    <span className="break-words">{term.term}</span>
-                                                    <span className="text-text-muted">{term.count}</span>
-                                                </div>
-                                            )) : (
-                                                <div className="text-text-muted">No recurring terms detected.</div>
-                                            )}
-                                        </div>
+                                    <div className="min-w-0 rounded-lg border border-border-light bg-white p-3">
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-3">Top Terms</div>
+                                        {results.content.topTerms.length > 0 ? (
+                                            <div className="flex flex-wrap gap-2">
+                                                {results.content.topTerms.map((term) => (
+                                                    <span
+                                                        key={term.term}
+                                                        className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-[11px] font-bold text-blue-700"
+                                                    >
+                                                        {term.term}
+                                                        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-black text-blue-600">{term.count}</span>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-xs font-bold text-text-muted">No recurring terms detected.</div>
+                                        )}
                                     </div>
-                                    <div className="min-w-0">
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Semantic Suggestions</div>
-                                        <div className="text-xs font-bold text-text-primary space-y-1">
-                                            {results.content.semanticSuggestions.length > 0 ? results.content.semanticSuggestions.map((term) => (
-                                                <div key={term} className="break-words">• {term}</div>
-                                            )) : (
-                                                <div className="text-text-muted">Add content to surface related concepts.</div>
-                                            )}
-                                        </div>
+                                    <div className="min-w-0 rounded-lg border border-border-light bg-white p-3">
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-3">Semantic Suggestions</div>
+                                        {results.content.semanticSuggestions.length > 0 ? (
+                                            <div className="flex flex-wrap gap-2">
+                                                {results.content.semanticSuggestions.map((term) => (
+                                                    <span key={term} className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-bold text-emerald-700">
+                                                        {term}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-xs font-bold text-text-muted">Add content to surface related concepts.</div>
+                                        )}
                                     </div>
                                 </dl>
                             </div>
@@ -652,14 +723,14 @@ export default function SEOChecker() {
                                 <Download className="h-3 w-3" /> Exportable Reports
                             </div>
                             <div className="flex flex-wrap gap-3">
-                                <button onClick={() => handleExport('json')} className="btn-secondary h-10 px-5 gap-2">
-                                    <Download className="h-4 w-4" /> JSON
+                                <button onClick={() => handleExport('json')} className="inline-flex items-center gap-2 rounded-full border border-border-light bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-text-muted hover:text-blue-600">
+                                    <FileJson className="h-4 w-4" /> JSON
                                 </button>
-                                <button onClick={() => handleExport('csv')} className="btn-secondary h-10 px-5 gap-2">
-                                    <Download className="h-4 w-4" /> CSV
+                                <button onClick={() => handleExport('csv')} className="inline-flex items-center gap-2 rounded-full border border-border-light bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-text-muted hover:text-blue-600">
+                                    <FileSpreadsheet className="h-4 w-4" /> CSV
                                 </button>
-                                <button onClick={handlePrint} className="btn-secondary h-10 px-5 gap-2">
-                                    <Download className="h-4 w-4" /> PDF
+                                <button onClick={handlePrint} className="inline-flex items-center gap-2 rounded-full border border-border-light bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-text-muted hover:text-blue-600">
+                                    <Printer className="h-4 w-4" /> PDF
                                 </button>
                             </div>
                         </section>
@@ -670,7 +741,7 @@ export default function SEOChecker() {
                                 <History className="h-3 w-3" /> Historical Scans
                             </div>
                             <div className="rounded-xl border border-border-light bg-white divide-y divide-border-light">
-                                {history.length > 0 ? history.map((entry) => (
+                                {history.length > 0 ? historyPages.map((entry) => (
                                     <div key={`${entry.url}-${entry.date}`} className="p-4">
                                         <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-bold text-text-primary">
                                             <span className="break-all">{entry.url}</span>
@@ -685,6 +756,29 @@ export default function SEOChecker() {
                                     </div>
                                 )}
                             </div>
+                            {history.length > 0 && (
+                                <div className="mt-3 flex items-center justify-between text-xs font-bold text-text-muted">
+                                    <span>Page {historyPage} of {historyTotalPages}</span>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setHistoryPage((prev) => Math.max(1, prev - 1))}
+                                            disabled={historyPage === 1}
+                                            className="inline-flex items-center gap-1 rounded-full border border-border-light px-3 py-1 text-[10px] font-black uppercase tracking-widest text-text-muted disabled:opacity-50"
+                                        >
+                                            <ChevronLeft className="h-3 w-3" /> Prev
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setHistoryPage((prev) => Math.min(historyTotalPages, prev + 1))}
+                                            disabled={historyPage === historyTotalPages}
+                                            className="inline-flex items-center gap-1 rounded-full border border-border-light px-3 py-1 text-[10px] font-black uppercase tracking-widest text-text-muted disabled:opacity-50"
+                                        >
+                                            Next <ChevronRight className="h-3 w-3" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </section>
 
                         {/* Issues & Recommendations */}
