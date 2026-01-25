@@ -8,12 +8,16 @@ const updateSummaryForQuery = async ({
     workspaceId,
     userId,
     tokens,
+    inputTokens,
+    outputTokens,
     query,
     citedDocuments
 }: {
     workspaceId: string;
     userId: string | null;
     tokens: number;
+    inputTokens: number;
+    outputTokens: number;
     query: string;
     citedDocuments: string[];
 }) => {
@@ -51,12 +55,16 @@ const updateSummaryForQuery = async ({
         existing.lastUsed = now;
         existing.query = query;
         existing.citedDocuments = citedDocuments;
+        existing.inputTokens = (existing.inputTokens || 0) + inputTokens;
+        existing.outputTokens = (existing.outputTokens || 0) + outputTokens;
     } else {
         summary.topQueries.push({
             normalizedQuery,
             query,
             count: 1,
             lastUsed: now,
+            inputTokens,
+            outputTokens,
             citedDocuments
         });
     }
@@ -77,12 +85,16 @@ export const recordUsageSummaryForQuery = async ({
     workspaceId,
     userId,
     tokens,
+    inputTokens,
+    outputTokens,
     query,
     citedDocuments
 }: {
     workspaceId: string;
     userId: string;
     tokens: number;
+    inputTokens: number;
+    outputTokens: number;
     query: string;
     citedDocuments: string[];
 }) => {
@@ -91,6 +103,8 @@ export const recordUsageSummaryForQuery = async ({
             workspaceId,
             userId,
             tokens,
+            inputTokens,
+            outputTokens,
             query,
             citedDocuments
         }),
@@ -98,6 +112,8 @@ export const recordUsageSummaryForQuery = async ({
             workspaceId,
             userId: null,
             tokens,
+            inputTokens,
+            outputTokens,
             query,
             citedDocuments
         })

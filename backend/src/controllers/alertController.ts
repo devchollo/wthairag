@@ -109,6 +109,8 @@ export const recordAlertView = async (req: Request, res: Response) => {
             workspaceId,
             userId: req.user?._id,
             tokens: 0,
+            inputTokens: 0,
+            outputTokens: 0,
             query: alert.title,
             citedDocuments: [alert.title],
             eventType: 'view'

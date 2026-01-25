@@ -406,6 +406,9 @@ export default function Dashboard() {
                                         </div>
                                         <div className="flex items-center gap-4 shrink-0">
                                             <span className="text-[10px] font-black bg-surface-light px-2 py-1 rounded text-text-muted whitespace-nowrap">{q.count} queries</span>
+                                            <span className="text-[10px] text-text-muted whitespace-nowrap">
+                                                Input {Number(q.inputTokens || 0).toLocaleString()} • Output {Number(q.outputTokens || 0).toLocaleString()}
+                                            </span>
                                             <span className="text-[10px] text-text-muted whitespace-nowrap">{new Date(q.lastUsed).toLocaleDateString()}</span>
                                         </div>
                                     </div>

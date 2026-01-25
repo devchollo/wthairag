@@ -38,7 +38,9 @@ const buildTopTopics = async (match: Record<string, unknown>, limit = 20) => {
                 normalizedQuery: { $toLower: { $trim: { input: "$query" } } },
                 displayQuery: { $trim: { input: "$query" } },
                 createdAt: 1,
-                citedDocuments: 1
+                citedDocuments: 1,
+                inputTokens: { $ifNull: ["$inputTokens", 0] },
+                outputTokens: { $ifNull: ["$outputTokens", 0] }
             }
         },
         { $match: { normalizedQuery: { $ne: "" } } },
@@ -48,7 +50,9 @@ const buildTopTopics = async (match: Record<string, unknown>, limit = 20) => {
                 query: { $first: "$displayQuery" },
                 count: { $sum: 1 },
                 lastUsed: { $max: "$createdAt" },
-                citedDocuments: { $first: "$citedDocuments" }
+                citedDocuments: { $first: "$citedDocuments" },
+                inputTokens: { $sum: "$inputTokens" },
+                outputTokens: { $sum: "$outputTokens" }
             }
         },
         { $sort: { count: -1 } },
@@ -438,7 +442,9 @@ export const getUserStats = async (req: Request, res: Response) => {
                 query: (q as any).query ?? (q as any)._id,
                 topic: deriveTopicFromQuery((q as any).query ?? (q as any)._id, (q as any).citedDocuments),
                 count: (q as any).count,
-                lastUsed: (q as any).lastUsed
+                lastUsed: (q as any).lastUsed,
+                inputTokens: (q as any).inputTokens ?? 0,
+                outputTokens: (q as any).outputTokens ?? 0
             })),
             chartData: { labels: usageSeries.labels, tokens: usageSeries.values },
             recentItem,
@@ -577,7 +583,9 @@ export const getWorkspaceStats = async (req: Request, res: Response) => {
                 query: (q as any).query ?? (q as any)._id,
                 topic: deriveTopicFromQuery((q as any).query ?? (q as any)._id, (q as any).citedDocuments),
                 count: (q as any).count,
-                lastUsed: (q as any).lastUsed
+                lastUsed: (q as any).lastUsed,
+                inputTokens: (q as any).inputTokens ?? 0,
+                outputTokens: (q as any).outputTokens ?? 0
             })),
             topUsers,
             chartData: { labels: usageSeries.labels, tokens: usageSeries.values },
