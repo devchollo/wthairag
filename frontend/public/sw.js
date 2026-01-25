@@ -44,7 +44,12 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
           return response;
         })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match("/offline")))
+        .catch(() =>
+          caches
+            .match(request)
+            .then((cached) => cached || caches.match("/offline"))
+            .then((fallback) => fallback || Response.error())
+        )
     );
     return;
   }
@@ -63,7 +68,7 @@ self.addEventListener("fetch", (event) => {
           }
           return response;
         })
-        .catch(() => cached);
+        .catch(() => cached || Response.error());
     })
   );
 });
