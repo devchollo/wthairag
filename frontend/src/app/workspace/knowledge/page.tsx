@@ -21,11 +21,11 @@ interface Document {
     updatedBy?: { name?: string; email?: string };
 }
 
-const font = Quill.import('formats/font');
+const font = Quill.import('formats/font') as { whitelist: string[] };
 font.whitelist = ['inter', 'serif', 'monospace'];
 Quill.register(font, true);
 
-const size = Quill.import('formats/size');
+const size = Quill.import('formats/size') as { whitelist: Array<string | false> };
 size.whitelist = ['small', false, 'large', 'huge'];
 Quill.register(size, true);
 
