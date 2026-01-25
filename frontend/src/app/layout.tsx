@@ -10,7 +10,6 @@ import { Analytics } from "@vercel/analytics/next";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 
 const inter = Inter({ subsets: ["latin"] });
-const GA_MEASUREMENT_ID = "G-2DKN72DYLE";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://worktoolshub.info"),
@@ -83,14 +82,15 @@ export default function RootLayout({
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
           strategy="afterInteractive"
         />
-        <Script id="ga4-init" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${GA_MEASUREMENT_ID}');
-          `}
-        </Script>
+        <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2DKN72DYLE"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-2DKN72DYLE');
+</script>
         <AuthProvider>
           <Navbar />
           <CookieBanner />
