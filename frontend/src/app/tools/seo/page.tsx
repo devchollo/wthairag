@@ -77,6 +77,10 @@ interface SEOResults {
             inDescription: boolean;
             inH1: boolean;
         }>;
+        topKeywords: Array<{
+            term: string;
+            count: number;
+        }>;
         qualityScore: number;
         competitorBenchmarks: Array<{ url: string; wordCount: number; keywordCoverage: number }>;
         gapAnalysis: number;
@@ -155,6 +159,7 @@ export default function SEOChecker() {
     const [history, setHistory] = useState<Array<{ url: string; keywords: string; score: number; date: string }>>([]);
     const [crawlPage, setCrawlPage] = useState(1);
     const [historyPage, setHistoryPage] = useState(1);
+    const [showAllTopKeywords, setShowAllTopKeywords] = useState(false);
     const itemsPerPage = 5;
 
     useEffect(() => {
@@ -195,6 +200,9 @@ export default function SEOChecker() {
     }, [history, historyPage, itemsPerPage]);
 
     const historyTotalPages = Math.max(1, Math.ceil(history.length / itemsPerPage));
+    const topKeywords = results?.content.topKeywords ?? [];
+    const topKeywordsToShow = showAllTopKeywords ? topKeywords : topKeywords.slice(0, 10);
+    const canShowMoreTopKeywords = topKeywords.length > 10;
 
     const handleAnalyze = async () => {
         let target = url;
@@ -207,6 +215,7 @@ export default function SEOChecker() {
         setLoading(true);
         setError(null);
         setResults(null);
+        setShowAllTopKeywords(false);
 
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -563,6 +572,32 @@ export default function SEOChecker() {
                                         <div className="text-text-muted">Add competitor URLs for gap insights.</div>
                                     )}
                                 </div>
+                            </div>
+                            <div className="rounded-xl border border-border-light bg-white p-4 mt-4">
+                                <div className="flex items-center justify-between gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted mb-3">
+                                    <span>Top Keywords</span>
+                                    {canShowMoreTopKeywords && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAllTopKeywords((prev) => !prev)}
+                                            className="text-[10px] font-black uppercase tracking-widest text-electric-blue hover:text-electric-blue/80"
+                                        >
+                                            {showAllTopKeywords ? 'Show less' : 'Show more'}
+                                        </button>
+                                    )}
+                                </div>
+                                {topKeywordsToShow.length > 0 ? (
+                                    <div className="space-y-2 text-xs font-bold text-text-primary">
+                                        {topKeywordsToShow.map((keyword) => (
+                                            <div key={keyword.term} className="flex items-center justify-between gap-2 border-b border-border-light pb-2 last:border-b-0">
+                                                <span className="break-words">{keyword.term}</span>
+                                                <span className="text-text-muted">{keyword.count}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-sm font-bold text-text-muted">No keyword frequency data available.</div>
+                                )}
                             </div>
                             <div className="rounded-xl border border-border-light bg-white p-4 mt-4">
                                 <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-3">Keyword Density</div>
