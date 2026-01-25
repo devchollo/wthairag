@@ -24,6 +24,8 @@ export default function Dashboard() {
     const [userStats, setUserStats] = useState<any>(null);
     const [workspaceStats, setWorkspaceStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [userTopQueryVisible, setUserTopQueryVisible] = useState(5);
+    const [workspaceTopQueryVisible, setWorkspaceTopQueryVisible] = useState(5);
 
     useEffect(() => {
         if (!currentWorkspace || !user) return;
@@ -88,6 +90,15 @@ export default function Dashboard() {
         count: query.count
     })) || [];
 
+    const userTopQueryList = userStats?.topQueries || [];
+    const workspaceTopQueryList = workspaceStats?.topQueries || [];
+
+    const visibleUserTopQueries = userTopQueryList.slice(0, userTopQueryVisible);
+    const visibleWorkspaceTopQueries = workspaceTopQueryList.slice(0, workspaceTopQueryVisible);
+
+    const chartUserTopQueries = userTopQueriesData.slice(0, 5);
+    const chartWorkspaceTopQueries = workspaceTopQueriesData.slice(0, 5);
+
     const buildSeries = (labels?: string[], values?: number[], key = 'value') =>
         labels?.map((label, i) => ({
             name: label,
@@ -115,6 +126,7 @@ export default function Dashboard() {
         workspaceStats?.recentAlerts?.counts,
         'count'
     );
+    const recentViewedType = userStats?.recentItems?.[0]?.type ?? userStats?.recentItem?.type;
 
     return (
         <div className="space-y-8">
@@ -167,9 +179,9 @@ export default function Dashboard() {
                         <div className="card p-6">
                             <h3 className="text-sm font-black text-text-primary mb-4 uppercase tracking-wide">Most Popular Topics</h3>
                             <div className="h-[180px]">
-                                {workspaceTopQueriesData.length > 0 ? (
+                                {chartWorkspaceTopQueries.length > 0 ? (
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={workspaceTopQueriesData} margin={{ top: 10, right: 16, left: -10, bottom: 0 }}>
+                                        <BarChart data={chartWorkspaceTopQueries} margin={{ top: 10, right: 16, left: -10, bottom: 0 }}>
                                             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                                             <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-15} textAnchor="end" height={50} />
                                             <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
@@ -184,9 +196,9 @@ export default function Dashboard() {
                                     <div className="flex h-full items-center justify-center text-xs text-text-muted italic">No activity recorded.</div>
                                 )}
                             </div>
-                            {workspaceStats?.topQueries?.length > 0 && (
+                            {workspaceTopQueryList.length > 0 && (
                                 <div className="mt-4 space-y-2">
-                                    {workspaceStats.topQueries.map((q: any, i: number) => (
+                                    {visibleWorkspaceTopQueries.map((q: any, i: number) => (
                                         <div key={i} className="flex justify-between items-start py-2 border-b border-border-light last:border-0 gap-4">
                                             <div className="min-w-0">
                                                 <div className="text-sm font-medium text-text-secondary truncate max-w-[70%]">{q.topic ?? q.query}</div>
@@ -197,6 +209,22 @@ export default function Dashboard() {
                                             <span className="text-[10px] font-black bg-indigo-50 text-indigo-700 px-2 py-1 rounded whitespace-nowrap">{q.count} queries</span>
                                         </div>
                                     ))}
+                                    {workspaceTopQueryList.length > workspaceTopQueryVisible && (
+                                        <button
+                                            onClick={() => setWorkspaceTopQueryVisible(prev => prev + 5)}
+                                            className="text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-700"
+                                        >
+                                            Show more
+                                        </button>
+                                    )}
+                                    {workspaceTopQueryVisible > 5 && (
+                                        <button
+                                            onClick={() => setWorkspaceTopQueryVisible(5)}
+                                            className="text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text-secondary"
+                                        >
+                                            Show less
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -255,7 +283,7 @@ export default function Dashboard() {
                             </div>
                             {workspaceStats?.recentKnowledgeBase?.items?.length > 0 && (
                                 <div className="mt-4 space-y-2">
-                                    {workspaceStats.recentKnowledgeBase.items.map((item: any, i: number) => (
+                                    {workspaceStats.recentKnowledgeBase.items.slice(0, 5).map((item: any, i: number) => (
                                         <div key={i} className="flex items-center justify-between gap-4 border-b border-border-light pb-2 last:border-0 last:pb-0">
                                             <span className="text-sm font-medium text-text-secondary truncate">{item.title}</span>
                                             <span className="text-[10px] text-text-muted whitespace-nowrap">
@@ -295,7 +323,7 @@ export default function Dashboard() {
                             </div>
                             {workspaceStats?.recentAlerts?.items?.length > 0 && (
                                 <div className="mt-4 space-y-2">
-                                    {workspaceStats.recentAlerts.items.map((item: any, i: number) => (
+                                    {workspaceStats.recentAlerts.items.slice(0, 5).map((item: any, i: number) => (
                                         <div key={i} className="flex items-center justify-between gap-4 border-b border-border-light pb-2 last:border-0 last:pb-0">
                                             <span className="text-sm font-medium text-text-secondary truncate">{item.title}</span>
                                             <span className="text-[10px] text-text-muted whitespace-nowrap">
@@ -349,9 +377,9 @@ export default function Dashboard() {
                             <BarChart3 className="h-4 w-4 text-blue-600" /> Most Queried Topics
                         </h3>
                         <div className="h-[180px]">
-                            {userTopQueriesData.length > 0 ? (
+                            {chartUserTopQueries.length > 0 ? (
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={userTopQueriesData} margin={{ top: 10, right: 16, left: -10, bottom: 0 }}>
+                                    <BarChart data={chartUserTopQueries} margin={{ top: 10, right: 16, left: -10, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                                         <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-15} textAnchor="end" height={50} />
                                         <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
@@ -366,9 +394,9 @@ export default function Dashboard() {
                                 <div className="flex h-full items-center justify-center text-xs text-text-muted italic">No queries recorded yet.</div>
                             )}
                         </div>
-                        {userStats?.topQueries?.length > 0 && (
+                        {userTopQueryList.length > 0 && (
                             <div className="mt-4 space-y-2">
-                                {userStats.topQueries.map((q: any, i: number) => (
+                                {visibleUserTopQueries.map((q: any, i: number) => (
                                     <div key={i} className="flex justify-between items-start py-2 border-b border-border-light last:border-0 gap-4">
                                         <div className="min-w-0">
                                             <div className="text-sm font-medium text-text-secondary truncate max-w-[70%]">{q.topic ?? q.query}</div>
@@ -382,46 +410,68 @@ export default function Dashboard() {
                                         </div>
                                     </div>
                                 ))}
+                                {userTopQueryList.length > userTopQueryVisible && (
+                                    <button
+                                        onClick={() => setUserTopQueryVisible(prev => prev + 5)}
+                                        className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-700"
+                                    >
+                                        Show more
+                                    </button>
+                                )}
+                                {userTopQueryVisible > 5 && (
+                                    <button
+                                        onClick={() => setUserTopQueryVisible(5)}
+                                        className="text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text-secondary"
+                                    >
+                                        Show less
+                                    </button>
+                                )}
                             </div>
                         )}
                     </div>
 
                     <div className="card p-6">
                         <h3 className="text-sm font-black text-text-primary mb-4 uppercase tracking-wide flex items-center gap-2">
-                            {userStats?.recentItem?.type === 'alert' ? (
+                            {recentViewedType === 'alert' ? (
                                 <Bell className="h-4 w-4 text-amber-600" />
-                            ) : userStats?.recentItem?.type === 'query' ? (
+                            ) : recentViewedType === 'query' ? (
                                 <Terminal className="h-4 w-4 text-blue-600" />
                             ) : (
                                 <FileText className="h-4 w-4 text-emerald-600" />
                             )}
                             Recently Viewed
                         </h3>
-                        {userStats?.recentItem ? (
+                        {userStats?.recentItems?.length > 0 ? (
                             <div className="space-y-3">
-                                <div className="text-sm font-bold text-text-primary">{userStats.recentItem.title}</div>
-                                <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-wide text-text-muted">
-                                    <span className="rounded-full bg-surface-light px-2 py-1 font-black">
-                                        {userStats.recentItem.type === 'alert'
-                                            ? 'Alert'
-                                            : userStats.recentItem.type === 'query'
-                                                ? 'Query'
-                                                : 'Knowledge Base'}
-                                    </span>
-                                    {userStats.recentItem.status && (
-                                        <span className="rounded-full bg-amber-50 px-2 py-1 font-black text-amber-700">
-                                            {userStats.recentItem.status}
-                                        </span>
-                                    )}
-                                    {userStats.recentItem.updatedAt && (
-                                        <span>{new Date(userStats.recentItem.updatedAt).toLocaleDateString()}</span>
-                                    )}
-                                </div>
-                                {userStats.recentItem.link && (
-                                    <Link href={userStats.recentItem.link} className="text-xs font-black uppercase tracking-widest text-blue-600 hover:text-blue-700">
-                                        View Details
-                                    </Link>
-                                )}
+                                {userStats.recentItems.slice(0, 10).map((item: any, index: number) => (
+                                    <div key={`${item.title}-${index}`} className="flex items-center justify-between gap-4 border-b border-border-light pb-3 last:border-0 last:pb-0">
+                                        <div className="min-w-0">
+                                            <div className="text-sm font-bold text-text-primary truncate">{item.title}</div>
+                                            <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-wide text-text-muted">
+                                                <span className="rounded-full bg-surface-light px-2 py-1 font-black">
+                                                    {item.type === 'alert'
+                                                        ? 'Alert'
+                                                        : item.type === 'query'
+                                                            ? 'Query'
+                                                            : 'Knowledge Base'}
+                                                </span>
+                                                {item.status && (
+                                                    <span className="rounded-full bg-amber-50 px-2 py-1 font-black text-amber-700">
+                                                        {item.status}
+                                                    </span>
+                                                )}
+                                                {(item.viewedAt || item.updatedAt) && (
+                                                    <span>{new Date(item.viewedAt || item.updatedAt).toLocaleDateString()}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {item.link && (
+                                            <Link href={item.link} className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-700 whitespace-nowrap">
+                                                View Details
+                                            </Link>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
                         ) : (
                             <p className="text-sm text-text-muted italic">No recent knowledge base file or alert viewed.</p>
@@ -459,7 +509,7 @@ export default function Dashboard() {
                         </div>
                         {userStats?.recentKnowledgeBase?.items?.length > 0 && (
                             <div className="mt-4 space-y-2">
-                                {userStats.recentKnowledgeBase.items.map((item: any, i: number) => (
+                                {userStats.recentKnowledgeBase.items.slice(0, 5).map((item: any, i: number) => (
                                     <div key={i} className="flex items-center justify-between gap-4 border-b border-border-light pb-2 last:border-0 last:pb-0">
                                         <span className="text-sm font-medium text-text-secondary truncate">{item.title}</span>
                                         <span className="text-[10px] text-text-muted whitespace-nowrap">
@@ -499,7 +549,7 @@ export default function Dashboard() {
                         </div>
                         {userStats?.recentAlerts?.items?.length > 0 && (
                             <div className="mt-4 space-y-2">
-                                {userStats.recentAlerts.items.map((item: any, i: number) => (
+                                {userStats.recentAlerts.items.slice(0, 5).map((item: any, i: number) => (
                                     <div key={i} className="flex items-center justify-between gap-4 border-b border-border-light pb-2 last:border-0 last:pb-0">
                                         <span className="text-sm font-medium text-text-secondary truncate">{item.title}</span>
                                         <span className="text-[10px] text-text-muted whitespace-nowrap">

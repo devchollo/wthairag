@@ -119,6 +119,8 @@ export const uploadDocument = async (req: Request, res: Response) => {
             mimeType: file.mimetype,
             fileKey: `workspaces/${(req as any).workspace?._id}/vault/${Date.now()}-${file.originalname}`,
             metadata: metadataObj,
+            createdBy: req.user?._id,
+            updatedBy: req.user?._id,
 
         });
 
@@ -183,6 +185,8 @@ export const createManualDocument = async (req: Request, res: Response) => {
             summary: buildSummary(content, 600),
             mimeType: 'text/plain',
             metadata: metadata || {},
+            createdBy: req.user?._id,
+            updatedBy: req.user?._id,
 
         });
 
@@ -222,8 +226,71 @@ export const createManualDocument = async (req: Request, res: Response) => {
 
 export const listDocuments = async (req: Request, res: Response) => {
     try {
-        const docs = await Document.find({ workspaceId: (req as any).workspace?._id }).sort('-createdAt');
+        const docs = await Document.find({ workspaceId: (req as any).workspace?._id })
+            .populate('createdBy', 'name email')
+            .populate('updatedBy', 'name email')
+            .sort('-createdAt');
         return sendSuccess(res, docs, 'Documents fetched');
+    } catch (error: any) {
+        return sendError(res, error.message, 500);
+    }
+};
+
+export const updateManualDocument = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { title, content } = req.body;
+
+        if (!title || !content) {
+            return sendError(res, 'Title and content are required', 400);
+        }
+
+        const doc = await Document.findOne({ _id: id, workspaceId: (req as any).workspace?._id });
+        if (!doc) {
+            return sendError(res, 'Document not found', 404);
+        }
+
+        if (doc.fileKey) {
+            return sendError(res, 'Only manual records can be edited', 400);
+        }
+
+        doc.title = title;
+        doc.content = content;
+        doc.summary = buildSummary(content, 600);
+        doc.updatedBy = req.user?._id;
+
+        await doc.save();
+
+        await DocumentChunk.deleteMany({ documentId: doc._id });
+
+        const chunkSize = 1000;
+        const overlap = 200;
+
+        if (content.length > 0) {
+            const chunks = [];
+            for (let i = 0; i < content.length; i += (chunkSize - overlap)) {
+                chunks.push(content.substring(i, i + chunkSize));
+            }
+
+            await Promise.all(chunks.map(async (chunkText, index) => {
+                try {
+                    const embedding = await AIService.generateEmbedding(chunkText);
+                    await DocumentChunk.create({
+                        workspaceId: (req as any).workspace?._id,
+                        documentId: doc._id,
+                        content: chunkText,
+                        summary: buildSummary(chunkText, 240),
+                        embedding: embedding,
+                        chunkIndex: index,
+                        metadata: doc.metadata
+                    });
+                } catch (e) {
+                    console.error(`Failed to embed chunk ${index} for doc ${doc._id}`, e);
+                }
+            }));
+        }
+
+        return sendSuccess(res, doc, 'Knowledge record updated');
     } catch (error: any) {
         return sendError(res, error.message, 500);
     }
