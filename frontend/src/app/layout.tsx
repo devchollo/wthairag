@@ -128,8 +128,16 @@ export default function RootLayout({
                 <div>
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-text-primary mb-6">Governance</h4>
                   <ul className="space-y-4 text-[13px] font-bold text-text-muted">
-                    <li><a href="/legal?type=privacy" className="hover:text-blue-600 transition-colors">Privacy Protocol</a></li>
-                    <li><a href="/legal?type=terms" className="hover:text-blue-600 transition-colors">Terms of Service</a></li>
+                    <li><a href="/legal?type=overview" className="hover:text-blue-600 transition-colors">Legal Overview</a></li>
+                    <li><a href="/legal?type=privacy-ph" className="hover:text-blue-600 transition-colors">Privacy (Philippines)</a></li>
+                    <li><a href="/legal?type=privacy-us" className="hover:text-blue-600 transition-colors">Privacy (United States)</a></li>
+                    <li><a href="/legal?type=privacy-ca" className="hover:text-blue-600 transition-colors">Privacy (Canada)</a></li>
+                    <li><a href="/legal?type=terms-ph" className="hover:text-blue-600 transition-colors">Terms (Philippines)</a></li>
+                    <li><a href="/legal?type=terms-us" className="hover:text-blue-600 transition-colors">Terms (United States)</a></li>
+                    <li><a href="/legal?type=terms-ca" className="hover:text-blue-600 transition-colors">Terms (Canada)</a></li>
+                    <li><a href="/legal?type=data-processing" className="hover:text-blue-600 transition-colors">Data Processing</a></li>
+                    <li><a href="/legal?type=third-party" className="hover:text-blue-600 transition-colors">Third-Party APIs</a></li>
+                    <li><a href="/legal?type=cookies" className="hover:text-blue-600 transition-colors">Cookies & Analytics</a></li>
                     <li><a href="/legal?type=security" className="hover:text-blue-600 transition-colors">Security Standards</a></li>
                     <li><a href="/legal?type=sla" className="hover:text-blue-600 transition-colors">SLA & Reliability</a></li>
                   </ul>
