@@ -442,7 +442,7 @@ export default function AlertsPage() {
                                 {selectedAlert.status === 'open' ? 'Open' : 'Resolved'}
                             </span>
                         </div>
-                        <div className="text-sm font-bold text-text-secondary whitespace-pre-wrap">
+                        <div className="text-sm font-bold text-text-secondary whitespace-pre-wrap max-h-64 overflow-y-auto pr-2">
                             {selectedAlert.description || 'No details provided.'}
                         </div>
                         <div className="mt-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
