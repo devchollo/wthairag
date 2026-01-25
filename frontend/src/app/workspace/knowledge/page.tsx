@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import ReactQuill, { Quill } from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import { FileText, Trash2, Upload, Terminal, BookOpen, Clock, Activity, Search, Filter, Download, X, Lightbulb, Pencil } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -19,6 +21,14 @@ interface Document {
     updatedBy?: { name?: string; email?: string };
 }
 
+const font = Quill.import('formats/font');
+font.whitelist = ['inter', 'serif', 'monospace'];
+Quill.register(font, true);
+
+const size = Quill.import('formats/size');
+size.whitelist = ['small', false, 'large', 'huge'];
+Quill.register(size, true);
+
 export default function KnowledgeBase() {
     const { currentWorkspace, userRole } = useAuth();
     const [documents, setDocuments] = useState<Document[]>([]);
@@ -35,6 +45,52 @@ export default function KnowledgeBase() {
     const [editingDoc, setEditingDoc] = useState<Document | null>(null);
     const [editTitle, setEditTitle] = useState('');
     const [editContent, setEditContent] = useState('');
+
+    const quillModules = useMemo(
+        () => ({
+            toolbar: [
+                [{ font: [] }, { size: [] }],
+                [{ header: [1, 2, 3, 4, 5, 6, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ color: [] }, { background: [] }],
+                [{ script: 'sub' }, { script: 'super' }],
+                [{ list: 'ordered' }, { list: 'bullet' }],
+                [{ indent: '-1' }, { indent: '+1' }],
+                [{ align: [] }],
+                ['blockquote', 'code-block'],
+                ['link', 'image'],
+                ['clean']
+            ]
+        }),
+        []
+    );
+
+    const quillFormats = [
+        'font',
+        'size',
+        'header',
+        'bold',
+        'italic',
+        'underline',
+        'strike',
+        'color',
+        'background',
+        'script',
+        'list',
+        'bullet',
+        'indent',
+        'align',
+        'blockquote',
+        'code-block',
+        'link',
+        'image'
+    ];
+
+    const stripHtml = (value: string) =>
+        value.replace(/<(.|\n)*?>/g, '').replace(/&nbsp;/g, ' ').trim();
+
+    const isManualContentEmpty = stripHtml(manualContent).length === 0;
+    const isEditContentEmpty = stripHtml(editContent).length === 0;
 
     const isAdmin = userRole === 'owner' || userRole === 'admin';
 
@@ -103,7 +159,7 @@ export default function KnowledgeBase() {
     };
 
     const handleManualSubmit = async () => {
-        if (!manualTitle || !manualContent || !currentWorkspace?._id || !isAdmin) return;
+        if (!manualTitle || isManualContentEmpty || !currentWorkspace?._id || !isAdmin) return;
 
         setUploading(true);
         try {
@@ -203,7 +259,7 @@ export default function KnowledgeBase() {
 
     const handleEditSubmit = async () => {
         if (!editingDoc || !currentWorkspace?._id || !isAdmin) return;
-        if (!editTitle || !editContent) return;
+        if (!editTitle || isEditContentEmpty) return;
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
             const res = await fetch(`${apiUrl}/api/workspace-data/knowledge/${editingDoc._id}`, {
@@ -312,16 +368,20 @@ export default function KnowledgeBase() {
                                     onChange={(e) => setManualTitle(e.target.value)}
                                     className="w-full h-11 bg-surface-light border-2 border-border-light rounded-xl px-4 text-xs font-bold outline-none focus:border-blue-600 transition-all"
                                 />
-                                <textarea
-                                    placeholder="Enter the full text content here for AI indexing..."
-                                    value={manualContent}
-                                    onChange={(e) => setManualContent(e.target.value)}
-                                    rows={8}
-                                    className="w-full bg-surface-light border-2 border-border-light rounded-xl p-4 text-xs font-bold outline-none focus:border-blue-600 transition-all resize-none"
-                                />
+                                <div className="rounded-xl border-2 border-border-light bg-surface-light overflow-hidden focus-within:border-blue-600 transition-all">
+                                    <ReactQuill
+                                        theme="snow"
+                                        value={manualContent}
+                                        onChange={setManualContent}
+                                        modules={quillModules}
+                                        formats={quillFormats}
+                                        placeholder="Enter the full text content here for AI indexing..."
+                                        className="text-xs font-bold text-text-primary"
+                                    />
+                                </div>
                                 <button
                                     onClick={handleManualSubmit}
-                                    disabled={!manualTitle || !manualContent || uploading}
+                                    disabled={!manualTitle || isManualContentEmpty || uploading}
                                     className="btn-primary w-full h-11"
                                 >
                                     {uploading ? 'Vaulting...' : 'Vault Record'}
@@ -485,8 +545,17 @@ export default function KnowledgeBase() {
                                 Added by {formatUser(selectedDoc.createdBy)} · Edited by {formatUser(selectedDoc.updatedBy)}
                                 {selectedDoc.updatedAt && ` · Modified ${new Date(selectedDoc.updatedAt).toLocaleString()}`}
                             </div>
-                            <div className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap text-sm text-text-secondary leading-relaxed pr-2">
-                                {selectedDoc.content || 'No content available for this record.'}
+                            <div className="max-h-[60vh] overflow-y-auto pr-2">
+                                {selectedDoc.content ? (
+                                    <div
+                                        className="ql-editor text-sm text-text-secondary leading-relaxed p-0"
+                                        dangerouslySetInnerHTML={{ __html: selectedDoc.content }}
+                                    />
+                                ) : (
+                                    <div className="text-sm text-text-secondary leading-relaxed">
+                                        No content available for this record.
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -515,12 +584,16 @@ export default function KnowledgeBase() {
                                 onChange={(e) => setEditTitle(e.target.value)}
                                 className="w-full h-11 bg-surface-light border-2 border-border-light rounded-xl px-4 text-xs font-bold outline-none focus:border-blue-600 transition-all"
                             />
-                            <textarea
-                                value={editContent}
-                                onChange={(e) => setEditContent(e.target.value)}
-                                rows={10}
-                                className="w-full bg-surface-light border-2 border-border-light rounded-xl p-4 text-xs font-bold outline-none focus:border-blue-600 transition-all resize-none"
-                            />
+                            <div className="rounded-xl border-2 border-border-light bg-surface-light overflow-hidden focus-within:border-blue-600 transition-all">
+                                <ReactQuill
+                                    theme="snow"
+                                    value={editContent}
+                                    onChange={setEditContent}
+                                    modules={quillModules}
+                                    formats={quillFormats}
+                                    className="text-xs font-bold text-text-primary"
+                                />
+                            </div>
                         </div>
                         <div className="flex justify-end gap-3 px-6 pb-6">
                             <button
@@ -532,7 +605,7 @@ export default function KnowledgeBase() {
                             <button
                                 onClick={handleEditSubmit}
                                 className="btn-primary h-9 px-4 text-[10px] font-black uppercase tracking-widest"
-                                disabled={!editTitle || !editContent}
+                                disabled={!editTitle || isEditContentEmpty}
                             >
                                 Save Changes
                             </button>
