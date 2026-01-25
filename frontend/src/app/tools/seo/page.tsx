@@ -7,7 +7,7 @@ import {
     Search,
     FileText,
     Image,
-    Link2,
+    Link as LinkIcon,
     AlertCircle,
     CheckCircle,
     Activity,
@@ -77,19 +77,9 @@ interface SEOResults {
             inDescription: boolean;
             inH1: boolean;
         }>;
-        topTerms: Array<{ term: string; count: number }>;
         qualityScore: number;
-        semanticSuggestions: string[];
         competitorBenchmarks: Array<{ url: string; wordCount: number; keywordCoverage: number }>;
         gapAnalysis: number;
-    };
-    backlinks: {
-        status: string;
-        reason: string | null;
-        totalBacklinks: number | null;
-        referringDomains: number | null;
-        authorityScore: number | null;
-        toxicLinks: number | null;
     };
     rankTracking: {
         status: string;
@@ -297,6 +287,14 @@ export default function SEOChecker() {
         return 'bg-emerald-100 text-emerald-700';
     };
 
+    const formatPerformanceReason = (reason?: string | null) => {
+        if (!reason) return null;
+        if (reason.toLowerCase().includes('timeout')) {
+            return 'Performance data timed out. Try again in a moment.';
+        }
+        return reason;
+    };
+
     return (
         <div className="mx-auto max-w-[1100px] px-6 py-12">
             <Link href="/tools" className="inline-flex items-center gap-2 text-sm font-bold text-text-muted hover:text-blue-600 transition-colors mb-8 group">
@@ -411,7 +409,7 @@ export default function SEOChecker() {
                                 </div>
                                 <div className="flex items-center justify-between gap-3 min-w-0">
                                     <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
-                                        <Link2 className="h-4 w-4 text-amber-600" /> Total Links
+                                        <LinkIcon className="h-4 w-4 text-amber-600" /> Total Links
                                     </div>
                                     <div className="text-lg font-black text-text-primary">{results.links.total}</div>
                                 </div>
@@ -448,30 +446,27 @@ export default function SEOChecker() {
                                     </div>
                                 </dl>
                             </div>
-                            <div className="mt-4 rounded-xl border border-border-light bg-white">
+                            <div className="mt-4">
                                 {crawlPages.length > 0 ? (
-                                    <ul className="divide-y divide-border-light text-sm font-bold text-text-primary">
+                                    <ul className="space-y-2 text-sm font-bold text-text-primary">
                                         {crawlPages.map((page) => (
-                                            <li key={page.url} className="flex flex-col gap-2 p-4">
-                                                <div className="flex flex-wrap items-start justify-between gap-2">
-                                                    <span className="break-words min-w-0">{page.title || page.url}</span>
-                                                    <span className={`text-[10px] font-black uppercase tracking-widest ${page.indexable ? 'text-emerald-600' : 'text-red-600'}`}>
-                                                        {page.indexable ? 'Indexable' : 'Blocked'}
-                                                    </span>
-                                                </div>
-                                                <span className="text-xs font-bold text-text-muted break-all">{page.url}</span>
-                                                {page.issues.length > 0 && (
-                                                    <ul className="list-disc pl-4 text-xs font-bold text-red-600 space-y-1">
-                                                        {page.issues.map((issue, index) => (
-                                                            <li key={index}>{issue}</li>
-                                                        ))}
-                                                    </ul>
-                                                )}
+                                            <li key={page.url} className="flex flex-wrap items-center justify-between gap-2">
+                                                <a
+                                                    href={page.url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="text-blue-600 hover:underline break-all"
+                                                >
+                                                    {page.url}
+                                                </a>
+                                                <span className={`text-[10px] font-black uppercase tracking-widest ${page.indexable ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                    {page.indexable ? 'Indexable' : 'Blocked'}
+                                                </span>
                                             </li>
                                         ))}
                                     </ul>
                                 ) : (
-                                    <div className="bg-surface-light p-4 text-sm font-bold text-text-muted">
+                                    <div className="text-sm font-bold text-text-muted">
                                         No crawl results available yet.
                                     </div>
                                 )}
@@ -526,7 +521,8 @@ export default function SEOChecker() {
                                     </dl>
                                 ) : (
                                     <div className="text-sm font-bold text-text-muted">
-                                        {results.performance.reason || 'Performance data unavailable. Add PAGESPEED_API_KEY to enable Core Web Vitals.'}
+                                        {formatPerformanceReason(results.performance.reason)
+                                            || 'Performance data unavailable. Add PAGESPEED_API_KEY to enable Core Web Vitals.'}
                                     </div>
                                 )}
                             </div>
@@ -538,7 +534,7 @@ export default function SEOChecker() {
                                 <BarChart3 className="h-3 w-3" /> Keyword & Content Optimization
                             </div>
                             <div className="rounded-xl border border-border-light bg-white p-4 space-y-4">
-                                <dl className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                                <dl className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                                     <div className="min-w-0 border border-border-light bg-surface-light p-3">
                                         <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Word Count</div>
                                         <div className="text-2xl font-black text-text-primary">{results.content.wordCount}</div>
@@ -554,30 +550,13 @@ export default function SEOChecker() {
                                         <div className="text-xs font-bold text-text-muted">Based on depth & keyword coverage</div>
                                     </div>
                                     <div className="min-w-0 border border-border-light bg-white p-3">
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-3">Top Terms</div>
-                                        {results.content.topTerms.length > 0 ? (
-                                            <ul className="grid grid-cols-1 gap-1 text-xs font-bold text-text-primary sm:grid-cols-2">
-                                                {results.content.topTerms.map((term) => (
-                                                    <li key={term.term} className="flex items-center justify-between gap-3">
-                                                        <span className="break-words">{term.term}</span>
-                                                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">{term.count}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Primary Keywords</div>
+                                        {results.content.keywordStats.length > 0 ? (
+                                            <div className="text-xs font-bold text-text-muted">
+                                                {results.content.keywordStats.map((keyword) => keyword.keyword).join(', ')}
+                                            </div>
                                         ) : (
-                                            <div className="text-xs font-bold text-text-muted">No recurring terms detected.</div>
-                                        )}
-                                    </div>
-                                    <div className="min-w-0 border border-border-light bg-white p-3">
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-3">Semantic Suggestions</div>
-                                        {results.content.semanticSuggestions.length > 0 ? (
-                                            <ul className="grid grid-cols-1 gap-1 text-xs font-bold text-text-primary sm:grid-cols-2">
-                                                {results.content.semanticSuggestions.map((term) => (
-                                                    <li key={term} className="break-words">{term}</li>
-                                                ))}
-                                            </ul>
-                                        ) : (
-                                            <div className="text-xs font-bold text-text-muted">Add content to surface related concepts.</div>
+                                            <div className="text-xs font-bold text-text-muted">Add keywords to see density insights.</div>
                                         )}
                                     </div>
                                 </dl>
@@ -614,18 +593,6 @@ export default function SEOChecker() {
                                 ) : (
                                     <div className="text-sm font-bold text-text-muted">Add keywords to calculate density and relevance.</div>
                                 )}
-                            </div>
-                        </section>
-
-                        {/* Backlinks */}
-                        <section>
-                            <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
-                                <Link2 className="h-3 w-3" /> Backlink Analysis
-                            </div>
-                            <div className="rounded-xl border border-border-light bg-white p-4 text-sm font-bold text-text-muted">
-                                {results.backlinks.status === 'available'
-                                    ? 'Backlink data connected. Metrics will appear here.'
-                                    : results.backlinks.reason || 'Backlink data unavailable. Configure BACKLINKS_API_URL to enable.'}
                             </div>
                         </section>
 
@@ -826,7 +793,7 @@ export default function SEOChecker() {
                 items={[
                     {
                         question: "What is a good SEO score?",
-                        answer: "A score above 80 is generally considered good, indicating that your page follows most technical best practices. Content quality, backlinks, and user engagement are also critical factors, which you can now connect via the enhanced modules."
+                        answer: "A score above 80 is generally considered good, indicating that your page follows most technical best practices. Content quality and user engagement are also critical factors for long-term rankings."
                     },
                     {
                         question: "Why are my meta tags important?",
