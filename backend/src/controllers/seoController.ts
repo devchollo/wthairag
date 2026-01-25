@@ -13,6 +13,13 @@ const STOPWORDS = new Set([
     'into', 'over', 'after', 'beneath', 'under', 'above', 'be', 'is', 'are', 'was', 'were', 'that',
     'this', 'it', 'as', 'or', 'if', 'but', 'not', 'your', 'you', 'we', 'our', 'their', 'they', 'i'
 ]);
+const COMMON_TERMS = new Set([
+    'about', 'access', 'account', 'analytics', 'api', 'app', 'apps', 'blog', 'careers', 'community',
+    'contact', 'dashboard', 'developer', 'developers', 'docs', 'documentation', 'enterprise', 'faq',
+    'features', 'help', 'home', 'login', 'pricing', 'privacy', 'product', 'products', 'resources',
+    'security', 'services', 'sign', 'signin', 'signup', 'solutions', 'sponsor', 'sponsorship',
+    'support', 'terms', 'tool', 'tools'
+]);
 
 const seoRequestSchema = z.object({
     url: z.string().trim().url().max(2048),
@@ -50,6 +57,29 @@ const wordFrequency = (text: string) => {
     const counts = new Map<string, number>();
     words.forEach(word => counts.set(word, (counts.get(word) || 0) + 1));
     return { words, counts };
+};
+
+const segmentToken = (token: string, vocab: Set<string>) => {
+    if (token.length < 12) return token;
+    const lower = token.toLowerCase();
+    const dp: Array<{ words: string[]; score: number } | null> = Array(lower.length + 1).fill(null);
+    dp[0] = { words: [], score: 0 };
+    for (let i = 0; i < lower.length; i++) {
+        if (!dp[i]) continue;
+        for (let j = i + 3; j <= lower.length; j++) {
+            const chunk = lower.slice(i, j);
+            if (!vocab.has(chunk)) continue;
+            const prev = dp[i]!;
+            const words = [...prev.words, chunk];
+            const score = prev.score + chunk.length + 2;
+            if (!dp[j] || score > dp[j]!.score) {
+                dp[j] = { words, score };
+            }
+        }
+    }
+    const result = dp[lower.length];
+    if (!result || result.words.length < 2) return token;
+    return result.words.join(' ');
 };
 
 const parseRobotsTxt = (robotsBody: string) => {
@@ -96,7 +126,7 @@ const getPageSpeedMetrics = async (targetUrl: string) => {
                 strategy: 'mobile',
                 key: apiKey
             },
-            timeout: 15000
+            timeout: 25000
         });
         const audits = response.data?.lighthouseResult?.audits || {};
         const lcp = audits['largest-contentful-paint'];
@@ -112,7 +142,11 @@ const getPageSpeedMetrics = async (targetUrl: string) => {
             score: response.data?.lighthouseResult?.categories?.performance?.score ?? null
         };
     } catch (error: any) {
-        return { status: 'error', reason: error.message };
+        const isTimeout = error?.code === 'ECONNABORTED' || `${error?.message || ''}`.toLowerCase().includes('timeout');
+        if (isTimeout) {
+            return { status: 'unavailable', reason: 'Performance data timed out. Try again in a moment.' };
+        }
+        return { status: 'error', reason: 'Performance data unavailable due to a PageSpeed request error.' };
     }
 };
 
@@ -188,10 +222,11 @@ const analyzeKeywords = (text: string, keywords: string[], meta: { title?: strin
             inH1: meta.h1?.some(h1 => h1.toLowerCase().includes(keyword)) || false
         };
     });
+    const vocab = new Set([...counts.keys(), ...COMMON_TERMS]);
     const topTerms = Array.from(counts.entries())
         .sort((a, b) => b[1] - a[1])
         .slice(0, 8)
-        .map(([term, count]) => ({ term, count }));
+        .map(([term, count]) => ({ term: segmentToken(term, vocab), count }));
     return { keywordStats, totalWords, topTerms };
 };
 
@@ -399,14 +434,6 @@ export const seoChecker = async (req: Request, res: Response) => {
                 gapAnalysis: avgCompetitorWords > 0
                     ? Math.round(avgCompetitorWords - keywordInsights.totalWords)
                     : 0
-            },
-            backlinks: {
-                status: process.env.BACKLINKS_API_URL ? 'available' : 'unavailable',
-                reason: process.env.BACKLINKS_API_URL ? null : 'BACKLINKS_API_URL not configured',
-                totalBacklinks: null,
-                referringDomains: null,
-                authorityScore: null,
-                toxicLinks: null
             },
             rankTracking: {
                 status: serpInsights.status,
