@@ -340,111 +340,83 @@ export default function SEOChecker() {
                         </div>
 
                         {/* Meta Tags */}
-                        <div>
+                        <section>
                             <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
                                 <FileText className="h-3 w-3" /> Meta Tags
                             </div>
-                            <dl className="rounded-xl border border-border-light bg-white">
-                                <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-[180px_1fr] md:items-start">
-                                    <dt className="text-[10px] font-black uppercase tracking-widest text-text-muted">Title ({results.meta.titleLength} chars)</dt>
-                                    <dd className="text-sm font-bold text-text-primary break-words">{results.meta.title || '—'}</dd>
+                            <div className="rounded-xl border border-border-light bg-white divide-y divide-border-light md:grid md:grid-cols-2 md:divide-y-0 md:divide-x">
+                                <div className="p-4">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Title ({results.meta.titleLength} chars)</div>
+                                    <div className="text-sm font-bold text-text-primary break-words">{results.meta.title || '—'}</div>
                                 </div>
-                                <div className="border-t border-border-light" />
-                                <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-[180px_1fr] md:items-start">
-                                    <dt className="text-[10px] font-black uppercase tracking-widest text-text-muted">Description ({results.meta.descriptionLength} chars)</dt>
-                                    <dd className="text-sm font-bold text-text-primary break-words">{results.meta.description || '—'}</dd>
-                                </div>
-                                <div className="border-t border-border-light" />
-                                <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-[180px_1fr] md:items-start">
-                                    <dt className="text-[10px] font-black uppercase tracking-widest text-text-muted">Canonical</dt>
-                                    <dd className="text-sm font-bold text-text-primary break-all">{results.meta.canonical || '—'}</dd>
-                                </div>
-                                <div className="border-t border-border-light" />
-                                <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-[180px_1fr] md:items-start">
-                                    <dt className="text-[10px] font-black uppercase tracking-widest text-text-muted">Robots</dt>
-                                    <dd className="text-sm font-bold text-text-primary break-words">{results.meta.robots || '—'}</dd>
-                                </div>
-                                <div className="border-t border-border-light" />
-                                <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-[180px_1fr] md:items-start">
-                                    <dt className="text-[10px] font-black uppercase tracking-widest text-text-muted">OG Title</dt>
-                                    <dd className="text-sm font-bold text-text-primary break-words">{results.meta.ogTitle || '—'}</dd>
-                                </div>
-                                <div className="border-t border-border-light" />
-                                <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-[180px_1fr] md:items-start">
-                                    <dt className="text-[10px] font-black uppercase tracking-widest text-text-muted">OG Description</dt>
-                                    <dd className="text-sm font-bold text-text-primary break-words">{results.meta.ogDescription || '—'}</dd>
-                                </div>
-                                <div className="border-t border-border-light" />
-                                <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-[180px_1fr] md:items-start">
-                                    <dt className="text-[10px] font-black uppercase tracking-widest text-text-muted">OG Image</dt>
-                                    <dd className="text-sm font-bold text-text-primary break-all">{results.meta.ogImage || '—'}</dd>
-                                </div>
-                            </dl>
-                        </div>
-
-                        {/* Stats Grid */}
-                        <div className="rounded-xl border border-border-light bg-white">
-                            <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 xl:grid-cols-4">
-                                <div className="flex items-center gap-3">
-                                    <Hash className="h-4 w-4 text-blue-600" />
-                                    <div>
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted">H1 Tags</div>
-                                        <div className="text-xl font-black text-text-primary">{results.headings.h1.length}</div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <Image className="h-4 w-4 text-emerald-600" />
-                                    <div>
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted">Images w/ Alt</div>
-                                        <div className="text-xl font-black text-text-primary">{results.images.withAlt}/{results.images.total}</div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <Link2 className="h-4 w-4 text-amber-600" />
-                                    <div>
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted">Total Links</div>
-                                        <div className="text-xl font-black text-text-primary">{results.links.total}</div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <Code className="h-4 w-4 text-indigo-600" />
-                                    <div>
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted">JSON-LD</div>
-                                        <div className="text-xl font-black text-text-primary">{results.structuredData.hasJsonLd ? 'Yes' : 'No'}</div>
-                                    </div>
+                                <div className="p-4">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Description ({results.meta.descriptionLength} chars)</div>
+                                    <div className="text-sm font-bold text-text-primary break-words">{results.meta.description || '—'}</div>
                                 </div>
                             </div>
-                        </div>
+                        </section>
+
+                        {/* Stats Grid */}
+                        <section className="rounded-xl border border-border-light bg-white p-4">
+                            <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="flex items-center justify-between gap-3 min-w-0">
+                                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
+                                        <Hash className="h-4 w-4 text-blue-600" /> H1 Tags
+                                    </div>
+                                    <div className="text-lg font-black text-text-primary">{results.headings.h1.length}</div>
+                                </div>
+                                <div className="flex items-center justify-between gap-3 min-w-0">
+                                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
+                                        <Image className="h-4 w-4 text-emerald-600" /> Images w/ Alt
+                                    </div>
+                                    <div className="text-lg font-black text-text-primary">
+                                        {results.images.withAlt}/{results.images.total}
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between gap-3 min-w-0">
+                                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
+                                        <Link2 className="h-4 w-4 text-amber-600" /> Total Links
+                                    </div>
+                                    <div className="text-lg font-black text-text-primary">{results.links.total}</div>
+                                </div>
+                                <div className="flex items-center justify-between gap-3 min-w-0">
+                                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
+                                        <Code className="h-4 w-4 text-indigo-600" /> JSON-LD
+                                    </div>
+                                    <div className="text-lg font-black text-text-primary">{results.structuredData.hasJsonLd ? 'Yes' : 'No'}</div>
+                                </div>
+                            </dl>
+                        </section>
 
                         {/* Crawl & Indexing */}
-                        <div>
+                        <section>
                             <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
                                 <Network className="h-3 w-3" /> Crawl & Indexing
                             </div>
-                            <div className="rounded-xl border border-border-light bg-white mb-4">
-                                <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-3">
-                                    <div>
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted">Pages Crawled</div>
+                            <div className="rounded-xl border border-border-light bg-white p-4">
+                                <dl className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                    <div className="min-w-0">
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Pages Crawled</div>
                                         <div className="text-2xl font-black text-text-primary">{results.crawl.pagesScanned}</div>
                                         <div className="text-xs font-bold text-text-muted">Indexable: {results.crawl.indexableCount} / {results.crawl.pagesScanned}</div>
                                     </div>
-                                    <div>
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted">Robots.txt</div>
-                                        <div className="text-sm font-black text-text-primary">{results.crawl.robots.status}</div>
+                                    <div className="min-w-0">
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Robots.txt</div>
+                                        <div className="text-sm font-black text-text-primary break-words">{results.crawl.robots.status}</div>
                                         <div className="text-xs font-bold text-text-muted">Disallow rules: {results.crawl.robots.disallowCount}</div>
                                     </div>
-                                    <div>
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted">Sitemap</div>
-                                        <div className="text-sm font-black text-text-primary">{results.crawl.sitemap.status}</div>
+                                    <div className="min-w-0">
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Sitemap</div>
+                                        <div className="text-sm font-black text-text-primary break-words">{results.crawl.sitemap.status}</div>
                                         <div className="text-xs font-bold text-text-muted">URLs: {results.crawl.sitemap.urlCount}</div>
                                     </div>
-                                </div>
+                                </dl>
                             </div>
-                            <div className="space-y-3">
+                            <div className="mt-4 rounded-xl border border-border-light bg-white divide-y divide-border-light">
                                 {results.crawl.pages.map((page) => (
-                                    <div key={page.url} className="flex flex-col gap-2 rounded-xl border border-border-light bg-white p-4">
-                                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                                            <div className="text-sm font-black text-text-primary break-words">{page.title || page.url}</div>
+                                    <div key={page.url} className="flex flex-col gap-2 p-4">
+                                        <div className="flex flex-wrap items-start justify-between gap-2">
+                                            <div className="text-sm font-black text-text-primary break-words min-w-0">{page.title || page.url}</div>
                                             <span className={`text-[10px] font-black uppercase tracking-widest ${page.indexable ? 'text-emerald-600' : 'text-red-600'}`}>
                                                 {page.indexable ? 'Indexable' : 'Blocked'}
                                             </span>
@@ -460,16 +432,16 @@ export default function SEOChecker() {
                                     </div>
                                 ))}
                             </div>
-                        </div>
+                        </section>
 
                         {/* Performance */}
-                        <div>
+                        <section>
                             <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
                                 <Gauge className="h-3 w-3" /> Performance & Core Web Vitals
                             </div>
                             <div className="rounded-xl border border-border-light bg-white p-4">
                                 {results.performance.status === 'available' ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <dl className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                         <div>
                                             <div className="text-[10px] font-black uppercase tracking-widest text-text-muted">LCP</div>
                                             <div className="text-lg font-black text-text-primary">{results.performance.metrics?.lcp || '—'}</div>
@@ -486,23 +458,23 @@ export default function SEOChecker() {
                                             <div className="text-[10px] font-black uppercase tracking-widest text-text-muted">Score</div>
                                             <div className="text-lg font-black text-text-primary">{results.performance.score ?? '—'}</div>
                                         </div>
-                                    </div>
+                                    </dl>
                                 ) : (
                                     <div className="text-sm font-bold text-text-muted">
                                         {results.performance.reason || 'Performance data unavailable. Add PAGESPEED_API_KEY to enable Core Web Vitals.'}
                                     </div>
                                 )}
                             </div>
-                        </div>
+                        </section>
 
                         {/* Keyword & Content */}
-                        <div>
+                        <section>
                             <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
                                 <BarChart3 className="h-3 w-3" /> Keyword & Content Optimization
                             </div>
-                            <div className="rounded-xl border border-border-light bg-white mb-4">
-                                <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 xl:grid-cols-3">
-                                    <div>
+                            <div className="rounded-xl border border-border-light bg-white p-4">
+                                <dl className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                                    <div className="min-w-0">
                                         <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Word Count</div>
                                         <div className="text-2xl font-black text-text-primary">{results.content.wordCount}</div>
                                         {results.content.gapAnalysis !== 0 && (
@@ -511,23 +483,25 @@ export default function SEOChecker() {
                                             </div>
                                         )}
                                     </div>
-                                    <div>
+                                    <div className="min-w-0">
                                         <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Content Quality</div>
                                         <div className="text-2xl font-black text-text-primary">{results.content.qualityScore}</div>
                                         <div className="text-xs font-bold text-text-muted">Based on depth & keyword coverage</div>
                                     </div>
-                                    <div>
+                                    <div className="min-w-0">
                                         <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Top Terms</div>
                                         <div className="text-xs font-bold text-text-primary space-y-1">
-                                            {results.content.topTerms.map((term) => (
-                                                <div key={term.term} className="flex justify-between gap-4">
+                                            {results.content.topTerms.length > 0 ? results.content.topTerms.map((term) => (
+                                                <div key={term.term} className="flex items-center justify-between gap-2">
                                                     <span className="break-words">{term.term}</span>
                                                     <span className="text-text-muted">{term.count}</span>
                                                 </div>
-                                            ))}
+                                            )) : (
+                                                <div className="text-text-muted">No recurring terms detected.</div>
+                                            )}
                                         </div>
                                     </div>
-                                    <div>
+                                    <div className="min-w-0">
                                         <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Semantic Suggestions</div>
                                         <div className="text-xs font-bold text-text-primary space-y-1">
                                             {results.content.semanticSuggestions.length > 0 ? results.content.semanticSuggestions.map((term) => (
@@ -537,28 +511,28 @@ export default function SEOChecker() {
                                             )}
                                         </div>
                                     </div>
-                                    <div className="md:col-span-2 xl:col-span-2">
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Competitor Benchmarks</div>
-                                        <div className="text-xs font-bold text-text-primary space-y-2">
-                                            {results.content.competitorBenchmarks.length > 0 ? results.content.competitorBenchmarks.map((item) => (
-                                                <div key={item.url} className="border-b border-border-light pb-2 last:border-b-0">
-                                                    <div className="break-all">{item.url}</div>
-                                                    <div className="text-text-muted">Words: {item.wordCount} · Keyword coverage: {item.keywordCoverage}%</div>
-                                                </div>
-                                            )) : (
-                                                <div className="text-text-muted">Add competitor URLs for gap insights.</div>
-                                            )}
+                                </dl>
+                            </div>
+                            <div className="rounded-xl border border-border-light bg-white p-4 mt-4">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-3">Competitor Benchmarks</div>
+                                <div className="space-y-2 text-xs font-bold text-text-primary">
+                                    {results.content.competitorBenchmarks.length > 0 ? results.content.competitorBenchmarks.map((item) => (
+                                        <div key={item.url} className="flex flex-col gap-1 border-b border-border-light pb-2 last:border-b-0">
+                                            <span className="break-all">{item.url}</span>
+                                            <span className="text-text-muted">Words: {item.wordCount} · Keyword coverage: {item.keywordCoverage}%</span>
                                         </div>
-                                    </div>
+                                    )) : (
+                                        <div className="text-text-muted">Add competitor URLs for gap insights.</div>
+                                    )}
                                 </div>
                             </div>
-                            <div className="rounded-xl border border-border-light bg-white p-4">
+                            <div className="rounded-xl border border-border-light bg-white p-4 mt-4">
                                 <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-3">Keyword Density</div>
                                 {results.content.keywordStats.length > 0 ? (
                                     <div className="space-y-2">
                                         {results.content.keywordStats.map((keyword) => (
                                             <div key={keyword.keyword} className="flex flex-col gap-2 border-b border-border-light pb-2 last:border-b-0">
-                                                <div className="flex items-center justify-between gap-4 text-sm font-bold text-text-primary">
+                                                <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-bold text-text-primary">
                                                     <span className="break-words">{keyword.keyword}</span>
                                                     <span className="text-text-muted">{keyword.density}%</span>
                                                 </div>
@@ -572,10 +546,10 @@ export default function SEOChecker() {
                                     <div className="text-sm font-bold text-text-muted">Add keywords to calculate density and relevance.</div>
                                 )}
                             </div>
-                        </div>
+                        </section>
 
                         {/* Backlinks */}
-                        <div>
+                        <section>
                             <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
                                 <Link2 className="h-3 w-3" /> Backlink Analysis
                             </div>
@@ -584,10 +558,10 @@ export default function SEOChecker() {
                                     ? 'Backlink data connected. Metrics will appear here.'
                                     : results.backlinks.reason || 'Backlink data unavailable. Configure BACKLINKS_API_URL to enable.'}
                             </div>
-                        </div>
+                        </section>
 
                         {/* Rank Tracking */}
-                        <div>
+                        <section>
                             <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
                                 <TrendingUp className="h-3 w-3" /> Rank Tracking
                             </div>
@@ -596,7 +570,7 @@ export default function SEOChecker() {
                                     results.rankTracking.positions.length > 0 ? (
                                         <div className="space-y-2">
                                             {results.rankTracking.positions.map((item) => (
-                                                <div key={item.keyword} className="flex items-center justify-between gap-4 text-xs font-bold text-text-primary">
+                                                <div key={item.keyword} className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-text-primary">
                                                     <span className="break-words">{item.keyword}</span>
                                                     <span>{item.position ? `#${item.position}` : 'Not in top 10'}</span>
                                                 </div>
@@ -609,10 +583,10 @@ export default function SEOChecker() {
                                     results.rankTracking.reason || 'Rank tracking unavailable. Configure SERPAPI_KEY to enable.'
                                 )}
                             </div>
-                        </div>
+                        </section>
 
                         {/* User Behavior */}
-                        <div>
+                        <section>
                             <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
                                 <Users className="h-3 w-3" /> User Behavior Integration
                             </div>
@@ -621,10 +595,10 @@ export default function SEOChecker() {
                                     ? 'Analytics connected. Engagement insights will appear here.'
                                     : results.userBehavior.reason || 'Connect Google Analytics to surface engagement priorities.'}
                             </div>
-                        </div>
+                        </section>
 
                         {/* Competitor & SERP */}
-                        <div>
+                        <section>
                             <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
                                 <Search className="h-3 w-3" /> Competitor & SERP Analysis
                             </div>
@@ -648,17 +622,17 @@ export default function SEOChecker() {
                                     results.competitorSerp.reason || 'Configure SERPAPI_KEY to enable SERP feature analysis.'
                                 )}
                             </div>
-                        </div>
+                        </section>
 
                         {/* Remediation Engine */}
-                        <div>
+                        <section>
                             <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
                                 <ShieldAlert className="h-3 w-3" /> Remediation Engine
                             </div>
-                            <div className="space-y-3">
+                            <div className="rounded-xl border border-border-light bg-white divide-y divide-border-light">
                                 {results.report.remediation.map((item, index) => (
-                                    <div key={`${item.issue}-${index}`} className="rounded-xl border border-border-light bg-white p-4">
-                                        <div className="flex items-center justify-between gap-2">
+                                    <div key={`${item.issue}-${index}`} className="p-4">
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
                                             <div className="text-sm font-black text-text-primary break-words">{item.issue}</div>
                                             <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full ${getSeverityColor(item.severity)}`}>
                                                 {item.severity}
@@ -670,10 +644,10 @@ export default function SEOChecker() {
                                     </div>
                                 ))}
                             </div>
-                        </div>
+                        </section>
 
                         {/* Export */}
-                        <div>
+                        <section>
                             <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
                                 <Download className="h-3 w-3" /> Exportable Reports
                             </div>
@@ -688,17 +662,17 @@ export default function SEOChecker() {
                                     <Download className="h-4 w-4" /> PDF
                                 </button>
                             </div>
-                        </div>
+                        </section>
 
                         {/* History */}
-                        <div>
+                        <section>
                             <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
                                 <History className="h-3 w-3" /> Historical Scans
                             </div>
-                            <div className="space-y-3">
+                            <div className="rounded-xl border border-border-light bg-white divide-y divide-border-light">
                                 {history.length > 0 ? history.map((entry) => (
-                                    <div key={`${entry.url}-${entry.date}`} className="rounded-xl border border-border-light bg-white p-4">
-                                        <div className="flex items-center justify-between text-sm font-bold text-text-primary">
+                                    <div key={`${entry.url}-${entry.date}`} className="p-4">
+                                        <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-bold text-text-primary">
                                             <span className="break-all">{entry.url}</span>
                                             <span>{entry.score}</span>
                                         </div>
@@ -706,22 +680,22 @@ export default function SEOChecker() {
                                         <div className="text-xs font-bold text-text-muted">Scan: {new Date(entry.date).toLocaleString()}</div>
                                     </div>
                                 )) : (
-                                    <div className="rounded-xl border border-border-light bg-surface-light p-4 text-sm font-bold text-text-muted">
+                                    <div className="bg-surface-light p-4 text-sm font-bold text-text-muted">
                                         Run an analysis to populate historical scans.
                                     </div>
                                 )}
                             </div>
-                        </div>
+                        </section>
 
                         {/* Issues & Recommendations */}
                         {(results.report.issues.length > 0 || results.report.recommendations.length > 0) && (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 {results.report.issues.length > 0 && (
                                     <div className="p-6 rounded-xl bg-red-50 border border-red-100">
                                         <div className="text-[10px] font-black uppercase tracking-widest text-red-600 mb-4">Issues</div>
                                         <ul className="space-y-2">
                                             {results.report.issues.map((issue, i) => (
-                                                <li key={i} className="flex items-start gap-2 text-sm font-bold text-red-800">
+                                                <li key={i} className="flex items-start gap-2 text-sm font-bold text-red-800 break-words">
                                                     <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" /> {issue}
                                                 </li>
                                             ))}
@@ -733,14 +707,14 @@ export default function SEOChecker() {
                                         <div className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-4">Recommendations</div>
                                         <ul className="space-y-2">
                                             {results.report.recommendations.map((rec, i) => (
-                                                <li key={i} className="flex items-start gap-2 text-sm font-bold text-blue-800">
+                                                <li key={i} className="flex items-start gap-2 text-sm font-bold text-blue-800 break-words">
                                                     <CheckCircle className="h-4 w-4 mt-0.5 shrink-0" /> {rec}
                                                 </li>
                                             ))}
                                         </ul>
                                     </div>
                                 )}
-                            </div>
+                            </section>
                         )}
 
                         <div className="text-center pt-4 border-t border-border-light">
