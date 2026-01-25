@@ -78,14 +78,19 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.className} suppressHydrationWarning>
       <body className="min-h-screen bg-white">
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-2DKN72DYLE"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-2DKN72DYLE');
-</script>
+        <Script async src="https://www.googletagmanager.com/gtag/js?id=G-2DKN72DYLE" strategy="afterInteractive" />
+        <Script
+          id="gtag-init"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-2DKN72DYLE');
+            `,
+          }}
+        />
         <AuthProvider>
           <Navbar />
           <CookieBanner />
