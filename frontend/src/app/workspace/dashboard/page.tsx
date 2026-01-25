@@ -169,7 +169,7 @@ export default function Dashboard() {
             };
 
             if (item.type === 'knowledge') {
-                const res = await fetch(`${apiUrl}/api/workspace/knowledge`, { headers, credentials: 'include' });
+                const res = await fetch(`${apiUrl}/api/workspace-data/knowledge`, { headers, credentials: 'include' });
                 const data = await res.json();
                 if (!res.ok) {
                     throw new Error(data?.message || 'Failed to load knowledge record');
@@ -180,7 +180,7 @@ export default function Dashboard() {
                 if (match) {
                     setSelectedRecentDetails(match);
                     if (match._id) {
-                        await fetch(`${apiUrl}/api/workspace/knowledge/${match._id}/view`, {
+                        await fetch(`${apiUrl}/api/workspace-data/knowledge/${match._id}/view`, {
                             method: 'POST',
                             headers,
                             credentials: 'include'
@@ -610,7 +610,9 @@ export default function Dashboard() {
                                                 </div>
                                                 <div>
                                                     <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">Details</p>
-                                                    <p>{selectedRecentDetails.description || 'No description available.'}</p>
+                                                    <div className="whitespace-pre-wrap text-sm text-text-secondary">
+                                                        {selectedRecentDetails.description || 'No description available.'}
+                                                    </div>
                                                 </div>
                                                 <div className="text-[10px] font-black uppercase tracking-widest text-text-muted">
                                                     Created by {formatUser(selectedRecentDetails.createdBy)} · Updated by {formatUser(selectedRecentDetails.updatedBy)}
