@@ -16,8 +16,8 @@ export const metadata: Metadata = {
   title: "WorkToolsHub — Modern AI & Public Utilities",
   description: "A professional workspace for modern engineers. Features AI RAG, DNS Debugging, SSL Audits, and high-performance developer utilities.",
   keywords: ["developer tools", "dns lookup", "ssl checker", "seo analysis", "ai rag", "engineering workspace"],
-  authors: [{ name: "WorkToolsHub Engineering" }],
-  creator: "WorkToolsHub",
+  authors: [{ name: "Kent Sevillejo" }],
+  creator: "Kent Sevillejo",
   applicationName: "WorkToolsHub",
   manifest: "/manifest.webmanifest",
   themeColor: "#0f172a",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "/",
-    title: "WorkToolsHub — The Modern Engineering Workspace",
+    title: "WorkToolsHub — Developer Utilities & AI",
     description: "Stateless, privacy-focused utilities for developers. DNS, SSL, AI, and more.",
     siteName: "WorkToolsHub",
     images: [
@@ -78,11 +78,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.className} suppressHydrationWarning>
       <body className="min-h-screen bg-white">
-        <Script
-          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-          strategy="afterInteractive"
-        />
-
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-2DKN72DYLE"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
