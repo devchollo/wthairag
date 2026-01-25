@@ -331,7 +331,7 @@ export default function SEOChecker() {
                 )}
 
                 {results && (
-                    <div className="space-y-8 animate-in fade-in duration-300">
+                    <div className="space-y-10 animate-in fade-in duration-300">
                         {/* Score */}
                         <div className={`p-8 rounded-2xl border-2 text-center ${getScoreColor(results.report.score)}`}>
                             <div className="text-6xl font-black">{results.report.score}</div>
@@ -439,7 +439,7 @@ export default function SEOChecker() {
                             <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
                                 <Gauge className="h-3 w-3" /> Performance & Core Web Vitals
                             </div>
-                            <div className="rounded-xl border border-border-light bg-surface-light p-4">
+                            <div className="rounded-xl border border-border-light bg-white p-4">
                                 {results.performance.status === 'available' ? (
                                     <dl className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                         <div>
@@ -553,7 +553,7 @@ export default function SEOChecker() {
                             <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
                                 <Link2 className="h-3 w-3" /> Backlink Analysis
                             </div>
-                            <div className="rounded-xl border border-border-light bg-surface-light p-4 text-sm font-bold text-text-muted">
+                            <div className="rounded-xl border border-border-light bg-white p-4 text-sm font-bold text-text-muted">
                                 {results.backlinks.status === 'available'
                                     ? 'Backlink data connected. Metrics will appear here.'
                                     : results.backlinks.reason || 'Backlink data unavailable. Configure BACKLINKS_API_URL to enable.'}
@@ -565,7 +565,7 @@ export default function SEOChecker() {
                             <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
                                 <TrendingUp className="h-3 w-3" /> Rank Tracking
                             </div>
-                            <div className="rounded-xl border border-border-light bg-surface-light p-4 text-sm font-bold text-text-muted">
+                            <div className="rounded-xl border border-border-light bg-white p-4 text-sm font-bold text-text-muted">
                                 {results.rankTracking.status === 'available' ? (
                                     results.rankTracking.positions.length > 0 ? (
                                         <div className="space-y-2">
@@ -590,7 +590,7 @@ export default function SEOChecker() {
                             <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
                                 <Users className="h-3 w-3" /> User Behavior Integration
                             </div>
-                            <div className="rounded-xl border border-border-light bg-surface-light p-4 text-sm font-bold text-text-muted">
+                            <div className="rounded-xl border border-border-light bg-white p-4 text-sm font-bold text-text-muted">
                                 {results.userBehavior.status === 'available'
                                     ? 'Analytics connected. Engagement insights will appear here.'
                                     : results.userBehavior.reason || 'Connect Google Analytics to surface engagement priorities.'}
@@ -602,7 +602,7 @@ export default function SEOChecker() {
                             <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
                                 <Search className="h-3 w-3" /> Competitor & SERP Analysis
                             </div>
-                            <div className="rounded-xl border border-border-light bg-surface-light p-4 text-sm font-bold text-text-muted">
+                            <div className="rounded-xl border border-border-light bg-white p-4 text-sm font-bold text-text-muted">
                                 {results.competitorSerp.status === 'available' ? (
                                     results.competitorSerp.serpFeatures.length > 0 ? (
                                         <div className="space-y-2">
@@ -638,9 +638,9 @@ export default function SEOChecker() {
                                                 {item.severity}
                                             </span>
                                         </div>
-                                        <div className="mt-2 text-xs font-bold text-text-muted">{item.impact}</div>
-                                        <div className="mt-2 text-xs font-bold text-text-primary">{item.fix}</div>
-                                        {item.example && <div className="mt-2 text-xs font-bold text-text-muted">{item.example}</div>}
+                                        <div className="mt-2 text-xs font-bold text-text-muted break-words">{item.impact}</div>
+                                        <div className="mt-2 text-xs font-bold text-text-primary break-words">{item.fix}</div>
+                                        {item.example && <div className="mt-2 text-xs font-bold text-text-muted break-words">{item.example}</div>}
                                     </div>
                                 ))}
                             </div>
