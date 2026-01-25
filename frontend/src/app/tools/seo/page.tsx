@@ -77,9 +77,7 @@ interface SEOResults {
             inDescription: boolean;
             inH1: boolean;
         }>;
-        topTerms: Array<{ term: string; count: number }>;
         qualityScore: number;
-        semanticSuggestions: string[];
         competitorBenchmarks: Array<{ url: string; wordCount: number; keywordCoverage: number }>;
         gapAnalysis: number;
     };
@@ -547,7 +545,7 @@ export default function SEOChecker() {
                                 <BarChart3 className="h-3 w-3" /> Keyword & Content Optimization
                             </div>
                             <div className="rounded-xl border border-border-light bg-white p-4 space-y-4">
-                                <dl className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                                <dl className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                                     <div className="min-w-0 border border-border-light bg-surface-light p-3">
                                         <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Word Count</div>
                                         <div className="text-2xl font-black text-text-primary">{results.content.wordCount}</div>
@@ -595,7 +593,7 @@ export default function SEOChecker() {
                                                 ))}
                                             </ul>
                                         ) : (
-                                            <div className="text-xs font-bold text-text-muted">Add content to surface related concepts.</div>
+                                            <div className="text-xs font-bold text-text-muted">Add keywords to see density insights.</div>
                                         )}
                                         {results.content.semanticSuggestions.length > termLimit && (
                                             <button

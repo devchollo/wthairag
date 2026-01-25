@@ -427,9 +427,7 @@ export const seoChecker = async (req: Request, res: Response) => {
             content: {
                 wordCount: keywordInsights.totalWords,
                 keywordStats: keywordInsights.keywordStats,
-                topTerms: keywordInsights.topTerms,
                 qualityScore,
-                semanticSuggestions: keywordInsights.topTerms.map(term => term.term),
                 competitorBenchmarks: competitorInsights,
                 gapAnalysis: avgCompetitorWords > 0
                     ? Math.round(avgCompetitorWords - keywordInsights.totalWords)
