@@ -5,6 +5,8 @@ export interface IUsageSummaryQuery {
     query: string;
     count: number;
     lastUsed: Date;
+    inputTokens?: number;
+    outputTokens?: number;
     citedDocuments?: string[];
 }
 
@@ -33,6 +35,8 @@ const UsageSummaryQuerySchema = new Schema<IUsageSummaryQuery>(
         query: { type: String, required: true },
         count: { type: Number, default: 0 },
         lastUsed: { type: Date, default: Date.now },
+        inputTokens: { type: Number, default: 0 },
+        outputTokens: { type: Number, default: 0 },
         citedDocuments: [{ type: String }]
     },
     { _id: false }

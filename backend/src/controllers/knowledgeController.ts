@@ -339,6 +339,8 @@ export const recordKnowledgeView = async (req: Request, res: Response) => {
             workspaceId: (req as any).workspace?._id,
             userId: req.user?._id,
             tokens: 0,
+            inputTokens: 0,
+            outputTokens: 0,
             query: doc.title,
             citedDocuments: [doc.title],
             eventType: 'view'

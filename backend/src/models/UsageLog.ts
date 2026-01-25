@@ -4,6 +4,8 @@ export interface IUsageLog extends Document {
     workspaceId: mongoose.Types.ObjectId;
     userId: mongoose.Types.ObjectId;
     tokens: number;
+    inputTokens: number;
+    outputTokens: number;
     query: string;
     citedDocuments: string[];
     aiModel: string;
@@ -16,6 +18,8 @@ const UsageLogSchema: Schema = new Schema(
         workspaceId: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true },
         userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
         tokens: { type: Number, required: true },
+        inputTokens: { type: Number, default: 0 },
+        outputTokens: { type: Number, default: 0 },
         query: { type: String, required: true },
         citedDocuments: [{ type: String }], // Document Titles
         aiModel: { type: String, default: 'gpt-4o' },

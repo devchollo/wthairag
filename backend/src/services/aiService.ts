@@ -10,6 +10,8 @@ export interface AIResponse {
     answer: string;
     citations: AICitation[];
     tokensUsed?: number;
+    inputTokens?: number;
+    outputTokens?: number;
     modelUsed: string;
     modelReason?: string;
 }
@@ -182,11 +184,15 @@ export class AIService {
 
             const answer = response.data.choices[0].message.content;
             const tokensUsed = response.data.usage?.total_tokens || 0;
+            const inputTokens = response.data.usage?.prompt_tokens || 0;
+            const outputTokens = response.data.usage?.completion_tokens || 0;
 
             return {
                 answer,
                 citations: [], // citations matching in controller
                 tokensUsed,
+                inputTokens,
+                outputTokens,
                 modelUsed: selection.model,
                 modelReason: selection.reason
             };

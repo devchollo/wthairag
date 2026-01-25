@@ -197,6 +197,8 @@ export const queryChat = async (req: Request, res: Response) => {
                     workspaceId,
                     userId: req.user._id,
                     tokens: 0,
+                    inputTokens: 0,
+                    outputTokens: 0,
                     query: query.substring(0, 500),
                     citedDocuments: cachedResponse.citations.map(c => c.title || c.documentId).filter(Boolean),
                     aiModel: 'cache',
@@ -206,6 +208,8 @@ export const queryChat = async (req: Request, res: Response) => {
                     workspaceId: workspaceId.toString(),
                     userId: req.user._id.toString(),
                     tokens: 0,
+                    inputTokens: 0,
+                    outputTokens: 0,
                     query: query.substring(0, 500),
                     citedDocuments: cachedResponse.citations.map(c => c.title || c.documentId).filter(Boolean)
                 }).catch(err => console.error('Failed to update usage summary:', err));
@@ -306,6 +310,8 @@ IMPORTANT GUIDELINES:
                 workspaceId,
                 userId: req.user._id,
                 tokens: aiResponse.tokensUsed || 0,
+                inputTokens: aiResponse.inputTokens || 0,
+                outputTokens: aiResponse.outputTokens || 0,
                 query: query.substring(0, 500),
                 citedDocuments: citedTitles,
                 aiModel: aiResponse.modelUsed,
@@ -315,6 +321,8 @@ IMPORTANT GUIDELINES:
                 workspaceId: workspaceId.toString(),
                 userId: req.user._id.toString(),
                 tokens: aiResponse.tokensUsed || 0,
+                inputTokens: aiResponse.inputTokens || 0,
+                outputTokens: aiResponse.outputTokens || 0,
                 query: query.substring(0, 500),
                 citedDocuments: citedTitles
             }).catch(err => console.error('Failed to update usage summary:', err));
