@@ -9,6 +9,7 @@ export default function AdminLogin() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const router = useRouter();
     const { login, logout, user } = useAuth();
 
@@ -21,6 +22,7 @@ export default function AdminLogin() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setIsSubmitting(true);
 
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -56,6 +58,8 @@ export default function AdminLogin() {
             router.push('/admin/dashboard');
         } catch (err: any) {
             setError('Access Denied. Invalid credentials.');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -121,10 +125,24 @@ export default function AdminLogin() {
 
                     <button
                         type="submit"
-                        className="flex w-full justify-center rounded-xl bg-blue-600 px-3 py-4 text-sm font-black text-white hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-all shadow-lg hover:shadow-blue-600/20"
+                        disabled={isSubmitting}
+                        className="flex w-full justify-center rounded-xl bg-blue-600 px-3 py-4 text-sm font-black text-white hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-all shadow-lg hover:shadow-blue-600/20 disabled:cursor-not-allowed disabled:bg-blue-600/80"
                     >
-                        Authenticate Session
+                        <span className="flex items-center gap-2">
+                            {isSubmitting && (
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white/70 opacity-75" />
+                                    <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
+                                </span>
+                            )}
+                            {isSubmitting ? 'Authenticating…' : 'Authenticate Session'}
+                        </span>
                     </button>
+                    {isSubmitting && (
+                        <div className="text-center text-[11px] font-semibold text-zinc-400 tracking-wide">
+                            Establishing a secure session…
+                        </div>
+                    )}
                 </form>
             </div>
         </div>

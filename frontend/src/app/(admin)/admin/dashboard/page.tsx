@@ -17,6 +17,8 @@ import {
     Bar,
     Legend
 } from 'recharts';
+import PageLoader from '@/components/PageLoader';
+import { Skeleton } from '@/components/Skeleton';
 
 type OverviewStats = {
     totalUsers: number;
@@ -262,6 +264,17 @@ export default function AdminDashboard() {
         );
     }, [overview?.workspaceUsage]);
 
+    const isInitialLoading = loadingOverview && !overview && !charts;
+
+    if (isInitialLoading) {
+        return (
+            <PageLoader
+                label="Loading admin dashboard"
+                hint="Fetching the latest system signals..."
+            />
+        );
+    }
+
     const formattedSystemUptime = useMemo(() => {
         const uptime = systemConfig?.server.uptimeSeconds ?? 0;
         const days = Math.floor(uptime / 86400);
@@ -352,23 +365,35 @@ export default function AdminDashboard() {
                     {activeTab === 'overview' && (
                         <>
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
-                                    <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Total Users</div>
-                                    <div className="text-3xl font-black text-zinc-900">{overview?.totalUsers?.toLocaleString() || 0}</div>
-                                </div>
-                                <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
-                                    <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Active Tenants</div>
-                                    <div className="text-3xl font-black text-zinc-900">{overview?.activeTenants?.toLocaleString() || 0}</div>
-                                </div>
-                                <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
-                                    <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Pending Reviews</div>
-                                    <div className="text-3xl font-black text-zinc-900">{overview?.pendingReviews?.toLocaleString() || 0}</div>
-                                </div>
-                                <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
-                                    <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Uptime</div>
-                                    <div className="text-3xl font-black text-zinc-900">{formattedUptime}</div>
-                                    <div className="text-[11px] text-zinc-400 font-semibold mt-1">Since last restart</div>
-                                </div>
+                                {loadingOverview ? (
+                                    Array.from({ length: 4 }).map((_, index) => (
+                                        <div key={`overview-skeleton-${index}`} className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
+                                            <Skeleton className="h-3 w-28 mb-4" />
+                                            <Skeleton className="h-8 w-20" />
+                                            {index === 3 ? <Skeleton className="h-3 w-32 mt-4" /> : null}
+                                        </div>
+                                    ))
+                                ) : (
+                                    <>
+                                        <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
+                                            <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Total Users</div>
+                                            <div className="text-3xl font-black text-zinc-900">{overview?.totalUsers?.toLocaleString() || 0}</div>
+                                        </div>
+                                        <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
+                                            <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Active Tenants</div>
+                                            <div className="text-3xl font-black text-zinc-900">{overview?.activeTenants?.toLocaleString() || 0}</div>
+                                        </div>
+                                        <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
+                                            <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Pending Reviews</div>
+                                            <div className="text-3xl font-black text-zinc-900">{overview?.pendingReviews?.toLocaleString() || 0}</div>
+                                        </div>
+                                        <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
+                                            <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Uptime</div>
+                                            <div className="text-3xl font-black text-zinc-900">{formattedUptime}</div>
+                                            <div className="text-[11px] text-zinc-400 font-semibold mt-1">Since last restart</div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
 
                             <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
@@ -383,7 +408,14 @@ export default function AdminDashboard() {
                                 </div>
                                 <div className="h-[260px]">
                                     {loadingOverview ? (
-                                        <div className="flex h-full items-center justify-center text-sm text-zinc-400">Loading analytics…</div>
+                                        <div className="h-full w-full flex items-center">
+                                            <div className="w-full space-y-4">
+                                                <Skeleton className="h-4 w-1/2" />
+                                                <Skeleton className="h-4 w-2/3" />
+                                                <Skeleton className="h-4 w-5/6" />
+                                                <Skeleton className="h-4 w-3/4" />
+                                            </div>
+                                        </div>
                                     ) : workspaceUsageData.length > 0 ? (
                                         <ResponsiveContainer width="100%" height="100%">
                                             <BarChart data={workspaceUsageData} layout="vertical" margin={{ left: 20 }}>
@@ -414,7 +446,14 @@ export default function AdminDashboard() {
                                     </div>
                                     <div className="h-[260px]">
                                         {loadingOverview ? (
-                                            <div className="flex h-full items-center justify-center text-sm text-zinc-400">Loading analytics…</div>
+                                            <div className="h-full w-full flex items-center">
+                                                <div className="w-full space-y-4">
+                                                    <Skeleton className="h-4 w-2/3" />
+                                                    <Skeleton className="h-4 w-5/6" />
+                                                    <Skeleton className="h-4 w-3/4" />
+                                                    <Skeleton className="h-4 w-1/2" />
+                                                </div>
+                                            </div>
                                         ) : usageChartData.length > 0 ? (
                                             <ResponsiveContainer width="100%" height="100%">
                                                 <LineChart data={usageChartData}>
@@ -442,7 +481,14 @@ export default function AdminDashboard() {
                                     </div>
                                     <div className="h-[260px]">
                                         {loadingOverview ? (
-                                            <div className="flex h-full items-center justify-center text-sm text-zinc-400">Loading analytics…</div>
+                                            <div className="h-full w-full flex items-center">
+                                                <div className="w-full space-y-4">
+                                                    <Skeleton className="h-4 w-1/2" />
+                                                    <Skeleton className="h-4 w-4/5" />
+                                                    <Skeleton className="h-4 w-2/3" />
+                                                    <Skeleton className="h-4 w-3/4" />
+                                                </div>
+                                            </div>
                                         ) : growthChartData.length > 0 ? (
                                             <ResponsiveContainer width="100%" height="100%">
                                                 <BarChart data={growthChartData}>
@@ -496,7 +542,22 @@ export default function AdminDashboard() {
                             </div>
                             <div className="divide-y divide-zinc-100">
                                 {loadingTestimonials ? (
-                                    <div className="p-6 text-sm text-zinc-500">Loading reviews…</div>
+                                    <div className="p-6 space-y-6">
+                                        {Array.from({ length: 3 }).map((_, index) => (
+                                            <div key={`review-skeleton-${index}`} className="flex items-start gap-6">
+                                                <Skeleton className="h-12 w-12 rounded-full" />
+                                                <div className="flex-1 space-y-3">
+                                                    <Skeleton className="h-4 w-1/3" />
+                                                    <Skeleton className="h-4 w-5/6" />
+                                                    <Skeleton className="h-3 w-1/2" />
+                                                    <div className="flex gap-3">
+                                                        <Skeleton className="h-8 w-20 rounded-lg" />
+                                                        <Skeleton className="h-8 w-24 rounded-lg" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 ) : activeTestimonials.length === 0 ? (
                                     <div className="p-6 text-sm text-zinc-500">
                                         {reviewStatus === 'pending' ? 'No pending reviews. 🎉' : 'No approved reviews yet.'}
@@ -578,11 +639,26 @@ export default function AdminDashboard() {
                                     </thead>
                                     <tbody className="divide-y divide-zinc-100">
                                         {loadingTenants ? (
-                                            <tr>
-                                                <td colSpan={5} className="px-6 py-8 text-center text-sm text-zinc-400">
-                                                    Loading tenants…
-                                                </td>
-                                            </tr>
+                                            Array.from({ length: 4 }).map((_, index) => (
+                                                <tr key={`tenant-skeleton-${index}`}>
+                                                    <td className="px-6 py-4">
+                                                        <Skeleton className="h-4 w-32 mb-2" />
+                                                        <Skeleton className="h-3 w-40" />
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <Skeleton className="h-4 w-28" />
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <Skeleton className="h-6 w-16 rounded" />
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <Skeleton className="h-4 w-20" />
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <Skeleton className="h-4 w-4 inline-block" />
+                                                    </td>
+                                                </tr>
+                                            ))
                                         ) : tenants.length === 0 ? (
                                             <tr>
                                                 <td colSpan={5} className="px-6 py-8 text-center text-sm text-zinc-400">
@@ -637,7 +713,15 @@ export default function AdminDashboard() {
                                 </div>
 
                                 {loadingSystemConfig ? (
-                                    <div className="text-sm text-zinc-500">Loading system configuration…</div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                        {Array.from({ length: 5 }).map((_, index) => (
+                                            <div key={`system-config-skeleton-${index}`} className="border border-zinc-200 rounded-xl p-4 space-y-3">
+                                                <Skeleton className="h-3 w-24" />
+                                                <Skeleton className="h-5 w-32" />
+                                                <Skeleton className="h-3 w-20" />
+                                            </div>
+                                        ))}
+                                    </div>
                                 ) : systemConfig ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                                         <div className="border border-zinc-200 rounded-xl p-4">
