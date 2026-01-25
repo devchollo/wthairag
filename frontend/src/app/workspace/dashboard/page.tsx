@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { LayoutDashboard, Terminal, User, FileText, Bell, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, Terminal, User, FileText, Bell, BarChart3, Clock, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { DashboardSkeleton } from '@/components/Skeleton';
 import {
@@ -26,6 +25,10 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [userTopQueryVisible, setUserTopQueryVisible] = useState(5);
     const [workspaceTopQueryVisible, setWorkspaceTopQueryVisible] = useState(5);
+    const [selectedRecentItem, setSelectedRecentItem] = useState<any>(null);
+    const [selectedRecentDetails, setSelectedRecentDetails] = useState<any>(null);
+    const [recentDetailsLoading, setRecentDetailsLoading] = useState(false);
+    const [recentDetailsError, setRecentDetailsError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!currentWorkspace || !user) return;
@@ -141,6 +144,81 @@ export default function Dashboard() {
         'count'
     );
     const recentViewedType = userStats?.recentItems?.[0]?.type ?? userStats?.recentItem?.type;
+    const formatUser = (userInfo?: { name?: string; email?: string }) => userInfo?.name || userInfo?.email || 'Unknown';
+
+    const closeRecentModal = () => {
+        setSelectedRecentItem(null);
+        setSelectedRecentDetails(null);
+        setRecentDetailsLoading(false);
+        setRecentDetailsError(null);
+    };
+
+    const openRecentItem = async (item: any) => {
+        if (!currentWorkspace?._id) return;
+        setSelectedRecentItem(item);
+        setSelectedRecentDetails(null);
+        setRecentDetailsError(null);
+        setRecentDetailsLoading(true);
+
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const headers = {
+                'x-workspace-id': currentWorkspace._id,
+                'x-workspace-slug': currentWorkspace.slug || '',
+                'Content-Type': 'application/json'
+            };
+
+            if (item.type === 'knowledge') {
+                const res = await fetch(`${apiUrl}/api/workspace/knowledge`, { headers, credentials: 'include' });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data?.message || 'Failed to load knowledge record');
+                }
+                const match = (data.data || []).find((doc: any) =>
+                    doc.title?.toLowerCase() === item.title?.toLowerCase()
+                );
+                if (match) {
+                    setSelectedRecentDetails(match);
+                    if (match._id) {
+                        await fetch(`${apiUrl}/api/workspace/knowledge/${match._id}/view`, {
+                            method: 'POST',
+                            headers,
+                            credentials: 'include'
+                        });
+                    }
+                } else {
+                    setRecentDetailsError('Unable to find the knowledge record details.');
+                }
+            } else if (item.type === 'alert') {
+                const res = await fetch(`${apiUrl}/api/alerts`, { headers, credentials: 'include' });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data?.message || 'Failed to load alert details');
+                }
+                const match = (data.data || []).find((alert: any) =>
+                    alert.title?.toLowerCase() === item.title?.toLowerCase()
+                );
+                if (match) {
+                    setSelectedRecentDetails(match);
+                    if (match._id) {
+                        await fetch(`${apiUrl}/api/alerts/${match._id}/view`, {
+                            method: 'POST',
+                            headers,
+                            credentials: 'include'
+                        });
+                    }
+                } else {
+                    setRecentDetailsError('Unable to find the alert details.');
+                }
+            } else {
+                setSelectedRecentDetails(item);
+            }
+        } catch (error: any) {
+            setRecentDetailsError(error?.message || 'Failed to load recent item details.');
+        } finally {
+            setRecentDetailsLoading(false);
+        }
+    };
 
     return (
         <div className="space-y-8">
@@ -470,11 +548,12 @@ export default function Dashboard() {
                                                 )}
                                             </div>
                                         </div>
-                                        {item.link && (
-                                            <Link href={item.link} className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-700 whitespace-nowrap">
-                                                View Details
-                                            </Link>
-                                        )}
+                                        <button
+                                            onClick={() => openRecentItem(item)}
+                                            className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-700 whitespace-nowrap"
+                                        >
+                                            View Details
+                                        </button>
                                     </div>
                                 ))}
                             </div>
@@ -483,6 +562,90 @@ export default function Dashboard() {
                         )}
                     </div>
                 </div>
+
+                {selectedRecentItem && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+                        <div className="bg-white w-full max-w-3xl rounded-2xl border border-border-light shadow-xl">
+                            <div className="flex items-center justify-between border-b border-border-light px-6 py-4">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">
+                                        {selectedRecentItem.type === 'alert'
+                                            ? 'Alert'
+                                            : selectedRecentItem.type === 'query'
+                                                ? 'Query'
+                                                : 'Knowledge Base'}
+                                    </p>
+                                    <h2 className="text-lg font-black text-text-primary">{selectedRecentItem.title}</h2>
+                                </div>
+                                <button
+                                    onClick={closeRecentModal}
+                                    className="h-9 w-9 flex items-center justify-center rounded-lg text-text-muted hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                    aria-label="Close modal"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            </div>
+                            <div className="px-6 py-5 space-y-4">
+                                {recentDetailsLoading && (
+                                    <div className="text-sm text-text-muted">Loading details...</div>
+                                )}
+                                {recentDetailsError && (
+                                    <div className="text-sm text-red-600">{recentDetailsError}</div>
+                                )}
+                                {!recentDetailsLoading && !recentDetailsError && selectedRecentDetails && (
+                                    <>
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
+                                            <Clock className="h-3 w-3" />
+                                            {new Date(selectedRecentItem.viewedAt || selectedRecentItem.updatedAt).toLocaleString()}
+                                        </div>
+                                        {selectedRecentItem.type === 'alert' && (
+                                            <div className="space-y-3 text-sm text-text-secondary">
+                                                <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-widest">
+                                                    <span className="rounded-full bg-amber-50 px-2 py-1 text-amber-700">
+                                                        {selectedRecentDetails.status || 'open'}
+                                                    </span>
+                                                    <span className="rounded-full bg-red-50 px-2 py-1 text-red-700">
+                                                        {selectedRecentDetails.severity || selectedRecentItem.severity || 'unknown'}
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">Details</p>
+                                                    <p>{selectedRecentDetails.description || 'No description available.'}</p>
+                                                </div>
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-text-muted">
+                                                    Created by {formatUser(selectedRecentDetails.createdBy)} · Updated by {formatUser(selectedRecentDetails.updatedBy)}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {selectedRecentItem.type === 'knowledge' && (
+                                            <div className="space-y-3 text-sm text-text-secondary">
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-text-muted">
+                                                    Added by {formatUser(selectedRecentDetails.createdBy)} · Edited by {formatUser(selectedRecentDetails.updatedBy)}
+                                                </div>
+                                                <div className="max-h-[60vh] overflow-y-auto pr-2">
+                                                    {selectedRecentDetails.content ? (
+                                                        <div
+                                                            className="ql-editor text-sm text-text-secondary leading-relaxed p-0"
+                                                            dangerouslySetInnerHTML={{ __html: selectedRecentDetails.content }}
+                                                        />
+                                                    ) : (
+                                                        <p>{selectedRecentDetails.summary || 'No content available for this record.'}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {selectedRecentItem.type === 'query' && (
+                                            <div className="text-sm text-text-secondary">
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Query Details</p>
+                                                <p>{selectedRecentDetails.title || selectedRecentItem.title}</p>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="card p-6">
