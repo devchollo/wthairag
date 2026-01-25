@@ -224,8 +224,6 @@ export default function SEOChecker() {
             if (!response.ok) throw new Error(data.message || 'Analysis failed');
             setResults(data.data);
             setCrawlPage(1);
-            setShowAllTopTerms(false);
-            setShowAllSemantic(false);
             setHistory((prev) => {
                 const updated = [
                     { url: target, keywords, score: data.data.report.score, date: new Date().toISOString() },
