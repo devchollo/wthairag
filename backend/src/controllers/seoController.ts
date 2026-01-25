@@ -96,7 +96,7 @@ const getPageSpeedMetrics = async (targetUrl: string) => {
                 strategy: 'mobile',
                 key: apiKey
             },
-            timeout: 15000
+            timeout: 25000
         });
         const audits = response.data?.lighthouseResult?.audits || {};
         const lcp = audits['largest-contentful-paint'];
@@ -112,7 +112,11 @@ const getPageSpeedMetrics = async (targetUrl: string) => {
             score: response.data?.lighthouseResult?.categories?.performance?.score ?? null
         };
     } catch (error: any) {
-        return { status: 'error', reason: error.message };
+        const isTimeout = error?.code === 'ECONNABORTED' || `${error?.message || ''}`.toLowerCase().includes('timeout');
+        if (isTimeout) {
+            return { status: 'unavailable', reason: 'Performance data timed out. Try again in a moment.' };
+        }
+        return { status: 'error', reason: 'Performance data unavailable due to a PageSpeed request error.' };
     }
 };
 
@@ -188,11 +192,7 @@ const analyzeKeywords = (text: string, keywords: string[], meta: { title?: strin
             inH1: meta.h1?.some(h1 => h1.toLowerCase().includes(keyword)) || false
         };
     });
-    const topTerms = Array.from(counts.entries())
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 8)
-        .map(([term, count]) => ({ term, count }));
-    return { keywordStats, totalWords, topTerms };
+    return { keywordStats, totalWords };
 };
 
 // SEO Checker
@@ -392,21 +392,11 @@ export const seoChecker = async (req: Request, res: Response) => {
             content: {
                 wordCount: keywordInsights.totalWords,
                 keywordStats: keywordInsights.keywordStats,
-                topTerms: keywordInsights.topTerms,
                 qualityScore,
-                semanticSuggestions: keywordInsights.topTerms.map(term => term.term),
                 competitorBenchmarks: competitorInsights,
                 gapAnalysis: avgCompetitorWords > 0
                     ? Math.round(avgCompetitorWords - keywordInsights.totalWords)
                     : 0
-            },
-            backlinks: {
-                status: process.env.BACKLINKS_API_URL ? 'available' : 'unavailable',
-                reason: process.env.BACKLINKS_API_URL ? null : 'BACKLINKS_API_URL not configured',
-                totalBacklinks: null,
-                referringDomains: null,
-                authorityScore: null,
-                toxicLinks: null
             },
             rankTracking: {
                 status: serpInsights.status,
