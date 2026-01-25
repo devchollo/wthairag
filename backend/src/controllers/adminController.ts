@@ -32,7 +32,7 @@ const mapAggregateToSeries = (labels: string[], data: { _id: string; value: numb
 
 export const getAdminOverview = async (_req: Request, res: Response) => {
     try {
-        const [totalUsers, activeTenants, pendingReviews, totalTokens, workspaceUsage] = await Promise.all([
+        const [totalUsers, activeTenants, pendingReviews, totalTokens, workspaceUsageRaw] = await Promise.all([
             User.countDocuments({}),
             Workspace.countDocuments({}),
             Testimonial.countDocuments({ isApproved: false }),
@@ -44,26 +44,21 @@ export const getAdminOverview = async (_req: Request, res: Response) => {
                 { $match: { eventType: 'query' } },
                 { $group: { _id: '$workspaceId', totalTokens: { $sum: '$tokens' }, requestCount: { $sum: 1 } } },
                 { $sort: { totalTokens: -1 } },
-                { $limit: 5 },
-                {
-                    $lookup: {
-                        from: 'workspaces',
-                        localField: '_id',
-                        foreignField: '_id',
-                        as: 'workspace'
-                    }
-                },
-                { $unwind: '$workspace' },
-                {
-                    $project: {
-                        _id: 1,
-                        totalTokens: 1,
-                        requestCount: 1,
-                        workspaceName: '$workspace.name'
-                    }
-                }
+                { $limit: 5 }
             ])
         ]);
+
+        const workspaceIds = workspaceUsageRaw.map((entry) => entry._id).filter(Boolean);
+        const workspaceDocs = await Workspace.find({ _id: { $in: workspaceIds } })
+            .select('name')
+            .lean();
+        const workspaceMap = new Map(workspaceDocs.map((workspace) => [workspace._id.toString(), workspace.name]));
+        const workspaceUsage = workspaceUsageRaw.map((entry) => ({
+            _id: entry._id,
+            totalTokens: entry.totalTokens,
+            requestCount: entry.requestCount,
+            workspaceName: entry._id ? workspaceMap.get(entry._id.toString()) || 'Deleted workspace' : 'Unknown workspace'
+        }));
 
         const labels = buildDateLabels();
         const startDate = new Date(labels[0]);
