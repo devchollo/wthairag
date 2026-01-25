@@ -448,26 +448,29 @@ export default function SEOChecker() {
                                     </div>
                                 </dl>
                             </div>
-                            <div className="mt-4 rounded-xl border border-border-light bg-white divide-y divide-border-light">
-                                {crawlPages.map((page) => (
-                                    <div key={page.url} className="flex flex-col gap-2 p-4">
-                                        <div className="flex flex-wrap items-start justify-between gap-2">
-                                            <div className="text-sm font-black text-text-primary break-words min-w-0">{page.title || page.url}</div>
-                                            <span className={`text-[10px] font-black uppercase tracking-widest ${page.indexable ? 'text-emerald-600' : 'text-red-600'}`}>
-                                                {page.indexable ? 'Indexable' : 'Blocked'}
-                                            </span>
-                                        </div>
-                                        <div className="text-xs font-bold text-text-muted break-all">{page.url}</div>
-                                        {page.issues.length > 0 && (
-                                            <ul className="text-xs font-bold text-red-600 space-y-1">
-                                                {page.issues.map((issue, index) => (
-                                                    <li key={index}>• {issue}</li>
-                                                ))}
-                                            </ul>
-                                        )}
-                                    </div>
-                                ))}
-                                {results.crawl.pages.length === 0 && (
+                            <div className="mt-4 rounded-xl border border-border-light bg-white">
+                                {crawlPages.length > 0 ? (
+                                    <ul className="divide-y divide-border-light text-sm font-bold text-text-primary">
+                                        {crawlPages.map((page) => (
+                                            <li key={page.url} className="flex flex-col gap-2 p-4">
+                                                <div className="flex flex-wrap items-start justify-between gap-2">
+                                                    <span className="break-words min-w-0">{page.title || page.url}</span>
+                                                    <span className={`text-[10px] font-black uppercase tracking-widest ${page.indexable ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                        {page.indexable ? 'Indexable' : 'Blocked'}
+                                                    </span>
+                                                </div>
+                                                <span className="text-xs font-bold text-text-muted break-all">{page.url}</span>
+                                                {page.issues.length > 0 && (
+                                                    <ul className="list-disc pl-4 text-xs font-bold text-red-600 space-y-1">
+                                                        {page.issues.map((issue, index) => (
+                                                            <li key={index}>{issue}</li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
                                     <div className="bg-surface-light p-4 text-sm font-bold text-text-muted">
                                         No crawl results available yet.
                                     </div>
@@ -536,7 +539,7 @@ export default function SEOChecker() {
                             </div>
                             <div className="rounded-xl border border-border-light bg-white p-4 space-y-4">
                                 <dl className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                                    <div className="min-w-0 rounded-lg border border-border-light bg-surface-light p-3">
+                                    <div className="min-w-0 border border-border-light bg-surface-light p-3">
                                         <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Word Count</div>
                                         <div className="text-2xl font-black text-text-primary">{results.content.wordCount}</div>
                                         {results.content.gapAnalysis !== 0 && (
@@ -545,39 +548,34 @@ export default function SEOChecker() {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="min-w-0 rounded-lg border border-border-light bg-surface-light p-3">
+                                    <div className="min-w-0 border border-border-light bg-surface-light p-3">
                                         <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Content Quality</div>
                                         <div className="text-2xl font-black text-text-primary">{results.content.qualityScore}</div>
                                         <div className="text-xs font-bold text-text-muted">Based on depth & keyword coverage</div>
                                     </div>
-                                    <div className="min-w-0 rounded-lg border border-border-light bg-white p-3">
+                                    <div className="min-w-0 border border-border-light bg-white p-3">
                                         <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-3">Top Terms</div>
                                         {results.content.topTerms.length > 0 ? (
-                                            <div className="flex flex-wrap gap-2">
+                                            <ul className="grid grid-cols-1 gap-1 text-xs font-bold text-text-primary sm:grid-cols-2">
                                                 {results.content.topTerms.map((term) => (
-                                                    <span
-                                                        key={term.term}
-                                                        className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-[11px] font-bold text-blue-700"
-                                                    >
-                                                        {term.term}
-                                                        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-black text-blue-600">{term.count}</span>
-                                                    </span>
+                                                    <li key={term.term} className="flex items-center justify-between gap-3">
+                                                        <span className="break-words">{term.term}</span>
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">{term.count}</span>
+                                                    </li>
                                                 ))}
-                                            </div>
+                                            </ul>
                                         ) : (
                                             <div className="text-xs font-bold text-text-muted">No recurring terms detected.</div>
                                         )}
                                     </div>
-                                    <div className="min-w-0 rounded-lg border border-border-light bg-white p-3">
+                                    <div className="min-w-0 border border-border-light bg-white p-3">
                                         <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-3">Semantic Suggestions</div>
                                         {results.content.semanticSuggestions.length > 0 ? (
-                                            <div className="flex flex-wrap gap-2">
+                                            <ul className="grid grid-cols-1 gap-1 text-xs font-bold text-text-primary sm:grid-cols-2">
                                                 {results.content.semanticSuggestions.map((term) => (
-                                                    <span key={term} className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-bold text-emerald-700">
-                                                        {term}
-                                                    </span>
+                                                    <li key={term} className="break-words">{term}</li>
                                                 ))}
-                                            </div>
+                                            </ul>
                                         ) : (
                                             <div className="text-xs font-bold text-text-muted">Add content to surface related concepts.</div>
                                         )}
@@ -740,17 +738,21 @@ export default function SEOChecker() {
                             <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-text-muted">
                                 <History className="h-3 w-3" /> Historical Scans
                             </div>
-                            <div className="rounded-xl border border-border-light bg-white divide-y divide-border-light">
-                                {history.length > 0 ? historyPages.map((entry) => (
-                                    <div key={`${entry.url}-${entry.date}`} className="p-4">
-                                        <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-bold text-text-primary">
-                                            <span className="break-all">{entry.url}</span>
-                                            <span>{entry.score}</span>
-                                        </div>
-                                        <div className="text-xs font-bold text-text-muted">Keywords: {entry.keywords || '—'}</div>
-                                        <div className="text-xs font-bold text-text-muted">Scan: {new Date(entry.date).toLocaleString()}</div>
-                                    </div>
-                                )) : (
+                            <div className="rounded-xl border border-border-light bg-white">
+                                {history.length > 0 ? (
+                                    <ul className="divide-y divide-border-light text-sm font-bold text-text-primary">
+                                        {historyPages.map((entry) => (
+                                            <li key={`${entry.url}-${entry.date}`} className="p-4 space-y-1">
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                    <span className="break-all">{entry.url}</span>
+                                                    <span>{entry.score}</span>
+                                                </div>
+                                                <div className="text-xs font-bold text-text-muted">Keywords: {entry.keywords || '—'}</div>
+                                                <div className="text-xs font-bold text-text-muted">Scan: {new Date(entry.date).toLocaleString()}</div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
                                     <div className="bg-surface-light p-4 text-sm font-bold text-text-muted">
                                         Run an analysis to populate historical scans.
                                     </div>
