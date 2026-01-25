@@ -155,10 +155,7 @@ export default function SEOChecker() {
     const [history, setHistory] = useState<Array<{ url: string; keywords: string; score: number; date: string }>>([]);
     const [crawlPage, setCrawlPage] = useState(1);
     const [historyPage, setHistoryPage] = useState(1);
-    const [showAllTopTerms, setShowAllTopTerms] = useState(false);
-    const [showAllSemantic, setShowAllSemantic] = useState(false);
     const itemsPerPage = 5;
-    const termLimit = 6;
 
     useEffect(() => {
         const stored = localStorage.getItem('seo-history');
@@ -198,12 +195,6 @@ export default function SEOChecker() {
     }, [history, historyPage, itemsPerPage]);
 
     const historyTotalPages = Math.max(1, Math.ceil(history.length / itemsPerPage));
-    const visibleTopTerms = results
-        ? (showAllTopTerms ? results.content.topTerms : results.content.topTerms.slice(0, termLimit))
-        : [];
-    const visibleSemantic = results
-        ? (showAllSemantic ? results.content.semanticSuggestions : results.content.semanticSuggestions.slice(0, termLimit))
-        : [];
 
     const handleAnalyze = async () => {
         let target = url;
@@ -233,8 +224,6 @@ export default function SEOChecker() {
             if (!response.ok) throw new Error(data.message || 'Analysis failed');
             setResults(data.data);
             setCrawlPage(1);
-            setShowAllTopTerms(false);
-            setShowAllSemantic(false);
             setHistory((prev) => {
                 const updated = [
                     { url: target, keywords, score: data.data.report.score, date: new Date().toISOString() },
@@ -559,51 +548,6 @@ export default function SEOChecker() {
                                         <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Content Quality</div>
                                         <div className="text-2xl font-black text-text-primary">{results.content.qualityScore}</div>
                                         <div className="text-xs font-bold text-text-muted">Based on depth & keyword coverage</div>
-                                    </div>
-                                    <div className="min-w-0 border border-border-light bg-white p-3">
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-3">Top Terms</div>
-                                        {visibleTopTerms.length > 0 ? (
-                                            <ul className="grid grid-cols-1 gap-1 text-xs font-bold text-text-primary sm:grid-cols-2">
-                                                {visibleTopTerms.map((term) => (
-                                                    <li key={term.term} className="flex items-center justify-between gap-3">
-                                                        <span className="break-words">{term.term}</span>
-                                                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">{term.count}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        ) : (
-                                            <div className="text-xs font-bold text-text-muted">No recurring terms detected.</div>
-                                        )}
-                                        {results.content.topTerms.length > termLimit && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowAllTopTerms((prev) => !prev)}
-                                                className="mt-2 text-[10px] font-black uppercase tracking-widest text-blue-600"
-                                            >
-                                                {showAllTopTerms ? 'Show less' : 'Show more'}
-                                            </button>
-                                        )}
-                                    </div>
-                                    <div className="min-w-0 border border-border-light bg-white p-3">
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-3">Semantic Suggestions</div>
-                                        {visibleSemantic.length > 0 ? (
-                                            <ul className="grid grid-cols-1 gap-1 text-xs font-bold text-text-primary sm:grid-cols-2">
-                                                {visibleSemantic.map((term) => (
-                                                    <li key={term} className="break-words">{term}</li>
-                                                ))}
-                                            </ul>
-                                        ) : (
-                                            <div className="text-xs font-bold text-text-muted">Add keywords to see density insights.</div>
-                                        )}
-                                        {results.content.semanticSuggestions.length > termLimit && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowAllSemantic((prev) => !prev)}
-                                                className="mt-2 text-[10px] font-black uppercase tracking-widest text-blue-600"
-                                            >
-                                                {showAllSemantic ? 'Show less' : 'Show more'}
-                                            </button>
-                                        )}
                                     </div>
                                 </dl>
                             </div>
