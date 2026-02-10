@@ -196,6 +196,23 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
                                  </div>
                              </div>
 
+                             {/* Submitted Values — always visible */}
+                             {submittedValues && Object.keys(submittedValues).length > 0 && (
+                                 <div className="mb-4 bg-white rounded-xl border border-blue-100 shadow-sm overflow-hidden">
+                                     <div className="px-4 py-2.5 bg-gray-50 border-b border-blue-100">
+                                         <span className="text-[10px] font-bold uppercase text-text-muted tracking-wider">Submitted Values</span>
+                                     </div>
+                                     <div className="divide-y divide-gray-100">
+                                         {Object.entries(submittedValues).map(([fieldId, sv]) => (
+                                             <div key={fieldId} className="flex items-center justify-between px-4 py-2.5 text-sm">
+                                                 <span className="font-bold text-text-primary text-xs">{sv.label}</span>
+                                                 <span className="text-text-secondary text-xs max-w-[60%] text-right">{String(sv.value)}</span>
+                                             </div>
+                                         ))}
+                                     </div>
+                                 </div>
+                             )}
+
                              {viewMode === 'rendered' ? (
                                  <div className="prose prose-sm max-w-none bg-white p-6 rounded-xl border border-blue-100 shadow-sm">
                                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{result}</ReactMarkdown>
@@ -204,27 +221,6 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
                                  <pre className="bg-gray-900 text-gray-100 p-6 rounded-xl border border-blue-100 shadow-sm text-sm font-mono whitespace-pre-wrap overflow-x-auto">
                                      {result}
                                  </pre>
-                             )}
-
-                             {/* Submitted Values Summary */}
-                             {submittedValues && Object.keys(submittedValues).length > 0 && (
-                                 <details className="mt-4">
-                                     <summary className="text-xs font-bold text-blue-700 cursor-pointer hover:text-blue-900 select-none">
-                                         View submitted values ({Object.keys(submittedValues).length})
-                                     </summary>
-                                     <div className="mt-2 space-y-1.5">
-                                         {Object.entries(submittedValues).map(([fieldId, sv]) => (
-                                             <div key={fieldId} className="flex items-center justify-between bg-white/60 p-2.5 rounded-lg text-xs">
-                                                 <span className="font-bold text-text-primary">
-                                                     {sv.label}
-                                                 </span>
-                                                 <span className="text-text-muted font-mono max-w-[200px] truncate">
-                                                     {String(sv.value)}
-                                                 </span>
-                                             </div>
-                                         ))}
-                                     </div>
-                                 </details>
                              )}
 
                              <button onClick={() => { setResult(null); setSubmittedValues(null); setAiImproved(false); setViewMode('rendered'); }} className="mt-4 text-xs font-bold text-blue-600 hover:underline">
