@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import App, { IApp, IAppField } from '../models/App';
 import { sendError, sendSuccess } from '../utils/response';
 import { AIService } from '../services/aiService';
-import { getUploadUrl } from '../services/s3Service';
+import { getUploadUrl, uploadFile } from '../services/s3Service';
 
 // --- CRUD ---
 
@@ -290,6 +290,39 @@ export const confirmLogo = async (req: Request, res: Response) => {
     }
 };
 
+export const uploadLogo = async (req: Request, res: Response) => {
+    try {
+        const { appId } = req.params;
+        const file = req.file;
+
+        if (!file) return sendError(res, 'Logo file is required', 400);
+
+        const app = await App.findOne({ _id: appId, workspaceId: req.workspace!._id });
+        if (!app) return sendError(res, 'App not found', 404);
+
+        const bucket = process.env.B2_BUCKET_NAME || '';
+        if (!bucket) return sendError(res, 'Storage not configured', 500);
+
+        const ext = file.mimetype?.split('/')[1] || 'png';
+        const key = `workspaces/${req.workspace!._id}/apps/${appId}/logo-${Date.now()}.${ext}`;
+        await uploadFile(bucket, key, file.buffer, file.mimetype || 'application/octet-stream');
+
+        const publicUrl = `https://${bucket}.s3.${process.env.B2_REGION}.backblazeb2.com/${key}`;
+
+        const updatedApp = await App.findOneAndUpdate(
+            { _id: appId, workspaceId: req.workspace!._id },
+            { $set: { 'layout.header.logoUrl': publicUrl, 'layout.header.logoKey': key } },
+            { new: true }
+        );
+
+        if (!updatedApp) return sendError(res, 'App not found', 404);
+
+        return sendSuccess(res, updatedApp, 'Logo uploaded');
+    } catch (error: any) {
+        return sendError(res, 'Failed to upload logo', 500);
+    }
+};
+
 export const deleteLogo = async (req: Request, res: Response) => {
     try {
         const { appId } = req.params;
@@ -356,6 +389,45 @@ export const confirmBackground = async (req: Request, res: Response) => {
         return sendSuccess(res, app, 'Background updated');
     } catch (error: any) {
         return sendError(res, 'Failed to update background', 500);
+    }
+};
+
+export const uploadBackground = async (req: Request, res: Response) => {
+    try {
+        const { appId } = req.params;
+        const file = req.file;
+
+        if (!file) return sendError(res, 'Background image file is required', 400);
+
+        const app = await App.findOne({ _id: appId, workspaceId: req.workspace!._id });
+        if (!app) return sendError(res, 'App not found', 404);
+
+        const bucket = process.env.B2_BUCKET_NAME || '';
+        if (!bucket) return sendError(res, 'Storage not configured', 500);
+
+        const ext = file.mimetype?.split('/')[1] || 'webp';
+        const key = `workspaces/${req.workspace!._id}/apps/${appId}/bg-${Date.now()}.${ext}`;
+        await uploadFile(bucket, key, file.buffer, file.mimetype || 'application/octet-stream');
+
+        const publicUrl = `https://${bucket}.s3.${process.env.B2_REGION}.backblazeb2.com/${key}`;
+
+        const updatedApp = await App.findOneAndUpdate(
+            { _id: appId, workspaceId: req.workspace!._id },
+            {
+                $set: {
+                    'layout.background.type': 'image',
+                    'layout.background.value': publicUrl,
+                    'layout.background.imageKey': key
+                }
+            },
+            { new: true }
+        );
+
+        if (!updatedApp) return sendError(res, 'App not found', 404);
+
+        return sendSuccess(res, updatedApp, 'Background uploaded');
+    } catch (error: any) {
+        return sendError(res, 'Failed to upload background image', 500);
     }
 };
 
