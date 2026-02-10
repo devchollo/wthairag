@@ -3,8 +3,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updatePassword = exports.updateMe = exports.getMe = exports.logout = exports.login = exports.completeSignup = exports.verifyEmail = exports.initiateSignup = void 0;
+exports.updatePassword = exports.resetPassword = exports.forgotPassword = exports.updateMe = exports.getMe = exports.logout = exports.login = exports.completeSignup = exports.verifyEmail = exports.initiateSignup = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const crypto_1 = __importDefault(require("crypto"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const User_1 = __importDefault(require("../models/User"));
 const Workspace_1 = __importDefault(require("../models/Workspace"));
@@ -26,6 +27,18 @@ const completeSignupSchema = zod_1.z.object({
     password: zod_1.z.string().min(8, 'Password must be at least 8 characters'),
     orgName: zod_1.z.string().max(100, 'Organization name too long').optional()
 });
+const getOwnerEmails = () => {
+    const envList = process.env.APP_OWNER_EMAILS || process.env.OWNER_EMAIL || '';
+    return envList
+        .split(',')
+        .map(email => email.trim().toLowerCase())
+        .filter(Boolean);
+};
+const isOwnerEmail = (email) => {
+    const normalized = email.trim().toLowerCase();
+    const ownerEmails = getOwnerEmails();
+    return ownerEmails.includes(normalized);
+};
 const generateToken = (id) => {
     return jsonwebtoken_1.default.sign({ id }, process.env.JWT_SECRET || 'secret', {
         expiresIn: '30d',
@@ -111,7 +124,8 @@ const completeSignup = async (req, res) => {
             password: hashedPassword,
             name,
             isVerified: true,
-            isAdmin: true // User is admin of their own workspace
+            isAdmin: false,
+            isOwner: isOwnerEmail(email)
         });
         // Create Workspace
         const cleanOrgName = orgName || `${name}'s Workspace`;
@@ -159,7 +173,8 @@ const login = async (req, res) => {
             return (0, response_1.sendError)(res, validated.error.issues[0].message, 400);
         }
         const { email, password } = validated.data;
-        const user = await User_1.default.findOne({ email });
+        const normalizedEmail = email.toLowerCase();
+        const user = await User_1.default.findOne({ email: normalizedEmail });
         if (!user || !user.password) {
             return (0, response_1.sendError)(res, 'Invalid credentials', 401);
         }
@@ -173,6 +188,10 @@ const login = async (req, res) => {
         const elapsed = Date.now() - start;
         if (elapsed < minTime)
             await new Promise(r => setTimeout(r, minTime - elapsed));
+        if (isOwnerEmail(user.email) && !user.isOwner) {
+            user.isOwner = true;
+            await user.save();
+        }
         // Set httpOnly cookie
         const token = generateToken(user._id.toString());
         res.cookie('token', token, {
@@ -213,6 +232,10 @@ exports.logout = logout;
 const getMe = async (req, res) => {
     try {
         const user = await User_1.default.findById(req.user?._id).select('-password');
+        if (user && isOwnerEmail(user.email) && !user.isOwner) {
+            user.isOwner = true;
+            await user.save();
+        }
         const memberships = await Membership_1.default.find({ userId: user?._id }).populate('workspaceId');
         return (0, response_1.sendSuccess)(res, { user, memberships }, 'User profile fetched');
     }
@@ -245,6 +268,55 @@ const updateMe = async (req, res) => {
     }
 };
 exports.updateMe = updateMe;
+const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email)
+            return (0, response_1.sendError)(res, 'Email is required', 400);
+        const user = await User_1.default.findOne({ email });
+        if (!user)
+            return (0, response_1.sendError)(res, 'User not found', 404);
+        const resetToken = crypto_1.default.randomBytes(32).toString('hex');
+        const resetTokenHash = crypto_1.default.createHash('sha256').update(resetToken).digest('hex');
+        user.resetPasswordToken = resetTokenHash;
+        user.resetPasswordExpire = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+        await user.save();
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+        // Send email
+        await (0, emailService_1.sendResetPasswordEmail)(user.email, resetUrl);
+        console.log(`Reset link sent to ${user.email}`);
+        return (0, response_1.sendSuccess)(res, null, 'Password reset email sent');
+    }
+    catch (error) {
+        return (0, response_1.sendError)(res, error.message, 500);
+    }
+};
+exports.forgotPassword = forgotPassword;
+const resetPassword = async (req, res) => {
+    try {
+        const { token, password } = req.body;
+        if (!token || !password)
+            return (0, response_1.sendError)(res, 'Token and Password required', 400);
+        const resetTokenHash = crypto_1.default.createHash('sha256').update(token).digest('hex');
+        const user = await User_1.default.findOne({
+            resetPasswordToken: resetTokenHash,
+            resetPasswordExpire: { $gt: Date.now() }
+        });
+        if (!user)
+            return (0, response_1.sendError)(res, 'Invalid or expired token', 400);
+        const salt = await bcryptjs_1.default.genSalt(10);
+        user.password = await bcryptjs_1.default.hash(password, salt);
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpire = undefined;
+        await user.save();
+        return (0, response_1.sendSuccess)(res, null, 'Password reset successful');
+    }
+    catch (error) {
+        return (0, response_1.sendError)(res, error.message, 500);
+    }
+};
+exports.resetPassword = resetPassword;
 const updatePassword = async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;

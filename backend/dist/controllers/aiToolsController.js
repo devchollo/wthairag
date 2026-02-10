@@ -31,7 +31,7 @@ const generateAltText = async (req, res) => {
         }
         // Call OpenAI Vision API
         const response = await axios_1.default.post('https://api.openai.com/v1/chat/completions', {
-            model: 'gpt-4o-mini',
+            model: 'gpt-4o',
             messages: [
                 {
                     role: 'user',

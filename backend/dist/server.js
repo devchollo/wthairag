@@ -92,16 +92,20 @@ const files_1 = __importDefault(require("./routes/files"));
 const testimonials_1 = __importDefault(require("./routes/testimonials"));
 const membership_1 = __importDefault(require("./routes/membership"));
 const analytics_1 = __importDefault(require("./routes/analytics"));
+const admin_1 = __importDefault(require("./routes/admin"));
+const apps_1 = __importDefault(require("./routes/apps"));
 app.use('/api/auth', auth_1.default);
 app.use('/api/tools', tools_1.default);
 app.use('/api/workspace', workspace_1.default);
 app.use('/api/workspaces', workspace_1.default); // Alias for plural usage
+app.use('/api/workspaces/:workspaceId/apps', apps_1.default); // Apps sub-route
 app.use('/api/workspace-data', workspaceData_1.default);
 app.use('/api/alerts', alerts_1.default);
 app.use('/api/files', files_1.default);
 app.use('/api/testimonials', testimonials_1.default);
 app.use('/api/memberships', membership_1.default);
 app.use('/api/analytics', analytics_1.default);
+app.use('/api/admin', admin_1.default);
 // Initialize Keep-Alive & Cleanup Workers
 const cleanupWorker_1 = require("./cleanupWorker");
 const keepAlive_1 = require("./keepAlive");

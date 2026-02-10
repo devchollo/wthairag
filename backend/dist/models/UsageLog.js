@@ -38,9 +38,12 @@ const UsageLogSchema = new mongoose_1.Schema({
     workspaceId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Workspace', required: true },
     userId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
     tokens: { type: Number, required: true },
+    inputTokens: { type: Number, default: 0 },
+    outputTokens: { type: Number, default: 0 },
     query: { type: String, required: true },
     citedDocuments: [{ type: String }], // Document Titles
     aiModel: { type: String, default: 'gpt-4o' },
+    eventType: { type: String, enum: ['query', 'view'], default: 'query' },
 }, { timestamps: true });
 UsageLogSchema.index({ workspaceId: 1, createdAt: -1 });
 UsageLogSchema.index({ userId: 1, createdAt: -1 });

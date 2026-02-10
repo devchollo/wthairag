@@ -34,19 +34,16 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const DocumentSchema = new mongoose_1.Schema({
+const DocumentChunkSchema = new mongoose_1.Schema({
     workspaceId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Workspace', required: true },
-    title: { type: String, required: true },
+    documentId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Document', required: true },
     content: { type: String, required: true },
     summary: { type: String },
-    sourceUrl: { type: String },
-    fileKey: { type: String },
-    mimeType: { type: String },
+    embedding: [{ type: Number, required: true }],
+    chunkIndex: { type: Number, required: true },
     metadata: { type: mongoose_1.Schema.Types.Mixed, default: {} },
-    embeddingId: { type: String },
-    expiresAt: { type: Date },
-    createdBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
-    updatedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
-DocumentSchema.index({ workspaceId: 1 });
-exports.default = mongoose_1.default.model('Document', DocumentSchema);
+// Indexes for regular querying
+DocumentChunkSchema.index({ workspaceId: 1 });
+DocumentChunkSchema.index({ documentId: 1 });
+exports.default = mongoose_1.default.model('DocumentChunk', DocumentChunkSchema);

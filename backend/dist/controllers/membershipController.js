@@ -3,8 +3,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeMember = exports.updateMemberRole = exports.listMembers = exports.acceptInvite = exports.inviteMember = void 0;
+exports.cancelInvite = exports.listPendingInvites = exports.removeMember = exports.updateMemberRole = exports.listMembers = exports.acceptInvite = exports.inviteMember = void 0;
 const crypto_1 = __importDefault(require("crypto"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const Membership_1 = __importDefault(require("../models/Membership"));
 const User_1 = __importDefault(require("../models/User"));
@@ -63,10 +64,12 @@ const acceptInvite = async (req, res) => {
         if (!user) {
             if (!password || !name)
                 return (0, response_1.sendError)(res, 'Name and password required to setup account', 400);
+            const salt = await bcryptjs_1.default.genSalt(10);
+            const hashedPassword = await bcryptjs_1.default.hash(password, salt);
             user = await User_1.default.create({
                 name,
                 email: invitation.email,
-                password,
+                password: hashedPassword,
                 isVerified: true // They came from email
             });
         }
@@ -145,3 +148,29 @@ const removeMember = async (req, res) => {
     }
 };
 exports.removeMember = removeMember;
+const listPendingInvites = async (req, res) => {
+    try {
+        const invites = await Invitation_1.default.find({ workspaceId: req.workspace?._id })
+            .populate('invitedBy', 'name email')
+            .sort('-createdAt');
+        return (0, response_1.sendSuccess)(res, invites, 'Pending invites fetched');
+    }
+    catch (error) {
+        return (0, response_1.sendError)(res, error.message, 500);
+    }
+};
+exports.listPendingInvites = listPendingInvites;
+const cancelInvite = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const invite = await Invitation_1.default.findOne({ _id: id, workspaceId: req.workspace?._id });
+        if (!invite)
+            return (0, response_1.sendError)(res, 'Invitation not found', 404);
+        await invite.deleteOne();
+        return (0, response_1.sendSuccess)(res, null, 'Invitation cancelled');
+    }
+    catch (error) {
+        return (0, response_1.sendError)(res, error.message, 500);
+    }
+};
+exports.cancelInvite = cancelInvite;

@@ -24,9 +24,6 @@ const workspaceOverlay = async (req, res, next) => {
         if (!workspace) {
             return (0, response_1.sendError)(res, 'Workspace not found', 404);
         }
-        if (workspace.pendingDeletionAt) {
-            return (0, response_1.sendError)(res, 'This workspace is scheduled for deletion', 403);
-        }
         req.workspace = workspace;
         req.userRole = membership.role;
         next();

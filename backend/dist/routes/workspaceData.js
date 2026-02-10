@@ -21,6 +21,8 @@ router.post('/knowledge', (0, workspace_1.authorize)('owner', 'admin'), upload.s
 router.post('/knowledge/manual', (0, workspace_1.authorize)('owner', 'admin'), knowledgeController_1.createManualDocument);
 router.get('/knowledge', knowledgeController_1.listDocuments);
 router.get('/knowledge/:id/download', (0, workspace_1.authorize)('owner', 'admin', 'member'), knowledgeController_1.downloadDocument);
+router.post('/knowledge/:id/view', (0, workspace_1.authorize)('owner', 'admin', 'member', 'viewer'), knowledgeController_1.recordKnowledgeView);
+router.put('/knowledge/:id', (0, workspace_1.authorize)('owner', 'admin'), knowledgeController_1.updateManualDocument);
 router.delete('/knowledge/:id', (0, workspace_1.authorize)('owner', 'admin'), knowledgeController_1.deleteDocument);
 // Chat
 router.post('/chat', chatController_1.queryChat);

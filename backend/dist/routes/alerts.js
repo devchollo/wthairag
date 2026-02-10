@@ -12,6 +12,7 @@ router.use(auth_1.protect);
 router.use(workspace_1.workspaceOverlay);
 router.post('/', (0, workspace_1.authorize)('owner', 'admin'), alertController_1.createAlert);
 router.get('/', alertController_1.listAlerts);
+router.post('/:id/view', alertController_1.recordAlertView);
 router.put('/:id', (0, workspace_1.authorize)('owner', 'admin'), alertController_1.updateAlert);
 router.put('/:id/resolve', (0, workspace_1.authorize)('owner', 'admin'), alertController_1.resolveAlert);
 router.delete('/:id', (0, workspace_1.authorize)('owner', 'admin'), alertController_1.deleteAlert);

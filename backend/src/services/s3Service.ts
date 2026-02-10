@@ -35,3 +35,12 @@ export const getDownloadUrl = async (bucket: string, key: string) => {
     });
     return getSignedUrl(s3Client, command, { expiresIn: 3600 });
 };
+
+export const getUploadUrl = async (bucket: string, key: string, contentType: string) => {
+    const command = new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        ContentType: contentType,
+    });
+    return getSignedUrl(s3Client, command, { expiresIn: 3600 });
+};

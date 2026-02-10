@@ -34,19 +34,56 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const DocumentSchema = new mongoose_1.Schema({
-    workspaceId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Workspace', required: true },
-    title: { type: String, required: true },
-    content: { type: String, required: true },
-    summary: { type: String },
-    sourceUrl: { type: String },
-    fileKey: { type: String },
-    mimeType: { type: String },
-    metadata: { type: mongoose_1.Schema.Types.Mixed, default: {} },
-    embeddingId: { type: String },
-    expiresAt: { type: Date },
-    createdBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
-    updatedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
+const FieldSchema = new mongoose_1.Schema({
+    id: { type: String, required: true },
+    type: {
+        type: String,
+        enum: ["text", "textarea", "radio", "checkbox", "message", "submit"],
+        required: true,
+    },
+    label: { type: String },
+    required: { type: Boolean, default: false },
+    isSecret: { type: Boolean, default: false },
+    options: [
+        {
+            label: { type: String },
+            value: { type: String },
+        },
+    ],
+    messageHtml: { type: String },
+    submitText: { type: String },
+}, { _id: false });
+const AppSchema = new mongoose_1.Schema({
+    workspaceId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: "Workspace",
+        required: true,
+        index: true,
+    },
+    name: { type: String, required: true, trim: true },
+    status: {
+        type: String,
+        enum: ["draft", "published"],
+        default: "draft",
+    },
+    tag: {
+        type: String,
+        enum: ["generator", "form"],
+        default: "generator",
+    },
+    launchMode: {
+        type: String,
+        enum: ["modal", "new_tab"],
+        default: "modal",
+    },
+    enabled: { type: Boolean, default: true },
+    layout: {
+        header: {
+            logoUrl: String,
+            title: String,
+            subtitle: String,
+        },
+    },
+    fields: [FieldSchema],
 }, { timestamps: true });
-DocumentSchema.index({ workspaceId: 1 });
-exports.default = mongoose_1.default.model('Document', DocumentSchema);
+exports.default = mongoose_1.default.model("App", AppSchema);

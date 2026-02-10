@@ -13,6 +13,8 @@ router.post('/accept-invite', membershipController_1.acceptInvite);
 router.use(auth_1.protect);
 router.use(workspace_1.workspaceOverlay);
 router.get('/', membershipController_1.listMembers);
+router.get('/invites/pending', (0, workspace_1.authorize)('owner', 'admin'), membershipController_1.listPendingInvites);
+router.delete('/invites/:id', (0, workspace_1.authorize)('owner', 'admin'), membershipController_1.cancelInvite);
 router.post('/invite', (0, workspace_1.authorize)('owner', 'admin'), membershipController_1.inviteMember);
 router.put('/:membershipId', (0, workspace_1.authorize)('owner', 'admin'), membershipController_1.updateMemberRole);
 router.delete('/:membershipId', (0, workspace_1.authorize)('owner', 'admin'), membershipController_1.removeMember);
