@@ -14,8 +14,8 @@ interface SubmittedValue { label: string; value: any; isSecret: boolean }
 
 export default function AppRunnerPage({ params }: { params: Promise<{ workspaceId: string; appId: string }> }) {
     const { workspaceId, appId } = use(params);
-    const { user } = useAuth();
-    const router = useRouter();
+    // const { user } = useAuth();
+    // const router = useRouter();
     const [app, setApp] = useState<IApp | null>(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -249,9 +249,9 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
                                                     {field.required && <span className="text-red-500 ml-1">*</span>}
                                                 </label>
                                                 
-                                                {field.type === 'text' && (
+                                                {(field.type === 'text' || field.type === 'email' || field.type === 'phone' || field.type === 'number' || field.type === 'date') && (
                                                     <input
-                                                        type="text"
+                                                        type={field.type === 'phone' ? 'tel' : field.type}
                                                         className="input-base w-full p-3 border border-border-light rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                                                         value={inputs[field.id] || ''}
                                                         onChange={e => setInputs({...inputs, [field.id]: e.target.value})}
@@ -266,6 +266,20 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
                                                         onChange={e => setInputs({...inputs, [field.id]: e.target.value})}
                                                         required={field.required}
                                                     />
+                                                )}
+
+                                                {field.type === 'list' && (
+                                                    <select
+                                                        className="input-base w-full p-3 border border-border-light rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
+                                                        value={inputs[field.id] || ''}
+                                                        onChange={e => setInputs({...inputs, [field.id]: e.target.value})}
+                                                        required={field.required}
+                                                    >
+                                                        <option value="" disabled>Select an option...</option>
+                                                        {field.options?.map((opt, i) => (
+                                                            <option key={i} value={opt.value}>{opt.label}</option>
+                                                        ))}
+                                                    </select>
                                                 )}
 
                                                 {field.type === 'checkbox' && (

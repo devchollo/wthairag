@@ -1,7 +1,7 @@
 'use client';
 
 import { IAppField } from '@/types/app';
-import { Type, AlignLeft, CheckSquare, Info, Trash2 } from 'lucide-react';
+import { Type, AlignLeft, CheckSquare, Info, Trash2, Mail, Phone, Hash, List, Calendar } from 'lucide-react';
 
 interface FieldInspectorProps {
     field: IAppField | null;
@@ -18,12 +18,21 @@ export function FieldInspector({ field, onUpdate, onDelete }: FieldInspectorProp
         );
     }
 
-    const isSecretAllowed = ['text', 'textarea', 'radio', 'checkbox'].includes(field.type);
+    const isSecretAllowed = ['text', 'textarea', 'radio', 'checkbox', 'email', 'phone', 'number', 'date'].includes(field.type);
 
     return (
         <div>
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-border-light">
                 <span className="text-xs font-bold uppercase text-text-muted flex items-center gap-2">
+                    {field.type === 'text' && <Type size={12} />}
+                    {field.type === 'textarea' && <AlignLeft size={12} />}
+                    {field.type === 'checkbox' && <CheckSquare size={12} />}
+                    {field.type === 'message' && <Info size={12} />}
+                    {field.type === 'email' && <Mail size={12} />}
+                    {field.type === 'phone' && <Phone size={12} />}
+                    {field.type === 'number' && <Hash size={12} />}
+                    {field.type === 'list' && <List size={12} />}
+                    {field.type === 'date' && <Calendar size={12} />}
                     {field.type} Properties
                 </span>
                 <button 
@@ -107,11 +116,45 @@ export function FieldInspector({ field, onUpdate, onDelete }: FieldInspectorProp
                     </div>
                 )}
 
-                {/* Options (Radio/Checkbox placeholder) */}
-                {(field.type === 'radio') && (
+                {/* Options (Radio/List) */}
+                {(field.type === 'radio' || field.type === 'list') && (
                     <div>
-                         <label className="text-xs font-bold block mb-1 text-text-primary">Options</label>
-                         <p className="text-xs text-text-muted">Option editing coming soon...</p>
+                         <label className="text-xs font-bold block mb-2 text-text-primary">Options</label>
+                         <div className="space-y-2">
+                            {(field.options || []).map((opt, i) => (
+                                <div key={i} className="flex items-center gap-2">
+                                    <input 
+                                        type="text" 
+                                        className="flex-1 border border-border-light rounded-lg p-2 text-sm focus:border-blue-500 outline-none" 
+                                        value={opt.label}
+                                        placeholder="Label"
+                                        onChange={(e) => {
+                                            const newOpts = [...(field.options || [])];
+                                            newOpts[i] = { ...newOpts[i], label: e.target.value, value: e.target.value };
+                                            onUpdate(field.id, { options: newOpts });
+                                        }}
+                                    />
+                                    <button 
+                                        onClick={() => {
+                                            const newOpts = (field.options || []).filter((_, idx) => idx !== i);
+                                            onUpdate(field.id, { options: newOpts });
+                                        }}
+                                        className="text-text-muted hover:text-red-500 p-1"
+                                    >
+                                        <Trash2 size={12} />
+                                    </button>
+                                </div>
+                            ))}
+                            <button 
+                                onClick={() => {
+                                    const newOpts = [...(field.options || []), { label: `Option ${(field.options?.length || 0) + 1}`, value: String((field.options?.length || 0) + 1) }];
+                                    onUpdate(field.id, { options: newOpts });
+                                }}
+                                className="w-full py-2 border-2 border-dashed border-border-light rounded-lg text-[10px] font-bold uppercase text-text-muted hover:border-blue-300 hover:text-blue-600 transition-all"
+                            >
+                                + Add Option
+                            </button>
+                         </div>
                     </div>
                 )}
             </div>

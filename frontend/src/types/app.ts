@@ -1,4 +1,4 @@
-export type AppFieldType = 'text' | 'textarea' | 'radio' | 'checkbox' | 'message' | 'submit';
+export type AppFieldType = 'text' | 'textarea' | 'radio' | 'checkbox' | 'message' | 'submit' | 'email' | 'phone' | 'number' | 'list' | 'date';
 
 export interface IAppField {
     id: string;

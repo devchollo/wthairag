@@ -143,7 +143,7 @@ export default function AppBuilderPage({ params }: { params: Promise<{ workspace
             required: false,
             isSecret: false,
             ...(type === 'message' ? { messageHtml: '<p>Enter instructions here...</p>' } : {}),
-            ...(type === 'radio' ? { options: [{ label: 'Option 1', value: '1' }, { label: 'Option 2', value: '2' }] } : {}),
+            ...((type === 'radio' || type === 'list') ? { options: [{ label: 'Option 1', value: '1' }, { label: 'Option 2', value: '2' }] } : {}),
         };
         
         const submitIndex = fields.findIndex(f => f.type === 'submit');
@@ -299,6 +299,11 @@ export default function AppBuilderPage({ params }: { params: Promise<{ workspace
                                         <div className="flex flex-col gap-1.5">
                                             <SidebarItem type="text" label="Text Input" />
                                             <SidebarItem type="textarea" label="Text Area" />
+                                            <SidebarItem type="email" label="Email" />
+                                            <SidebarItem type="phone" label="Phone" />
+                                            <SidebarItem type="number" label="Number" />
+                                            <SidebarItem type="list" label="Dropdown List" />
+                                            <SidebarItem type="date" label="Date Picker" />
                                             <SidebarItem type="checkbox" label="Checkbox" />
                                             <SidebarItem type="radio" label="Radio Group" />
                                             <SidebarItem type="message" label="Info Message" />

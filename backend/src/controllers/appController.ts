@@ -1,8 +1,14 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import App, { IApp, IAppField } from '../models/App';
 import { sendError, sendSuccess } from '../utils/response';
 import { AIService } from '../services/aiService';
 import { getUploadUrl, uploadFile } from '../services/s3Service';
+import sharp from 'sharp';
+
+// ... (rest of imports are fine, but I need to make sure I don't duplicate them or remove them if they are not in the target block)
+// Actually, I should just fix the specific function first, then add imports in a separate call or use multi_replace if possible.
+// Let's use multi_replace to do both at once properly.
+
 
 // --- CRUD ---
 
@@ -415,22 +421,33 @@ export const confirmBackground = async (req: Request, res: Response) => {
     }
 };
 
-export const uploadBackground = async (req: Request, res: Response) => {
+export const uploadBackground = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { appId } = req.params;
         const file = req.file;
 
-        if (!file) return sendError(res, 'Background image file is required', 400);
+        if (!file) return next(new Error('Background image file is required'));
+
+        // Verify it's an image
+        if (!file.mimetype.startsWith('image/')) {
+            return next(new Error('File must be an image'));
+        }
 
         const app = await App.findOne({ _id: appId, workspaceId: req.workspace!._id });
-        if (!app) return sendError(res, 'App not found', 404);
+        if (!app) return next(new Error('App not found'));
 
         const bucket = process.env.B2_BUCKET_NAME || '';
-        if (!bucket) return sendError(res, 'Storage not configured', 500);
+        if (!bucket) return next(new Error('Storage not configured'));
 
-        const ext = file.mimetype?.split('/')[1] || 'webp';
-        const key = `workspaces/${req.workspace!._id}/apps/${appId}/bg-${Date.now()}.${ext}`;
-        await uploadFile(bucket, key, file.buffer, file.mimetype || 'application/octet-stream');
+        // Optimize image using Sharp
+        const optimizedBuffer = await sharp(file.buffer)
+            .resize({ width: 1920, withoutEnlargement: true })
+            .webp({ quality: 80 })
+            .toBuffer();
+
+        const key = `workspaces/${req.workspace!._id}/apps/${appId}/bg-${Date.now()}.webp`;
+        
+        await uploadFile(bucket, key, optimizedBuffer, 'image/webp');
 
         const publicUrl = `https://${bucket}.s3.${process.env.B2_REGION}.backblazeb2.com/${key}`;
 
@@ -446,11 +463,12 @@ export const uploadBackground = async (req: Request, res: Response) => {
             { new: true }
         );
 
-        if (!updatedApp) return sendError(res, 'App not found', 404);
+        if (!updatedApp) return next(new Error('App not found'));
 
         return sendSuccess(res, updatedApp, 'Background uploaded');
     } catch (error: any) {
-        return sendError(res, 'Failed to upload background image', 500);
+        console.error('Upload Background Error:', error);
+        next(error);
     }
 };
 

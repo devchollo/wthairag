@@ -303,31 +303,62 @@ export function AppSettingsPanel({ app, workspaceId, onUpdate, onSave, saving }:
                             </div>
 
                             {bg.type === 'solid' && (
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        type="color"
-                                        value={bg.value || '#ffffff'}
-                                        onChange={(e) => handleBgChange('solid', e.target.value)}
-                                        className="w-10 h-10 rounded border border-border-light cursor-pointer"
-                                    />
-                                    <input
-                                        type="text"
-                                        value={bg.value || '#ffffff'}
-                                        onChange={(e) => handleBgChange('solid', e.target.value)}
-                                        className="flex-1 border border-border-light rounded-lg p-2 text-xs font-mono"
-                                        placeholder="#ffffff"
-                                    />
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="color"
+                                            value={bg.value || '#ffffff'}
+                                            onChange={(e) => handleBgChange('solid', e.target.value)}
+                                            className="w-10 h-10 rounded-lg border border-border-light cursor-pointer overflow-hidden p-0"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={bg.value || '#ffffff'}
+                                            onChange={(e) => handleBgChange('solid', e.target.value)}
+                                            className="flex-1 border border-border-light rounded-lg p-2 text-xs font-mono focus:border-blue-500 outline-none transition-all"
+                                            placeholder="#ffffff"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-6 gap-2">
+                                        {['#ffffff', '#f3f4f6', '#fee2e2', '#fef3c7', '#dcfce7', '#dbeafe', '#f5f3ff', '#fce7f3', '#000000', '#1f2937', '#2563eb', '#db2777'].map(c => (
+                                            <button
+                                                key={c}
+                                                onClick={() => handleBgChange('solid', c)}
+                                                className={`h-6 rounded border border-black/5 transition-transform hover:scale-110 ${bg.value === c ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
+                                                style={{ backgroundColor: c }}
+                                            />
+                                        ))}
+                                    </div>
                                 </div>
                             )}
 
                             {bg.type === 'gradient' && (
-                                <input
-                                    type="text"
-                                    value={bg.value || ''}
-                                    onChange={(e) => handleBgChange('gradient', e.target.value)}
-                                    className="w-full border border-border-light rounded-lg p-2 text-xs font-mono"
-                                    placeholder="linear-gradient(135deg, #667eea, #764ba2)"
-                                />
+                                <div className="space-y-3">
+                                    <input
+                                        type="text"
+                                        value={bg.value || ''}
+                                        onChange={(e) => handleBgChange('gradient', e.target.value)}
+                                        className="w-full border border-border-light rounded-lg p-2 text-xs font-mono focus:border-blue-500 outline-none transition-all"
+                                        placeholder="linear-gradient(135deg, #667eea, #764ba2)"
+                                    />
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {[
+                                            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                            'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+                                            'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)',
+                                            'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)',
+                                            'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                                            'linear-gradient(135deg, #5ee7df 0%, #b490d1 100%)'
+                                        ].map((g, i) => (
+                                            <button
+                                                key={i}
+                                                onClick={() => handleBgChange('gradient', g)}
+                                                className={`h-10 rounded-lg border border-black/5 transition-all hover:scale-[1.02] ${bg.value === g ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
+                                                style={{ background: g }}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
                             )}
 
                             {bg.type === 'image' && (
