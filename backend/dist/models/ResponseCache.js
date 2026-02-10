@@ -34,19 +34,22 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const DocumentSchema = new mongoose_1.Schema({
+const ResponseCacheSchema = new mongoose_1.Schema({
     workspaceId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Workspace', required: true },
-    title: { type: String, required: true },
-    content: { type: String, required: true },
-    summary: { type: String },
-    sourceUrl: { type: String },
-    fileKey: { type: String },
-    mimeType: { type: String },
-    metadata: { type: mongoose_1.Schema.Types.Mixed, default: {} },
-    embeddingId: { type: String },
-    expiresAt: { type: Date },
-    createdBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
-    updatedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
+    queryHash: { type: String, required: true },
+    contextHash: { type: String, required: true },
+    answer: { type: String, required: true },
+    citations: [
+        {
+            documentId: { type: String, required: true },
+            snippet: { type: String, required: true },
+            link: { type: String },
+            title: { type: String },
+        }
+    ],
+    tokensUsed: { type: Number, default: 0 },
+    expiresAt: { type: Date, required: true },
 }, { timestamps: true });
-DocumentSchema.index({ workspaceId: 1 });
-exports.default = mongoose_1.default.model('Document', DocumentSchema);
+ResponseCacheSchema.index({ workspaceId: 1, queryHash: 1, contextHash: 1 }, { unique: true });
+ResponseCacheSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+exports.default = mongoose_1.default.model('ResponseCache', ResponseCacheSchema);

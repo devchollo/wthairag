@@ -6,6 +6,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.cancelDeleteWorkspace = exports.deleteWorkspaceRequest = exports.updateWorkspace = exports.getWorkspace = void 0;
 const Workspace_1 = __importDefault(require("../models/Workspace"));
 const Membership_1 = __importDefault(require("../models/Membership"));
+const Document_1 = __importDefault(require("../models/Document"));
+const Alert_1 = __importDefault(require("../models/Alert"));
+const Chat_1 = __importDefault(require("../models/Chat"));
+const UsageLog_1 = __importDefault(require("../models/UsageLog"));
+const Invitation_1 = __importDefault(require("../models/Invitation"));
+const s3Service_1 = require("../services/s3Service");
 const response_1 = require("../utils/response");
 const getWorkspace = async (req, res) => {
     try {
@@ -42,23 +48,37 @@ const updateWorkspace = async (req, res) => {
 exports.updateWorkspace = updateWorkspace;
 const deleteWorkspaceRequest = async (req, res) => {
     try {
-        const pendingDeletionAt = new Date();
-        pendingDeletionAt.setDate(pendingDeletionAt.getDate() + 7);
-        const workspace = await Workspace_1.default.findByIdAndUpdate(req.workspace?._id, { pendingDeletionAt }, { new: true });
-        return (0, response_1.sendSuccess)(res, workspace, 'Workspace scheduled for deletion in 7 days');
+        const workspaceId = req.workspace?._id;
+        if (!workspaceId)
+            return (0, response_1.sendError)(res, 'Workspace context missing', 400);
+        // 1. Delete associated files from storage (S3/B2)
+        const documents = await Document_1.default.find({ workspaceId });
+        const fileDeletionPromises = documents
+            .filter(doc => doc.fileKey)
+            .map(doc => (0, s3Service_1.deleteFile)(process.env.B2_BUCKET || 'worktoolshub', doc.fileKey).catch(err => {
+            console.error(`Failed to delete file ${doc.fileKey}:`, err);
+        }));
+        await Promise.all(fileDeletionPromises);
+        // 2. Delete all related database records
+        await Promise.all([
+            Document_1.default.deleteMany({ workspaceId }),
+            Alert_1.default.deleteMany({ workspaceId }),
+            Chat_1.default.deleteMany({ workspaceId }),
+            UsageLog_1.default.deleteMany({ workspaceId }),
+            Invitation_1.default.deleteMany({ workspaceId }),
+            Membership_1.default.deleteMany({ workspaceId }) // Removes all members including owner
+        ]);
+        // 3. Delete the workspace itself
+        await Workspace_1.default.findByIdAndDelete(workspaceId);
+        return (0, response_1.sendSuccess)(res, null, 'Workspace and all associated data have been permanently terminated.');
     }
     catch (error) {
+        console.error('Workspace termination failed:', error);
         return (0, response_1.sendError)(res, error.message, 500);
     }
 };
 exports.deleteWorkspaceRequest = deleteWorkspaceRequest;
 const cancelDeleteWorkspace = async (req, res) => {
-    try {
-        const workspace = await Workspace_1.default.findByIdAndUpdate(req.workspace?._id, { $unset: { pendingDeletionAt: 1 } }, { new: true });
-        return (0, response_1.sendSuccess)(res, workspace, 'Workspace deletion cancelled');
-    }
-    catch (error) {
-        return (0, response_1.sendError)(res, error.message, 500);
-    }
+    return (0, response_1.sendError)(res, 'Workspace deletion is now immediate and cannot be cancelled.', 400);
 };
 exports.cancelDeleteWorkspace = cancelDeleteWorkspace;

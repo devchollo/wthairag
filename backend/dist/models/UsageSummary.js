@@ -34,19 +34,31 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const DocumentSchema = new mongoose_1.Schema({
-    workspaceId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Workspace', required: true },
+const UsageSummaryQuerySchema = new mongoose_1.Schema({
+    normalizedQuery: { type: String, required: true },
+    query: { type: String, required: true },
+    count: { type: Number, default: 0 },
+    lastUsed: { type: Date, default: Date.now },
+    inputTokens: { type: Number, default: 0 },
+    outputTokens: { type: Number, default: 0 },
+    citedDocuments: [{ type: String }]
+}, { _id: false });
+const UsageSummaryLastViewedSchema = new mongoose_1.Schema({
+    type: { type: String, enum: ['knowledge', 'alert', 'query'], required: true },
     title: { type: String, required: true },
-    content: { type: String, required: true },
-    summary: { type: String },
-    sourceUrl: { type: String },
-    fileKey: { type: String },
-    mimeType: { type: String },
-    metadata: { type: mongoose_1.Schema.Types.Mixed, default: {} },
-    embeddingId: { type: String },
-    expiresAt: { type: Date },
-    createdBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
-    updatedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
+    updatedAt: { type: Date },
+    link: { type: String },
+    severity: { type: String },
+    status: { type: String }
+}, { _id: false });
+const UsageSummarySchema = new mongoose_1.Schema({
+    workspaceId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Workspace', required: true },
+    userId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', default: null },
+    totalTokens: { type: Number, default: 0 },
+    totalQueries: { type: Number, default: 0 },
+    dailyTokens: { type: Map, of: Number, default: {} },
+    topQueries: { type: [UsageSummaryQuerySchema], default: [] },
+    lastViewed: { type: UsageSummaryLastViewedSchema, default: null }
 }, { timestamps: true });
-DocumentSchema.index({ workspaceId: 1 });
-exports.default = mongoose_1.default.model('Document', DocumentSchema);
+UsageSummarySchema.index({ workspaceId: 1, userId: 1 }, { unique: true });
+exports.default = mongoose_1.default.model('UsageSummary', UsageSummarySchema);

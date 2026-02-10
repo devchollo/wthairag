@@ -42,6 +42,8 @@ const AlertSchema = new mongoose_1.Schema({
     status: { type: String, enum: ['open', 'resolved'], default: 'open' },
     resolvedAt: { type: Date },
     resolvedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
+    createdBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
+    updatedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 AlertSchema.index({ workspaceId: 1 });
 exports.default = mongoose_1.default.model('Alert', AlertSchema);

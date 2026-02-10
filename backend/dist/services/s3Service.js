@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDownloadUrl = exports.deleteFile = exports.uploadFile = void 0;
+exports.getUploadUrl = exports.getDownloadUrl = exports.deleteFile = exports.uploadFile = void 0;
 const client_s3_1 = require("@aws-sdk/client-s3");
 const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
 const s3Client = new client_s3_1.S3Client({
@@ -37,3 +37,12 @@ const getDownloadUrl = async (bucket, key) => {
     return (0, s3_request_presigner_1.getSignedUrl)(s3Client, command, { expiresIn: 3600 });
 };
 exports.getDownloadUrl = getDownloadUrl;
+const getUploadUrl = async (bucket, key, contentType) => {
+    const command = new client_s3_1.PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        ContentType: contentType,
+    });
+    return (0, s3_request_presigner_1.getSignedUrl)(s3Client, command, { expiresIn: 3600 });
+};
+exports.getUploadUrl = getUploadUrl;

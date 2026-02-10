@@ -3,10 +3,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteDocument = exports.listDocuments = exports.createManualDocument = exports.uploadDocument = exports.downloadDocument = void 0;
+exports.recordKnowledgeView = exports.deleteDocument = exports.updateManualDocument = exports.listDocuments = exports.createManualDocument = exports.uploadDocument = exports.downloadDocument = void 0;
 const Document_1 = __importDefault(require("../models/Document"));
+const DocumentChunk_1 = __importDefault(require("../models/DocumentChunk"));
+const UsageLog_1 = __importDefault(require("../models/UsageLog"));
 const response_1 = require("../utils/response");
 const s3Service_1 = require("../services/s3Service");
+const aiService_1 = require("../services/aiService");
+const usageSummaryService_1 = require("../services/usageSummaryService");
+const buildSummary = (text, maxLength) => {
+    const normalized = text.replace(/\s+/g, ' ').trim();
+    if (!normalized)
+        return '';
+    if (normalized.length <= maxLength)
+        return normalized;
+    return `${normalized.slice(0, maxLength).trim()}...`;
+};
 const validateFileSignature = (buffer, mimetype) => {
     if (!buffer || buffer.length < 4)
         return false;
@@ -99,10 +111,43 @@ const uploadDocument = async (req, res) => {
             workspaceId: req.workspace?._id,
             title: title || file.originalname,
             content: extractedText || 'No printable content found.',
+            summary: buildSummary(extractedText || 'No printable content found.', 600),
             mimeType: file.mimetype,
             fileKey: `workspaces/${req.workspace?._id}/vault/${Date.now()}-${file.originalname}`,
             metadata: metadataObj,
+            createdBy: req.user?._id,
+            updatedBy: req.user?._id,
         });
+        // CHUNKING & EMBEDDING
+        // Simple chunking strategy: Split by ~1000 characters with overlap
+        const chunkSize = 1000;
+        const overlap = 200;
+        const textToChunk = extractedText.length > 0 ? extractedText : 'No content';
+        // Only embed if we have meaningful content
+        if (textToChunk.length > 50) {
+            const chunks = [];
+            for (let i = 0; i < textToChunk.length; i += (chunkSize - overlap)) {
+                chunks.push(textToChunk.substring(i, i + chunkSize));
+            }
+            // Process chunks in parallel (limit concurrency if needed, but for single file strictly okay)
+            await Promise.all(chunks.map(async (chunkText, index) => {
+                try {
+                    const embedding = await aiService_1.AIService.generateEmbedding(chunkText);
+                    await DocumentChunk_1.default.create({
+                        workspaceId: req.workspace?._id,
+                        documentId: doc._id,
+                        content: chunkText,
+                        summary: buildSummary(chunkText, 240),
+                        embedding: embedding,
+                        chunkIndex: index,
+                        metadata: doc.metadata
+                    });
+                }
+                catch (e) {
+                    console.error(`Failed to embed chunk ${index} for doc ${doc._id}`, e);
+                }
+            }));
+        }
         // Upload to B2
         await (0, s3Service_1.uploadFile)(process.env.B2_BUCKET || 'worktoolshub', doc.fileKey, file.buffer, file.mimetype);
         return (0, response_1.sendSuccess)(res, doc, 'Document vaulted successfully', 201);
@@ -122,9 +167,38 @@ const createManualDocument = async (req, res) => {
             workspaceId: req.workspace?._id,
             title,
             content,
+            summary: buildSummary(content, 600),
             mimeType: 'text/plain',
             metadata: metadata || {},
+            createdBy: req.user?._id,
+            updatedBy: req.user?._id,
         });
+        // CHUNKING & EMBEDDING
+        const chunkSize = 1000;
+        const overlap = 200;
+        if (content.length > 0) {
+            const chunks = [];
+            for (let i = 0; i < content.length; i += (chunkSize - overlap)) {
+                chunks.push(content.substring(i, i + chunkSize));
+            }
+            await Promise.all(chunks.map(async (chunkText, index) => {
+                try {
+                    const embedding = await aiService_1.AIService.generateEmbedding(chunkText);
+                    await DocumentChunk_1.default.create({
+                        workspaceId: req.workspace?._id,
+                        documentId: doc._id,
+                        content: chunkText,
+                        summary: buildSummary(chunkText, 240),
+                        embedding: embedding,
+                        chunkIndex: index,
+                        metadata: doc.metadata
+                    });
+                }
+                catch (e) {
+                    console.error(`Failed to embed chunk ${index} for doc ${doc._id}`, e);
+                }
+            }));
+        }
         return (0, response_1.sendSuccess)(res, doc, 'Knowledge record created', 201);
     }
     catch (error) {
@@ -134,7 +208,10 @@ const createManualDocument = async (req, res) => {
 exports.createManualDocument = createManualDocument;
 const listDocuments = async (req, res) => {
     try {
-        const docs = await Document_1.default.find({ workspaceId: req.workspace?._id }).sort('-createdAt');
+        const docs = await Document_1.default.find({ workspaceId: req.workspace?._id })
+            .populate('createdBy', 'name email')
+            .populate('updatedBy', 'name email')
+            .sort('-createdAt');
         return (0, response_1.sendSuccess)(res, docs, 'Documents fetched');
     }
     catch (error) {
@@ -142,6 +219,58 @@ const listDocuments = async (req, res) => {
     }
 };
 exports.listDocuments = listDocuments;
+const updateManualDocument = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, content } = req.body;
+        if (!title || !content) {
+            return (0, response_1.sendError)(res, 'Title and content are required', 400);
+        }
+        const doc = await Document_1.default.findOne({ _id: id, workspaceId: req.workspace?._id });
+        if (!doc) {
+            return (0, response_1.sendError)(res, 'Document not found', 404);
+        }
+        if (doc.fileKey) {
+            return (0, response_1.sendError)(res, 'Only manual records can be edited', 400);
+        }
+        doc.title = title;
+        doc.content = content;
+        doc.summary = buildSummary(content, 600);
+        doc.updatedBy = req.user?._id;
+        await doc.save();
+        await DocumentChunk_1.default.deleteMany({ documentId: doc._id });
+        const chunkSize = 1000;
+        const overlap = 200;
+        if (content.length > 0) {
+            const chunks = [];
+            for (let i = 0; i < content.length; i += (chunkSize - overlap)) {
+                chunks.push(content.substring(i, i + chunkSize));
+            }
+            await Promise.all(chunks.map(async (chunkText, index) => {
+                try {
+                    const embedding = await aiService_1.AIService.generateEmbedding(chunkText);
+                    await DocumentChunk_1.default.create({
+                        workspaceId: req.workspace?._id,
+                        documentId: doc._id,
+                        content: chunkText,
+                        summary: buildSummary(chunkText, 240),
+                        embedding: embedding,
+                        chunkIndex: index,
+                        metadata: doc.metadata
+                    });
+                }
+                catch (e) {
+                    console.error(`Failed to embed chunk ${index} for doc ${doc._id}`, e);
+                }
+            }));
+        }
+        return (0, response_1.sendSuccess)(res, doc, 'Knowledge record updated');
+    }
+    catch (error) {
+        return (0, response_1.sendError)(res, error.message, 500);
+    }
+};
+exports.updateManualDocument = updateManualDocument;
 const deleteDocument = async (req, res) => {
     try {
         const { id } = req.params;
@@ -153,6 +282,8 @@ const deleteDocument = async (req, res) => {
             await (0, s3Service_1.deleteFile)(process.env.B2_BUCKET || 'worktoolshub', doc.fileKey);
         }
         await doc.deleteOne();
+        // Delete all associated chunks
+        await DocumentChunk_1.default.deleteMany({ documentId: doc._id });
         return (0, response_1.sendSuccess)(res, null, 'Document deleted');
     }
     catch (error) {
@@ -160,3 +291,42 @@ const deleteDocument = async (req, res) => {
     }
 };
 exports.deleteDocument = deleteDocument;
+const recordKnowledgeView = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const doc = await Document_1.default.findOne({ _id: id, workspaceId: req.workspace?._id })
+            .select('title updatedAt')
+            .lean();
+        if (!doc) {
+            return (0, response_1.sendError)(res, 'Document not found', 404);
+        }
+        if (!req.user?._id) {
+            return (0, response_1.sendError)(res, 'User context missing', 400);
+        }
+        await UsageLog_1.default.create({
+            workspaceId: req.workspace?._id,
+            userId: req.user?._id,
+            tokens: 0,
+            inputTokens: 0,
+            outputTokens: 0,
+            query: doc.title,
+            citedDocuments: [doc.title],
+            eventType: 'view'
+        });
+        await (0, usageSummaryService_1.recordUsageSummaryForView)({
+            workspaceId: req.workspace?._id.toString(),
+            userId: req.user?._id.toString(),
+            lastViewed: {
+                type: 'knowledge',
+                title: doc.title,
+                updatedAt: doc.updatedAt,
+                link: '/workspace/knowledge'
+            }
+        });
+        return (0, response_1.sendSuccess)(res, null, 'Knowledge view recorded');
+    }
+    catch (error) {
+        return (0, response_1.sendError)(res, error.message, 500);
+    }
+};
+exports.recordKnowledgeView = recordKnowledgeView;

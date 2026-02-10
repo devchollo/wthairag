@@ -40,6 +40,9 @@ const UserSchema = new mongoose_1.Schema({
     name: { type: String, required: true },
     isVerified: { type: Boolean, default: false },
     isAdmin: { type: Boolean, default: false },
+    isOwner: { type: Boolean, default: false },
     avatar: { type: String },
+    resetPasswordToken: { type: String },
+    resetPasswordExpire: { type: Date },
 }, { timestamps: true });
 exports.default = mongoose_1.default.model('User', UserSchema);
