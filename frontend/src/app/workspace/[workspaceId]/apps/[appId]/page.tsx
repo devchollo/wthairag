@@ -24,7 +24,7 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
     const [submittedValues, setSubmittedValues] = useState<Record<string, SubmittedValue> | null>(null);
     const [aiImproved, setAiImproved] = useState(false);
     const [copied, setCopied] = useState(false);
-    const [viewMode, setViewMode] = useState<'rendered' | 'raw'>('rendered');
+    const [viewMode, setViewMode] = useState<'rendered' | 'raw'>('raw');
 
     const fetchApp = useCallback(async () => {
         try {
