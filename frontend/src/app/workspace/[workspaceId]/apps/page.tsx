@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { Plus, Play, Edit, Trash2, Box } from 'lucide-react';
@@ -19,24 +19,25 @@ interface App {
     };
 }
 
-export default function WorkspaceAppsPage({ params }: { params: { workspaceId: string } }) {
+export default function WorkspaceAppsPage({ params }: { params: Promise<{ workspaceId: string }> }) {
+    const { workspaceId } = use(params);
     const { user, memberships } = useAuth();
     const [apps, setApps] = useState<App[]>([]);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
     const [error, setError] = useState('');
 
-    const membership = memberships.find(m => m.workspaceId.toString() === params.workspaceId);
+    const membership = memberships.find(m => m.workspaceId.toString() === workspaceId);
     const isAdmin = membership && ['owner', 'admin'].includes(membership.role);
 
     useEffect(() => {
         fetchApps();
-    }, [params.workspaceId]);
+    }, [workspaceId]);
 
     const fetchApps = async () => {
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-            const res = await fetch(`${apiUrl}/api/workspaces/${params.workspaceId}/apps`, {
+            const res = await fetch(`${apiUrl}/api/workspaces/${workspaceId}/apps`, {
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -57,7 +58,7 @@ export default function WorkspaceAppsPage({ params }: { params: { workspaceId: s
     const handleCreateApp = async () => {
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-            const res = await fetch(`${apiUrl}/api/workspaces/${params.workspaceId}/apps`, {
+            const res = await fetch(`${apiUrl}/api/workspaces/${workspaceId}/apps`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -69,7 +70,7 @@ export default function WorkspaceAppsPage({ params }: { params: { workspaceId: s
             if (!res.ok) throw new Error('Failed to create app');
 
             const data = await res.json();
-            router.push(`/workspace/${params.workspaceId}/apps/${data.data._id}/builder`);
+            router.push(`/workspace/${workspaceId}/apps/${data.data._id}/builder`);
         } catch (err: any) {
             alert('Failed to create app: ' + err.message);
         }
@@ -150,7 +151,7 @@ export default function WorkspaceAppsPage({ params }: { params: { workspaceId: s
 
                             <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border-light">
                                 <Link
-                                    href={`/workspace/${params.workspaceId}/apps/${app._id}`}
+                                    href={`/workspace/${workspaceId}/apps/${app._id}`}
                                     className="flex-1 btn-secondary text-center justify-center flex items-center gap-2 text-sm"
                                 >
                                     <Play size={14} />
@@ -158,7 +159,7 @@ export default function WorkspaceAppsPage({ params }: { params: { workspaceId: s
                                 </Link>
                                 {isAdmin && (
                                     <Link
-                                        href={`/workspace/${params.workspaceId}/apps/${app._id}/builder`}
+                                        href={`/workspace/${workspaceId}/apps/${app._id}/builder`}
                                         className="btn-secondary px-3 text-text-muted hover:text-blue-600"
                                         title="Edit Builder"
                                     >
