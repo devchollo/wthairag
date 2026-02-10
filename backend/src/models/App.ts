@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-export type AppFieldType = "text" | "textarea" | "radio" | "checkbox" | "message" | "submit";
+export type AppFieldType = "text" | "textarea" | "radio" | "checkbox" | "message" | "submit" | "email" | "phone" | "number" | "list" | "date";
 
 export interface IAppField {
   id: string;
@@ -49,7 +49,7 @@ const FieldSchema = new Schema(
     id: { type: String, required: true },
     type: {
       type: String,
-      enum: ["text", "textarea", "radio", "checkbox", "message", "submit"],
+      enum: ["text", "textarea", "radio", "checkbox", "message", "submit", "email", "phone", "number", "list", "date"],
       required: true,
     },
     label: { type: String },

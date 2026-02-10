@@ -146,7 +146,7 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
                     {/* Header */}
                     <div className="bg-surface-light border-b border-border-light p-8 text-center">
                         {app.layout?.header?.logoUrl && (
-                            <img src={app.layout.header.logoUrl} alt="Logo" className="h-16 w-16 mx-auto mb-4 object-contain rounded-lg" />
+                            <img src={app.layout.header.logoUrl} alt="Logo" className="h-auto w-auto max-w-[300px] max-h-[300px] mx-auto mb-4 object-contain rounded-lg" />
                         )}
                         <h1 className="text-3xl font-black text-text-primary tracking-tight">{app.name}</h1>
                         {app.description && (

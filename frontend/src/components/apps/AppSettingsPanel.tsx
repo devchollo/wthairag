@@ -290,6 +290,7 @@ export function AppSettingsPanel({ app, workspaceId, onUpdate, onSave, saving }:
                                         onClick={() => {
                                             if (t === 'solid') handleBgChange('solid', bg.value || '#ffffff');
                                             else if (t === 'gradient') handleBgChange('gradient', bg.value || 'linear-gradient(135deg, #667eea, #764ba2)');
+                                            else if (t === 'image') handleBgChange('image', bg.value || '');
                                         }}
                                         className={`p-2 rounded text-[10px] font-bold uppercase text-center transition-all ${
                                             bg.type === t
