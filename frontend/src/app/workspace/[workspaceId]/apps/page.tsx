@@ -27,7 +27,7 @@ export default function WorkspaceAppsPage({ params }: { params: Promise<{ worksp
     const router = useRouter();
     const [error, setError] = useState('');
 
-    const membership = memberships.find(m => m.workspaceId.toString() === workspaceId);
+    const membership = memberships.find(m => m.workspaceId._id === workspaceId);
     const isAdmin = membership && ['owner', 'admin'].includes(membership.role);
 
     useEffect(() => {
