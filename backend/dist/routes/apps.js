@@ -8,20 +8,28 @@ const appController_1 = require("../controllers/appController");
 const auth_1 = require("../middleware/auth");
 const workspace_1 = require("../middleware/workspace");
 const server_1 = require("../server");
+const multer_1 = __importDefault(require("multer"));
 const router = express_1.default.Router({ mergeParams: true });
+const upload = (0, multer_1.default)({ storage: multer_1.default.memoryStorage() });
 // All routes require auth and workspace context
 router.use(auth_1.protect);
 router.use(workspace_1.workspaceOverlay);
 // Public-ish routes (Members/Viewers)
-router.get('/', appController_1.getApps); // Filtered by status inside controller
-router.get('/:appId', appController_1.getApp); // Filtered by status inside controller
+router.get('/', appController_1.getApps);
+router.get('/:appId', appController_1.getApp);
 router.post('/:appId/run', server_1.aiLimiter, appController_1.runApp);
 // Admin-only routes
 router.post('/', (0, workspace_1.authorize)('owner', 'admin'), appController_1.createApp);
 router.put('/:appId', (0, workspace_1.authorize)('owner', 'admin'), appController_1.updateApp);
 router.delete('/:appId', (0, workspace_1.authorize)('owner', 'admin'), appController_1.deleteApp);
-// Only admins can manage assets usually
+// Asset management (admin-only)
 router.post('/:appId/logo/upload-url', (0, workspace_1.authorize)('owner', 'admin'), appController_1.getLogoUploadUrl);
 router.post('/:appId/logo/confirm', (0, workspace_1.authorize)('owner', 'admin'), appController_1.confirmLogo);
+router.post('/:appId/logo/upload', (0, workspace_1.authorize)('owner', 'admin'), upload.single('file'), appController_1.uploadLogo);
 router.delete('/:appId/logo', (0, workspace_1.authorize)('owner', 'admin'), appController_1.deleteLogo);
+// Background management (admin-only)
+router.post('/:appId/background/upload-url', (0, workspace_1.authorize)('owner', 'admin'), appController_1.getBackgroundUploadUrl);
+router.post('/:appId/background/confirm', (0, workspace_1.authorize)('owner', 'admin'), appController_1.confirmBackground);
+router.post('/:appId/background/upload', (0, workspace_1.authorize)('owner', 'admin'), upload.single('file'), appController_1.uploadBackground);
+router.put('/:appId/background', (0, workspace_1.authorize)('owner', 'admin'), appController_1.updateBackground);
 exports.default = router;

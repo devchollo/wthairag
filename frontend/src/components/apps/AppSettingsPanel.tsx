@@ -55,30 +55,17 @@ export function AppSettingsPanel({ app, workspaceId, onUpdate, onSave, saving }:
 
         setLogoUploading(true);
         try {
-            const urlRes = await fetch(`${apiUrl}/api/workspaces/${workspaceId}/apps/${app._id}/logo/upload-url`, {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const res = await fetch(`${apiUrl}/api/workspaces/${workspaceId}/apps/${app._id}/logo/upload`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contentType: file.type }),
+                body: formData,
                 credentials: 'include'
             });
-            if (!urlRes.ok) throw new Error('Failed to get upload URL');
-            const { data: urlData } = await urlRes.json();
+            if (!res.ok) throw new Error('Failed to upload logo');
 
-            await fetch(urlData.uploadUrl, {
-                method: 'PUT',
-                headers: { 'Content-Type': file.type },
-                body: file
-            });
-
-            const confirmRes = await fetch(`${apiUrl}/api/workspaces/${workspaceId}/apps/${app._id}/logo/confirm`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ logoUrl: urlData.publicUrl, logoKey: urlData.key }),
-                credentials: 'include'
-            });
-            if (!confirmRes.ok) throw new Error('Failed to confirm logo');
-
-            const { data: updatedApp } = await confirmRes.json();
+            const { data: updatedApp } = await res.json();
             onUpdate({ layout: updatedApp.layout });
         } catch (err) {
             console.error('Logo upload error:', err);
@@ -103,44 +90,24 @@ export function AppSettingsPanel({ app, workspaceId, onUpdate, onSave, saving }:
         }
     };
 
-    // --- Background Image Upload (presigned URL flow) ---
+    // --- Background Image Upload ---
     const handleBgImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
         setBgUploading(true);
         try {
-            // 1. Get presigned URL
-            const urlRes = await fetch(`${apiUrl}/api/workspaces/${workspaceId}/apps/${app._id}/background/upload-url`, {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const res = await fetch(`${apiUrl}/api/workspaces/${workspaceId}/apps/${app._id}/background/upload`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contentType: file.type }),
+                body: formData,
                 credentials: 'include'
             });
-            if (!urlRes.ok) throw new Error('Failed to get upload URL');
-            const { data: urlData } = await urlRes.json();
+            if (!res.ok) throw new Error('Failed to upload background image');
 
-            // 2. Upload to S3/B2
-            await fetch(urlData.uploadUrl, {
-                method: 'PUT',
-                headers: { 'Content-Type': file.type },
-                body: file
-            });
-
-            // 3. Confirm background
-            const confirmRes = await fetch(`${apiUrl}/api/workspaces/${workspaceId}/apps/${app._id}/background/confirm`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type: 'image',
-                    value: urlData.publicUrl,
-                    imageKey: urlData.key
-                }),
-                credentials: 'include'
-            });
-            if (!confirmRes.ok) throw new Error('Failed to confirm background');
-
-            const { data: updatedApp } = await confirmRes.json();
+            const { data: updatedApp } = await res.json();
             onUpdate({ layout: updatedApp.layout });
         } catch (err) {
             console.error('Background upload error:', err);
