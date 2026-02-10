@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Send, Sparkles, Copy, Check } from 'lucide-react';
@@ -10,7 +10,8 @@ import remarkGfm from 'remark-gfm';
 
 import { IAppField, IApp } from '@/types/app';
 
-export default function AppRunnerPage({ params }: { params: { workspaceId: string; appId: string } }) {
+export default function AppRunnerPage({ params }: { params: Promise<{ workspaceId: string; appId: string }> }) {
+    const { workspaceId, appId } = use(params);
     const { user } = useAuth();
     const router = useRouter();
     const [app, setApp] = useState<IApp | null>(null);
@@ -22,12 +23,12 @@ export default function AppRunnerPage({ params }: { params: { workspaceId: strin
 
     useEffect(() => {
         fetchApp();
-    }, [params.appId]);
+    }, [appId]);
 
     const fetchApp = async () => {
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-            const res = await fetch(`${apiUrl}/api/workspaces/${params.workspaceId}/apps/${params.appId}`, {
+            const res = await fetch(`${apiUrl}/api/workspaces/${workspaceId}/apps/${appId}`, {
                 credentials: 'include'
             });
             if (!res.ok) throw new Error('Failed to fetch app');
@@ -55,7 +56,7 @@ export default function AppRunnerPage({ params }: { params: { workspaceId: strin
 
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-            const res = await fetch(`${apiUrl}/api/workspaces/${params.workspaceId}/apps/${params.appId}/run`, {
+            const res = await fetch(`${apiUrl}/api/workspaces/${workspaceId}/apps/${appId}/run`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ inputs }),
@@ -100,7 +101,7 @@ export default function AppRunnerPage({ params }: { params: { workspaceId: strin
         <div className="min-h-screen bg-surface-base py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto">
                 <div className="mb-6 flex items-center justify-between">
-                     <Link href={`/workspace/${params.workspaceId}/apps`} className="text-text-muted hover:text-text-primary flex items-center gap-2 text-sm font-bold">
+                     <Link href={`/workspace/${workspaceId}/apps`} className="text-text-muted hover:text-text-primary flex items-center gap-2 text-sm font-bold">
                         <ArrowLeft size={16} /> Back to Apps
                      </Link>
                 </div>

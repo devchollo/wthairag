@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { 
@@ -30,7 +30,8 @@ import { SidebarItem } from '@/components/apps/SidebarItem';
 import { SortableField } from '@/components/apps/SortableField';
 import { FieldInspector } from '@/components/apps/FieldInspector';
 
-export default function AppBuilderPage({ params }: { params: { workspaceId: string; appId: string } }) {
+export default function AppBuilderPage({ params }: { params: Promise<{ workspaceId: string; appId: string }> }) {
+    const { workspaceId, appId } = use(params);
     const { user, memberships } = useAuth();
     const router = useRouter();
     const [app, setApp] = useState<any>(null);
@@ -54,12 +55,12 @@ export default function AppBuilderPage({ params }: { params: { workspaceId: stri
 
     useEffect(() => {
         fetchApp();
-    }, [params.appId]);
+    }, [appId]);
 
     const fetchApp = async () => {
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-            const res = await fetch(`${apiUrl}/api/workspaces/${params.workspaceId}/apps/${params.appId}`, {
+            const res = await fetch(`${apiUrl}/api/workspaces/${workspaceId}/apps/${appId}`, {
                 credentials: 'include'
             });
             if (!res.ok) throw new Error('Failed to fetch app');
@@ -100,7 +101,7 @@ export default function AppBuilderPage({ params }: { params: { workspaceId: stri
                 : [...otherFields, { id: 'submit-btn', type: 'submit' as AppFieldType, submitText: 'Submit' }];
 
              const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-            const res = await fetch(`${apiUrl}/api/workspaces/${params.workspaceId}/apps/${params.appId}`, {
+            const res = await fetch(`${apiUrl}/api/workspaces/${workspaceId}/apps/${appId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -191,7 +192,7 @@ export default function AppBuilderPage({ params }: { params: { workspaceId: stri
             {/* Header */}
             <div className="h-16 border-b border-border-light bg-white flex items-center justify-between px-4">
                 <div className="flex items-center gap-4">
-                    <Link href={`/workspace/${params.workspaceId}/apps`} className="text-text-muted hover:text-text-primary">
+                    <Link href={`/workspace/${workspaceId}/apps`} className="text-text-muted hover:text-text-primary">
                         <ArrowLeft size={20} />
                     </Link>
                     <div>
@@ -205,7 +206,7 @@ export default function AppBuilderPage({ params }: { params: { workspaceId: stri
                         Save Changes
                     </button>
                     <Link 
-                        href={`/workspace/${params.workspaceId}/apps/${params.appId}`}
+                        href={`/workspace/${workspaceId}/apps/${appId}`}
                         target="_blank"
                         className="btn-secondary flex items-center gap-2"
                     >
