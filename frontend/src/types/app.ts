@@ -11,22 +11,32 @@ export interface IAppField {
     submitText?: string;
 }
 
+export interface IAppBackground {
+    type: 'solid' | 'gradient' | 'image';
+    value: string;
+    imageKey?: string;
+}
+
 export interface IAppLayout {
     header: {
         logoUrl?: string;
-        title?: string; // string or null/undefined
+        logoKey?: string;
+        title?: string;
         subtitle?: string;
     };
+    background?: IAppBackground;
 }
 
 export interface IApp {
     _id: string;
     workspaceId: string;
     name: string;
+    description?: string;
     status: 'draft' | 'published';
     tag: 'generator' | 'form';
     launchMode: 'modal' | 'new_tab';
     enabled: boolean;
+    allowAiImprove: boolean;
     layout: IAppLayout;
     fields: IAppField[];
     createdAt: string;

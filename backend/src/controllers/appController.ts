@@ -3,7 +3,8 @@ import App, { IApp, IAppField } from '../models/App';
 import { sendError, sendSuccess } from '../utils/response';
 import { AIService } from '../services/aiService';
 import { getUploadUrl } from '../services/s3Service';
-import mongoose from 'mongoose';
+import { uploadFile } from '../services/s3Service';
+import sharp from 'sharp';
 
 // --- CRUD ---
 
@@ -20,8 +21,15 @@ export const createApp = async (req: Request, res: Response) => {
             name,
             status: 'draft',
             tag: 'generator',
-            layout: { header: {} },
-            fields: []
+            launchMode: 'modal',
+            allowAiImprove: false,
+            layout: {
+                header: {},
+                background: { type: 'solid', value: '#ffffff' }
+            },
+            fields: [
+                { id: 'submit-btn', type: 'submit', submitText: 'Generate' }
+            ]
         });
 
         return sendSuccess(res, app, 'App created successfully');
@@ -74,7 +82,7 @@ export const updateApp = async (req: Request, res: Response) => {
         const { appId } = req.params;
         const updates = req.body;
 
-        // Security: Prevent updating workspaceId or immutable fields if any
+        // Security: Prevent updating workspaceId or immutable fields
         delete updates.workspaceId;
         delete updates.createdAt;
         delete updates.updatedAt;
@@ -136,16 +144,15 @@ export const runApp = async (req: Request, res: Response) => {
         }
 
         if (app.status !== 'published') {
-             // Admins can test drafts, others cannot
             const isAdmin = ['owner', 'admin'].includes(req.userRole || '');
             if (!isAdmin) {
                 return sendError(res, 'App is not published', 403);
             }
         }
 
-        // Validate and separate inputs
+        // Collect ALL input values and separate for AI context
+        const allValues: Record<string, any> = {};
         const publicValues: Record<string, any> = {};
-        const secretValues: Record<string, any> = {};
 
         for (const field of app.fields) {
             if (field.type === 'message' || field.type === 'submit') continue;
@@ -158,32 +165,27 @@ export const runApp = async (req: Request, res: Response) => {
             }
 
             if (value !== undefined) {
-                if (field.isSecret) {
-                    secretValues[field.id] = value;
-                } else {
+                allValues[field.id] = { label: field.label || field.id, value, isSecret: !!field.isSecret };
+                if (!field.isSecret) {
                     publicValues[field.id] = value;
                 }
             }
         }
 
         if (app.tag === 'form') {
-            // Form mode: Just echo success 
-            // (Future: Save submission)
             return sendSuccess(res, {
                 processed: true,
-                mode: 'form'
+                mode: 'form',
+                submittedValues: allValues
             }, 'Form submitted successfully');
         }
 
         if (app.tag === 'generator') {
-            // Generator mode: Run AI
-            
-            // Construct context from Public Values ONLY
+            // Build AI context from public values ONLY
             let context = `App Name: ${app.name}\n`;
             context += `Inputs:\n${JSON.stringify(publicValues, null, 2)}`;
 
-            // System prompt guardrails
-            const systemPrompt = `You are a helpful AI generator assistant.
+            let systemPrompt = `You are a helpful AI generator assistant.
 Your goal is to process the provided input and generate a clean, direct output based on the user's request.
 IMPORTANT RULES:
 1. Return ONLY the result text. Do not define what it is.
@@ -193,17 +195,30 @@ IMPORTANT RULES:
 5. Do NOT reference any hidden or secret fields (they are not provided to you anyway).
 `;
 
+            // AI improvement mode
+            if (app.allowAiImprove) {
+                systemPrompt += `
+6. After generating the initial result, review and IMPROVE it:
+   - Fix grammar and clarity
+   - Enhance structure and readability
+   - Add relevant details if appropriate
+   - Make the output more professional and polished
+`;
+            }
+
             const aiResponse = await AIService.getQueryResponse(
                 "Generate the result based on these inputs.",
                 context,
                 req.workspace!._id.toString(),
                 systemPrompt,
-                2000 // Max tokens
+                2000
             );
 
             return sendSuccess(res, {
                 resultText: aiResponse.answer,
-                mode: 'generator'
+                mode: 'generator',
+                aiImproved: !!app.allowAiImprove,
+                submittedValues: allValues
             }, 'Generated successfully');
         }
 
@@ -236,8 +251,7 @@ export const getLogoUploadUrl = async (req: Request, res: Response) => {
         if (!bucket) return sendError(res, 'Storage not configured', 500);
 
         const uploadUrl = await getUploadUrl(bucket, key, contentType);
-        
-        const publicUrl = `https://${bucket}.s3.${process.env.B2_REGION}.backblazeb2.com/${key}`; 
+        const publicUrl = `https://${bucket}.s3.${process.env.B2_REGION}.backblazeb2.com/${key}`;
 
         return sendSuccess(res, {
             uploadUrl,
@@ -245,20 +259,20 @@ export const getLogoUploadUrl = async (req: Request, res: Response) => {
             publicUrl,
         }, 'Upload URL generated');
     } catch (error: any) {
-         return sendError(res, 'Failed to generate upload URL', 500);
+        return sendError(res, 'Failed to generate upload URL', 500);
     }
 };
 
 export const confirmLogo = async (req: Request, res: Response) => {
     try {
         const { appId } = req.params;
-        const { logoUrl } = req.body;
+        const { logoUrl, logoKey } = req.body;
 
         if (!logoUrl) return sendError(res, 'Logo URL required', 400);
 
         const app = await App.findOneAndUpdate(
             { _id: appId, workspaceId: req.workspace!._id },
-            { $set: { 'layout.header.logoUrl': logoUrl } },
+            { $set: { 'layout.header.logoUrl': logoUrl, 'layout.header.logoKey': logoKey || '' } },
             { new: true }
         );
 
@@ -276,7 +290,7 @@ export const deleteLogo = async (req: Request, res: Response) => {
 
         const app = await App.findOneAndUpdate(
             { _id: appId, workspaceId: req.workspace!._id },
-            { $unset: { 'layout.header.logoUrl': 1 } },
+            { $unset: { 'layout.header.logoUrl': 1, 'layout.header.logoKey': 1 } },
             { new: true }
         );
 
@@ -285,5 +299,93 @@ export const deleteLogo = async (req: Request, res: Response) => {
         return sendSuccess(res, app, 'Logo removed');
     } catch (error: any) {
         return sendError(res, 'Failed to remove logo', 500);
+    }
+};
+
+// --- BACKGROUND IMAGE ---
+
+export const uploadBackgroundImage = async (req: Request, res: Response) => {
+    try {
+        const { appId } = req.params;
+
+        const app = await App.findOne({ _id: appId, workspaceId: req.workspace!._id });
+        if (!app) return sendError(res, 'App not found', 404);
+
+        // Expect raw image data as base64 in body
+        const { imageData, contentType } = req.body;
+
+        if (!imageData) {
+            return sendError(res, 'Image data required', 400);
+        }
+
+        const bucket = process.env.B2_BUCKET_NAME || '';
+        if (!bucket) return sendError(res, 'Storage not configured', 500);
+
+        // Decode base64 and convert to WebP
+        const imageBuffer = Buffer.from(imageData, 'base64');
+        const webpBuffer = await sharp(imageBuffer)
+            .webp({ quality: 80 })
+            .resize({ width: 1920, withoutEnlargement: true })
+            .toBuffer();
+
+        const key = `workspaces/${req.workspace!._id}/apps/${appId}/bg-${Date.now()}.webp`;
+
+        await uploadFile(bucket, key, webpBuffer, 'image/webp');
+
+        const publicUrl = `https://${bucket}.s3.${process.env.B2_REGION}.backblazeb2.com/${key}`;
+
+        // Update app background
+        const updated = await App.findOneAndUpdate(
+            { _id: appId, workspaceId: req.workspace!._id },
+            {
+                $set: {
+                    'layout.background.type': 'image',
+                    'layout.background.value': publicUrl,
+                    'layout.background.imageKey': key
+                }
+            },
+            { new: true }
+        );
+
+        return sendSuccess(res, {
+            publicUrl,
+            key,
+            app: updated
+        }, 'Background image uploaded');
+    } catch (error: any) {
+        console.error('Background Upload Error:', error);
+        return sendError(res, 'Failed to upload background image', 500);
+    }
+};
+
+export const updateBackground = async (req: Request, res: Response) => {
+    try {
+        const { appId } = req.params;
+        const { type, value } = req.body;
+
+        if (!type || !value) {
+            return sendError(res, 'Background type and value are required', 400);
+        }
+
+        if (!['solid', 'gradient', 'image'].includes(type)) {
+            return sendError(res, 'Invalid background type', 400);
+        }
+
+        const app = await App.findOneAndUpdate(
+            { _id: appId, workspaceId: req.workspace!._id },
+            {
+                $set: {
+                    'layout.background.type': type,
+                    'layout.background.value': value
+                }
+            },
+            { new: true }
+        );
+
+        if (!app) return sendError(res, 'App not found', 404);
+
+        return sendSuccess(res, app, 'Background updated');
+    } catch (error: any) {
+        return sendError(res, 'Failed to update background', 500);
     }
 };

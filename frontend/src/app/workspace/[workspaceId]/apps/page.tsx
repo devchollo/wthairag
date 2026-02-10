@@ -125,7 +125,7 @@ export default function WorkspaceAppsPage({ params }: { params: Promise<{ worksp
                             <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center gap-3">
                                     <div className="h-12 w-12 rounded-lg bg-blue-50 flex items-center justify-center overflow-hidden border border-blue-100">
-                                        {app.layout.header.logoUrl ? (
+                                        {app.layout?.header?.logoUrl ? (
                                             <img src={app.layout.header.logoUrl} alt={app.name} className="h-full w-full object-cover" />
                                         ) : (
                                             <Box className="text-blue-600 h-6 w-6" />

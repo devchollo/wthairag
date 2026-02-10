@@ -1,8 +1,10 @@
 import mongoose, { Schema, Document } from "mongoose";
 
+export type AppFieldType = "text" | "textarea" | "radio" | "checkbox" | "message" | "submit";
+
 export interface IAppField {
   id: string;
-  type: "text" | "textarea" | "radio" | "checkbox" | "message" | "submit";
+  type: AppFieldType;
   label?: string;
   required?: boolean;
   isSecret?: boolean;
@@ -11,21 +13,31 @@ export interface IAppField {
   submitText?: string;
 }
 
+export interface IAppBackground {
+  type: "solid" | "gradient" | "image";
+  value: string; // hex color, CSS gradient string, or image URL
+  imageKey?: string; // S3 key for background image (webp)
+}
+
 export interface IAppLayout {
   header: {
     logoUrl?: string;
+    logoKey?: string;
     title?: string;
     subtitle?: string;
   };
+  background?: IAppBackground;
 }
 
 export interface IApp extends Document {
   workspaceId: mongoose.Types.ObjectId;
   name: string;
+  description?: string;
   status: "draft" | "published";
   tag: "generator" | "form";
   launchMode: "modal" | "new_tab";
   enabled: boolean;
+  allowAiImprove: boolean;
   layout: IAppLayout;
   fields: IAppField[];
   createdAt: Date;
@@ -64,6 +76,7 @@ const AppSchema: Schema = new Schema(
       index: true,
     },
     name: { type: String, required: true, trim: true },
+    description: { type: String, trim: true },
     status: {
       type: String,
       enum: ["draft", "published"],
@@ -80,11 +93,22 @@ const AppSchema: Schema = new Schema(
       default: "modal",
     },
     enabled: { type: Boolean, default: true },
+    allowAiImprove: { type: Boolean, default: false },
     layout: {
       header: {
         logoUrl: String,
+        logoKey: String,
         title: String,
         subtitle: String,
+      },
+      background: {
+        type: {
+          type: String,
+          enum: ["solid", "gradient", "image"],
+          default: "solid",
+        },
+        value: { type: String, default: "#ffffff" },
+        imageKey: String,
       },
     },
     fields: [FieldSchema],
