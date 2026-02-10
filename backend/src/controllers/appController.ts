@@ -3,8 +3,6 @@ import App, { IApp, IAppField } from '../models/App';
 import { sendError, sendSuccess } from '../utils/response';
 import { AIService } from '../services/aiService';
 import { getUploadUrl } from '../services/s3Service';
-import { uploadFile } from '../services/s3Service';
-import sharp from 'sharp';
 
 // --- CRUD ---
 
@@ -181,9 +179,18 @@ export const runApp = async (req: Request, res: Response) => {
         }
 
         if (app.tag === 'generator') {
-            // Build AI context from public values ONLY
-            let context = `App Name: ${app.name}\n`;
-            context += `Inputs:\n${JSON.stringify(publicValues, null, 2)}`;
+            // Build AI context from public (non-secret) values ONLY, using labels as keys
+            const labeledPublicValues: Record<string, any> = {};
+            for (const field of app.fields) {
+                if (field.type === 'message' || field.type === 'submit') continue;
+                if (field.isSecret) continue; // secrets never go to AI
+                const value = inputs[field.id];
+                if (value !== undefined) {
+                    labeledPublicValues[field.label || field.id] = value;
+                }
+            }
+
+            const context = `Inputs:\n${JSON.stringify(labeledPublicValues, null, 2)}`;
 
             let systemPrompt = `You are a helpful AI generator assistant.
 Your goal is to process the provided input and generate a clean, direct output based on the user's request.
@@ -302,59 +309,54 @@ export const deleteLogo = async (req: Request, res: Response) => {
     }
 };
 
-// --- BACKGROUND IMAGE ---
+// --- BACKGROUND ---
 
-export const uploadBackgroundImage = async (req: Request, res: Response) => {
+export const getBackgroundUploadUrl = async (req: Request, res: Response) => {
     try {
         const { appId } = req.params;
+        const { contentType } = req.body;
+
+        if (!contentType) return sendError(res, 'Content type required', 400);
 
         const app = await App.findOne({ _id: appId, workspaceId: req.workspace!._id });
         if (!app) return sendError(res, 'App not found', 404);
 
-        // Expect raw image data as base64 in body
-        const { imageData, contentType } = req.body;
-
-        if (!imageData) {
-            return sendError(res, 'Image data required', 400);
-        }
-
         const bucket = process.env.B2_BUCKET_NAME || '';
         if (!bucket) return sendError(res, 'Storage not configured', 500);
 
-        // Decode base64 and convert to WebP
-        const imageBuffer = Buffer.from(imageData, 'base64');
-        const webpBuffer = await sharp(imageBuffer)
-            .webp({ quality: 80 })
-            .resize({ width: 1920, withoutEnlargement: true })
-            .toBuffer();
-
         const key = `workspaces/${req.workspace!._id}/apps/${appId}/bg-${Date.now()}.webp`;
-
-        await uploadFile(bucket, key, webpBuffer, 'image/webp');
-
+        const uploadUrl = await getUploadUrl(bucket, key, contentType);
         const publicUrl = `https://${bucket}.s3.${process.env.B2_REGION}.backblazeb2.com/${key}`;
 
-        // Update app background
-        const updated = await App.findOneAndUpdate(
+        return sendSuccess(res, { uploadUrl, key, publicUrl }, 'Background upload URL generated');
+    } catch (error: any) {
+        return sendError(res, 'Failed to generate background upload URL', 500);
+    }
+};
+
+export const confirmBackground = async (req: Request, res: Response) => {
+    try {
+        const { appId } = req.params;
+        const { type, value, imageKey } = req.body;
+
+        if (!type || !value) return sendError(res, 'Type and value are required', 400);
+
+        const updateData: any = {
+            'layout.background.type': type,
+            'layout.background.value': value
+        };
+        if (imageKey) updateData['layout.background.imageKey'] = imageKey;
+
+        const app = await App.findOneAndUpdate(
             { _id: appId, workspaceId: req.workspace!._id },
-            {
-                $set: {
-                    'layout.background.type': 'image',
-                    'layout.background.value': publicUrl,
-                    'layout.background.imageKey': key
-                }
-            },
+            { $set: updateData },
             { new: true }
         );
 
-        return sendSuccess(res, {
-            publicUrl,
-            key,
-            app: updated
-        }, 'Background image uploaded');
+        if (!app) return sendError(res, 'App not found', 404);
+        return sendSuccess(res, app, 'Background updated');
     } catch (error: any) {
-        console.error('Background Upload Error:', error);
-        return sendError(res, 'Failed to upload background image', 500);
+        return sendError(res, 'Failed to update background', 500);
     }
 };
 

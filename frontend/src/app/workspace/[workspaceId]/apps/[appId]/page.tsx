@@ -3,7 +3,7 @@
 import { useState, useEffect, use, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Send, Sparkles, Copy, Check, Eye, EyeOff, Zap } from 'lucide-react';
+import { ArrowLeft, Send, Sparkles, Copy, Check, Zap, Code, FileText } from 'lucide-react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -24,7 +24,7 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
     const [submittedValues, setSubmittedValues] = useState<Record<string, SubmittedValue> | null>(null);
     const [aiImproved, setAiImproved] = useState(false);
     const [copied, setCopied] = useState(false);
-    const [revealedSecrets, setRevealedSecrets] = useState<Set<string>>(new Set());
+    const [viewMode, setViewMode] = useState<'rendered' | 'raw'>('rendered');
 
     const fetchApp = useCallback(async () => {
         try {
@@ -100,15 +100,6 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const toggleSecret = (fieldId: string) => {
-        setRevealedSecrets(prev => {
-            const next = new Set(prev);
-            if (next.has(fieldId)) next.delete(fieldId);
-            else next.add(fieldId);
-            return next;
-        });
-    };
-
     if (loading) return (
         <div className="min-h-screen flex items-center justify-center bg-surface-base">
             <div className="text-center">
@@ -140,7 +131,6 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
 
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8" style={app.launchMode === 'new_tab' ? bgStyle : undefined}>
-            {/* Overlay for image backgrounds */}
             {app.launchMode === 'new_tab' && bg?.type === 'image' && (
                 <div className="fixed inset-0 bg-black/20 -z-10" />
             )}
@@ -179,14 +169,42 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
                                          </span>
                                      )}
                                  </h3>
-                                 <button onClick={handleCopy} className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-xs font-bold uppercase">
-                                     {copied ? <Check size={14} /> : <Copy size={14} />}
-                                     {copied ? 'Copied' : 'Copy Text'}
-                                 </button>
+                                 <div className="flex items-center gap-2">
+                                     {/* View toggle */}
+                                     <div className="flex bg-white rounded-lg border border-blue-200 overflow-hidden">
+                                         <button
+                                             onClick={() => setViewMode('rendered')}
+                                             className={`px-2.5 py-1.5 text-[10px] font-bold flex items-center gap-1 transition-colors ${
+                                                 viewMode === 'rendered' ? 'bg-blue-600 text-white' : 'text-blue-600 hover:bg-blue-50'
+                                             }`}
+                                         >
+                                             <FileText size={10} /> Rendered
+                                         </button>
+                                         <button
+                                             onClick={() => setViewMode('raw')}
+                                             className={`px-2.5 py-1.5 text-[10px] font-bold flex items-center gap-1 transition-colors ${
+                                                 viewMode === 'raw' ? 'bg-blue-600 text-white' : 'text-blue-600 hover:bg-blue-50'
+                                             }`}
+                                         >
+                                             <Code size={10} /> Raw MD
+                                         </button>
+                                     </div>
+                                     <button onClick={handleCopy} className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-xs font-bold uppercase bg-white px-2.5 py-1.5 rounded-lg border border-blue-200">
+                                         {copied ? <Check size={12} /> : <Copy size={12} />}
+                                         {copied ? 'Copied' : 'Copy'}
+                                     </button>
+                                 </div>
                              </div>
-                             <div className="prose prose-sm max-w-none bg-white p-6 rounded-xl border border-blue-100 shadow-sm">
-                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{result}</ReactMarkdown>
-                             </div>
+
+                             {viewMode === 'rendered' ? (
+                                 <div className="prose prose-sm max-w-none bg-white p-6 rounded-xl border border-blue-100 shadow-sm">
+                                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{result}</ReactMarkdown>
+                                 </div>
+                             ) : (
+                                 <pre className="bg-gray-900 text-gray-100 p-6 rounded-xl border border-blue-100 shadow-sm text-sm font-mono whitespace-pre-wrap overflow-x-auto">
+                                     {result}
+                                 </pre>
+                             )}
 
                              {/* Submitted Values Summary */}
                              {submittedValues && Object.keys(submittedValues).length > 0 && (
@@ -197,25 +215,11 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
                                      <div className="mt-2 space-y-1.5">
                                          {Object.entries(submittedValues).map(([fieldId, sv]) => (
                                              <div key={fieldId} className="flex items-center justify-between bg-white/60 p-2.5 rounded-lg text-xs">
-                                                 <span className="font-bold text-text-primary flex items-center gap-1">
+                                                 <span className="font-bold text-text-primary">
                                                      {sv.label}
-                                                     {sv.isSecret && <EyeOff size={10} className="text-amber-500" />}
                                                  </span>
                                                  <span className="text-text-muted font-mono max-w-[200px] truncate">
-                                                     {sv.isSecret && !revealedSecrets.has(fieldId) ? (
-                                                         <button onClick={() => toggleSecret(fieldId)} className="text-amber-600 hover:text-amber-800 flex items-center gap-1">
-                                                             <Eye size={10} /> Reveal
-                                                         </button>
-                                                     ) : (
-                                                         <>
-                                                             {String(sv.value)}
-                                                             {sv.isSecret && (
-                                                                 <button onClick={() => toggleSecret(fieldId)} className="ml-1 text-amber-600">
-                                                                     <EyeOff size={10} />
-                                                                 </button>
-                                                             )}
-                                                         </>
-                                                     )}
+                                                     {String(sv.value)}
                                                  </span>
                                              </div>
                                          ))}
@@ -223,7 +227,7 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
                                  </details>
                              )}
 
-                             <button onClick={() => { setResult(null); setSubmittedValues(null); setAiImproved(false); }} className="mt-4 text-xs font-bold text-blue-600 hover:underline">
+                             <button onClick={() => { setResult(null); setSubmittedValues(null); setAiImproved(false); setViewMode('rendered'); }} className="mt-4 text-xs font-bold text-blue-600 hover:underline">
                                  Start Over
                              </button>
                         </div>
@@ -247,12 +251,11 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
                                                 <label className="block text-sm font-bold text-text-primary mb-2">
                                                     {field.label}
                                                     {field.required && <span className="text-red-500 ml-1">*</span>}
-                                                    {field.isSecret && <EyeOff size={12} className="inline ml-1.5 text-amber-500" />}
                                                 </label>
                                                 
                                                 {field.type === 'text' && (
                                                     <input
-                                                        type={field.isSecret ? 'password' : 'text'}
+                                                        type="text"
                                                         className="input-base w-full p-3 border border-border-light rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                                                         value={inputs[field.id] || ''}
                                                         onChange={e => setInputs({...inputs, [field.id]: e.target.value})}

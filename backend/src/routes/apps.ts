@@ -9,7 +9,8 @@ import {
     getLogoUploadUrl,
     confirmLogo,
     deleteLogo,
-    uploadBackgroundImage,
+    getBackgroundUploadUrl,
+    confirmBackground,
     updateBackground
 } from '../controllers/appController';
 import { protect } from '../middleware/auth';
@@ -38,7 +39,8 @@ router.post('/:appId/logo/confirm', authorize('owner', 'admin'), confirmLogo);
 router.delete('/:appId/logo', authorize('owner', 'admin'), deleteLogo);
 
 // Background management (admin-only)
-router.post('/:appId/background/upload', authorize('owner', 'admin'), uploadBackgroundImage);
+router.post('/:appId/background/upload-url', authorize('owner', 'admin'), getBackgroundUploadUrl);
+router.post('/:appId/background/confirm', authorize('owner', 'admin'), confirmBackground);
 router.put('/:appId/background', authorize('owner', 'admin'), updateBackground);
 
 export default router;
