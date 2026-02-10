@@ -3,12 +3,13 @@
 import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
-import { LayoutDashboard, BookOpen, MessageSquare, Bell, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, BookOpen, MessageSquare, Bell, Settings, LogOut, Box } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import PageLoader from '@/components/PageLoader';
 
 const navItems = [
     { name: 'Dashboard', href: '/workspace/dashboard', icon: LayoutDashboard, adminOnly: false },
+    { name: 'Apps', href: '/workspace/apps', icon: Box, adminOnly: false, needsId: true },
     { name: 'Knowledge Base', href: '/workspace/knowledge', icon: BookOpen, adminOnly: false },
     { name: 'AI RAG Console', href: '/workspace/chat', icon: MessageSquare, adminOnly: false },
     { name: 'Alerts', href: '/workspace/alerts', icon: Bell, adminOnly: false },
@@ -68,11 +69,17 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
 
                 <nav className="space-y-1">
                     {filteredNav.map((item) => {
-                        const isActive = pathname === item.href;
+                        let href = item.href;
+                        if ((item as any).needsId && currentWorkspace) {
+                            href = `/workspace/${currentWorkspace._id}/apps`;
+                        }
+
+                        const isActive = pathname === href || (href !== '/workspace/dashboard' && pathname.startsWith(href));
+                        
                         return (
                             <Link
                                 key={item.name}
-                                href={item.href}
+                                href={href}
                                 className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-black transition-all ${isActive
                                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
                                     : 'text-text-secondary hover:bg-white hover:text-text-primary border border-transparent hover:border-border-light'
