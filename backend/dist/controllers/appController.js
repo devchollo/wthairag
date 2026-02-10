@@ -23,7 +23,7 @@ const createApp = async (req, res) => {
             layout: { header: {} },
             fields: []
         });
-        return (0, response_1.sendSuccess)(res, 'App created successfully', app);
+        return (0, response_1.sendSuccess)(res, app, 'App created successfully');
     }
     catch (error) {
         return (0, response_1.sendError)(res, error.message || 'Failed to create app', 500);
@@ -38,7 +38,7 @@ const getApps = async (req, res) => {
             query.status = 'published';
         }
         const apps = await App_1.default.find(query).sort({ updatedAt: -1 });
-        return (0, response_1.sendSuccess)(res, 'Apps retrieved', apps);
+        return (0, response_1.sendSuccess)(res, apps, 'Apps retrieved');
     }
     catch (error) {
         return (0, response_1.sendError)(res, 'Failed to fetch apps', 500);
@@ -59,7 +59,7 @@ const getApp = async (req, res) => {
                 return (0, response_1.sendError)(res, 'App not found', 404);
             }
         }
-        return (0, response_1.sendSuccess)(res, 'App details', app);
+        return (0, response_1.sendSuccess)(res, app, 'App details');
     }
     catch (error) {
         return (0, response_1.sendError)(res, 'Failed to fetch app', 500);
@@ -89,7 +89,7 @@ const updateApp = async (req, res) => {
         if (!app) {
             return (0, response_1.sendError)(res, 'App not found', 404);
         }
-        return (0, response_1.sendSuccess)(res, 'App updated', app);
+        return (0, response_1.sendSuccess)(res, app, 'App updated');
     }
     catch (error) {
         return (0, response_1.sendError)(res, error.message || 'Failed to update app', 500);
@@ -103,7 +103,7 @@ const deleteApp = async (req, res) => {
         if (!app) {
             return (0, response_1.sendError)(res, 'App not found', 404);
         }
-        return (0, response_1.sendSuccess)(res, 'App deleted');
+        return (0, response_1.sendSuccess)(res, null, 'App deleted');
     }
     catch (error) {
         return (0, response_1.sendError)(res, 'Failed to delete app', 500);
@@ -149,10 +149,10 @@ const runApp = async (req, res) => {
         if (app.tag === 'form') {
             // Form mode: Just echo success 
             // (Future: Save submission)
-            return (0, response_1.sendSuccess)(res, 'Form submitted successfully', {
+            return (0, response_1.sendSuccess)(res, {
                 processed: true,
                 mode: 'form'
-            });
+            }, 'Form submitted successfully');
         }
         if (app.tag === 'generator') {
             // Generator mode: Run AI
@@ -171,10 +171,10 @@ IMPORTANT RULES:
 `;
             const aiResponse = await aiService_1.AIService.getQueryResponse("Generate the result based on these inputs.", context, req.workspace._id.toString(), systemPrompt, 2000 // Max tokens
             );
-            return (0, response_1.sendSuccess)(res, 'Generated successfully', {
+            return (0, response_1.sendSuccess)(res, {
                 resultText: aiResponse.answer,
                 mode: 'generator'
-            });
+            }, 'Generated successfully');
         }
         return (0, response_1.sendError)(res, 'Invalid app tag', 500);
     }
@@ -201,22 +201,12 @@ const getLogoUploadUrl = async (req, res) => {
         if (!bucket)
             return (0, response_1.sendError)(res, 'Storage not configured', 500);
         const uploadUrl = await (0, s3Service_1.getUploadUrl)(bucket, key, contentType);
-        // B2/S3 usually constructs public URL like https://<bucket>.<endpoint>/<key>
-        // Or if using a CDN/custom domain. For now, we assume direct B2 URL or standard S3 structure.
-        // But since we use s3Service, let's just return the key and let the client know where to fetch or constructor the URL if needed.
-        // Actually, for display, we likely need a public URL. 
-        // If the bucket is private, we'd need a presigned GET url. If public, just the URL.
-        // Let's assume public bucket for assets like logos, or we generate a long-lived presigned GET url?
-        // The implementation plan says "Browser uploads directly".
-        // Let's return the key. The 'confirm' step can construct the full URL if needed or we just store the Key and use a 'getFile' endpoint or Pre-signed GET.
-        // However, requirements say "Store only: logoUrl, storage key".
-        // Let's assume we can construct the public URL.
         const publicUrl = `https://${bucket}.s3.${process.env.B2_REGION}.backblazeb2.com/${key}`;
-        return (0, response_1.sendSuccess)(res, 'Upload URL generated', {
+        return (0, response_1.sendSuccess)(res, {
             uploadUrl,
             key,
-            publicUrl, // Optimistic public URL, client might need to adjust based on actual B2 config
-        });
+            publicUrl,
+        }, 'Upload URL generated');
     }
     catch (error) {
         return (0, response_1.sendError)(res, 'Failed to generate upload URL', 500);
@@ -232,7 +222,7 @@ const confirmLogo = async (req, res) => {
         const app = await App_1.default.findOneAndUpdate({ _id: appId, workspaceId: req.workspace._id }, { $set: { 'layout.header.logoUrl': logoUrl } }, { new: true });
         if (!app)
             return (0, response_1.sendError)(res, 'App not found', 404);
-        return (0, response_1.sendSuccess)(res, 'Logo updated', app);
+        return (0, response_1.sendSuccess)(res, app, 'Logo updated');
     }
     catch (error) {
         return (0, response_1.sendError)(res, 'Failed to confirm logo', 500);
@@ -245,7 +235,7 @@ const deleteLogo = async (req, res) => {
         const app = await App_1.default.findOneAndUpdate({ _id: appId, workspaceId: req.workspace._id }, { $unset: { 'layout.header.logoUrl': 1 } }, { new: true });
         if (!app)
             return (0, response_1.sendError)(res, 'App not found', 404);
-        return (0, response_1.sendSuccess)(res, 'Logo removed', app);
+        return (0, response_1.sendSuccess)(res, app, 'Logo removed');
     }
     catch (error) {
         return (0, response_1.sendError)(res, 'Failed to remove logo', 500);
