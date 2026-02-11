@@ -38,7 +38,7 @@ It is designed for teams and individuals who want:
 
 ### 1) Clone the repository
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/devchollo/wthairag.git
 cd wthairag
 ```
 
@@ -139,4 +139,5 @@ Contributions are welcome and appreciated.
 
 ## License
 
-Add your license in a `LICENSE` file (for example MIT) and reference it here.
+MIT
+
