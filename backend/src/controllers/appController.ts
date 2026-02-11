@@ -598,8 +598,9 @@ export const runApp = async (req: Request, res: Response) => {
         }
 
         const inputs = parseRawInputs(req.body?.inputs);
+        const filesByFieldId = resolveFilesByFieldId(req);
 
-        const prepared = prepareSubmission(app.fields, inputs, {});
+        const prepared = prepareSubmission(app.fields, inputs, filesByFieldId);
         if (prepared.error || !prepared.data) {
             return sendError(res, prepared.error || 'Invalid submission', 400);
         }
@@ -607,7 +608,7 @@ export const runApp = async (req: Request, res: Response) => {
         const { allValues, labeledValues, rawValues } = prepared.data;
 
         if (app.tag === 'form') {
-            return processAndSendFormSubmission(req, res, appId, inputs, {});
+            return processAndSendFormSubmission(req, res, appId, inputs, filesByFieldId);
         }
 
         if (app.tag === 'generator') {
