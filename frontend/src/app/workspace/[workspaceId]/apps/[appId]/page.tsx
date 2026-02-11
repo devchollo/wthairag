@@ -144,7 +144,7 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
                 <div className="fixed inset-0 bg-black/20 -z-10" />
             )}
 
-            <div className="w-1/2 mx-auto">
+            <div className="w-full lg:w-1/2 mx-auto">
                 <div className="mb-6 flex items-center justify-between">
                      <Link href={`/workspace/${workspaceId}/apps`} className="text-text-muted hover:text-text-primary flex items-center gap-2 text-sm font-bold backdrop-blur-sm bg-white/70 px-3 py-1.5 rounded-lg">
                         <ArrowLeft size={16} /> Back to Apps
