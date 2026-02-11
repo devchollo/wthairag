@@ -25,18 +25,29 @@ export const sendEmail = async ({ to, subject, html, text, cc = [], bcc = [], at
             return false;
         }
 
+        const payload: Record<string, unknown> = {
+            sender: { name: senderName, email: senderEmail },
+            to: (Array.isArray(to) ? to : [to]).map((email) => ({ email })),
+            subject: subject,
+            htmlContent: html,
+            textContent: text || html.replace(/<[^>]*>?/gm, ''),
+        };
+
+        if (cc.length > 0) {
+            payload.cc = cc.map((email) => ({ email }));
+        }
+
+        if (bcc.length > 0) {
+            payload.bcc = bcc.map((email) => ({ email }));
+        }
+
+        if (attachments.length > 0) {
+            payload.attachment = attachments;
+        }
+
         const response = await axios.post(
             'https://api.brevo.com/v3/smtp/email',
-            {
-                sender: { name: senderName, email: senderEmail },
-                to: (Array.isArray(to) ? to : [to]).map((email) => ({ email })),
-                cc: cc.map((email) => ({ email })),
-                bcc: bcc.map((email) => ({ email })),
-                subject: subject,
-                htmlContent: html,
-                textContent: text || html.replace(/<[^>]*>?/gm, ''),
-                attachment: attachments,
-            },
+            payload,
             {
                 headers: {
                     'accept': 'application/json',
@@ -110,10 +121,11 @@ export const sendFormSubmissionEmail = async ({
     renderedTextBody,
     attachments = [],
 }: FormSubmissionEmailOptions) => {
-    const headerLogo = appLogoUrl
+    const normalizedAppLogoUrl = appLogoUrl?.trim();
+    const headerLogo = normalizedAppLogoUrl
         ? `
             <div style="text-align: center; margin-bottom: 20px;">
-                <img src="${appLogoUrl}" alt="${appName}" style="max-width: 220px; max-height: 120px; width: auto; height: auto;" />
+                <img src="${normalizedAppLogoUrl}" alt="${appName} logo" style="max-width: 220px; max-height: 120px; width: auto; height: auto;" />
             </div>
         `
         : '';
