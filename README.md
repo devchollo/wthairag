@@ -139,4 +139,5 @@ Contributions are welcome and appreciated.
 
 ## License
 
+MIT
 
