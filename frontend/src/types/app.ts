@@ -21,6 +21,13 @@ export interface IAppFormSettings {
     improveWithAi: boolean;
 }
 
+
+export interface IAppPublicShare {
+    enabled: boolean;
+    token?: string;
+    expiresAt?: string | null;
+}
+
 export interface IAppBackground {
     type: 'solid' | 'gradient' | 'image';
     value: string;
@@ -48,6 +55,7 @@ export interface IApp {
     enabled: boolean;
     allowAiImprove: boolean;
     formSettings?: IAppFormSettings;
+    publicShare?: IAppPublicShare;
     layout: IAppLayout;
     fields: IAppField[];
     createdAt: string;

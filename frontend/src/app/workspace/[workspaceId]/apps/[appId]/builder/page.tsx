@@ -38,7 +38,12 @@ const withFormDefaults = (appData: IApp): IApp => ({
         subject: appData.formSettings?.subject || 'New Form Submission',
         anonymousSubmissions: appData.formSettings?.anonymousSubmissions || false,
         improveWithAi: appData.formSettings?.improveWithAi || false,
-    }
+    },
+    publicShare: {
+        enabled: appData.publicShare?.enabled || false,
+        token: appData.publicShare?.token || '',
+        expiresAt: appData.publicShare?.expiresAt || null,
+    },
 });
 
 export default function AppBuilderPage({ params }: { params: Promise<{ workspaceId: string; appId: string }> }) {
@@ -120,6 +125,7 @@ export default function AppBuilderPage({ params }: { params: Promise<{ workspace
                     launchMode: app.launchMode,
                     allowAiImprove: app.allowAiImprove,
                     formSettings: app.formSettings,
+                    publicShare: app.publicShare,
                     layout: app.layout,
                     fields: finalFields,
                 }),
