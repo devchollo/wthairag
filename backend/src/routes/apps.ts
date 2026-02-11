@@ -6,6 +6,7 @@ import {
     updateApp,
     deleteApp,
     runApp,
+    submitFormApp,
     getLogoUploadUrl,
     confirmLogo,
     uploadLogo,
@@ -22,6 +23,13 @@ import multer from 'multer';
 
 const router = express.Router({ mergeParams: true });
 const upload = multer({ storage: multer.memoryStorage() });
+const formSubmitUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 15 * 1024 * 1024,
+        files: 10,
+    },
+});
 
 // All routes require auth and workspace context
 router.use(protect);
@@ -31,6 +39,7 @@ router.use(workspaceOverlay);
 router.get('/', getApps);
 router.get('/:appId', getApp);
 router.post('/:appId/run', aiLimiter, runApp);
+router.post('/:appId/submit', formSubmitUpload.any(), aiLimiter, submitFormApp);
 
 // Admin-only routes
 router.post('/', authorize('owner', 'admin'), createApp);

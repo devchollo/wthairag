@@ -29,6 +29,18 @@ import { SortableField } from '@/components/apps/SortableField';
 import { FieldInspector } from '@/components/apps/FieldInspector';
 import { AppSettingsPanel } from '@/components/apps/AppSettingsPanel';
 
+const withFormDefaults = (appData: IApp): IApp => ({
+    ...appData,
+    formSettings: {
+        recipients: appData.formSettings?.recipients || [],
+        cc: appData.formSettings?.cc || [],
+        bcc: appData.formSettings?.bcc || [],
+        subject: appData.formSettings?.subject || 'New Form Submission',
+        anonymousSubmissions: appData.formSettings?.anonymousSubmissions || false,
+        improveWithAi: appData.formSettings?.improveWithAi || false,
+    }
+});
+
 export default function AppBuilderPage({ params }: { params: Promise<{ workspaceId: string; appId: string }> }) {
     const { workspaceId, appId } = use(params);
     const { user, memberships } = useAuth();
@@ -60,7 +72,7 @@ export default function AppBuilderPage({ params }: { params: Promise<{ workspace
             });
             if (!res.ok) throw new Error('Failed to fetch app');
             const data = await res.json();
-            setApp(data.data);
+            setApp(withFormDefaults(data.data));
             
             let fetchedFields: IAppField[] = data.data.fields || [];
             const hasSubmit = fetchedFields.some((f: IAppField) => f.type === 'submit');
@@ -106,6 +118,7 @@ export default function AppBuilderPage({ params }: { params: Promise<{ workspace
                     tag: app.tag,
                     launchMode: app.launchMode,
                     allowAiImprove: app.allowAiImprove,
+                    formSettings: app.formSettings,
                     layout: app.layout,
                     fields: finalFields,
                 }),
@@ -144,6 +157,7 @@ export default function AppBuilderPage({ params }: { params: Promise<{ workspace
             isSecret: false,
             ...(type === 'message' ? { messageHtml: '<p>Enter instructions here...</p>' } : {}),
             ...((type === 'radio' || type === 'list') ? { options: [{ label: 'Option 1', value: '1' }, { label: 'Option 2', value: '2' }] } : {}),
+            ...(type === 'file' ? { acceptedFileTypes: '.pdf,.png,.jpg,.jpeg,.doc,.docx' } : {}),
         };
         
         const submitIndex = fields.findIndex(f => f.type === 'submit');
@@ -304,6 +318,7 @@ export default function AppBuilderPage({ params }: { params: Promise<{ workspace
                                             <SidebarItem type="number" label="Number" />
                                             <SidebarItem type="list" label="Dropdown List" />
                                             <SidebarItem type="date" label="Date Picker" />
+                                            <SidebarItem type="file" label="File Upload" />
                                             <SidebarItem type="checkbox" label="Checkbox" />
                                             <SidebarItem type="radio" label="Radio Group" />
                                             <SidebarItem type="message" label="Info Message" />

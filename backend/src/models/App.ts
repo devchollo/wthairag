@@ -1,6 +1,18 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-export type AppFieldType = "text" | "textarea" | "radio" | "checkbox" | "message" | "submit" | "email" | "phone" | "number" | "list" | "date";
+export type AppFieldType =
+  | "text"
+  | "textarea"
+  | "radio"
+  | "checkbox"
+  | "message"
+  | "submit"
+  | "email"
+  | "phone"
+  | "number"
+  | "list"
+  | "date"
+  | "file";
 
 export interface IAppField {
   id: string;
@@ -8,9 +20,19 @@ export interface IAppField {
   label?: string;
   required?: boolean;
   isSecret?: boolean;
+  acceptedFileTypes?: string;
   options?: { label: string; value: string }[];
   messageHtml?: string;
   submitText?: string;
+}
+
+export interface IAppFormSettings {
+  recipients: string[];
+  cc: string[];
+  bcc: string[];
+  subject: string;
+  anonymousSubmissions: boolean;
+  improveWithAi: boolean;
 }
 
 export interface IAppBackground {
@@ -38,6 +60,7 @@ export interface IApp extends Document {
   launchMode: "modal" | "new_tab";
   enabled: boolean;
   allowAiImprove: boolean;
+  formSettings: IAppFormSettings;
   layout: IAppLayout;
   fields: IAppField[];
   createdAt: Date;
@@ -49,12 +72,13 @@ const FieldSchema = new Schema(
     id: { type: String, required: true },
     type: {
       type: String,
-      enum: ["text", "textarea", "radio", "checkbox", "message", "submit", "email", "phone", "number", "list", "date"],
+      enum: ["text", "textarea", "radio", "checkbox", "message", "submit", "email", "phone", "number", "list", "date", "file"],
       required: true,
     },
     label: { type: String },
     required: { type: Boolean, default: false },
     isSecret: { type: Boolean, default: false },
+    acceptedFileTypes: { type: String },
     options: [
       {
         label: { type: String },
@@ -94,6 +118,14 @@ const AppSchema: Schema = new Schema(
     },
     enabled: { type: Boolean, default: true },
     allowAiImprove: { type: Boolean, default: false },
+    formSettings: {
+      recipients: [{ type: String, trim: true, lowercase: true }],
+      cc: [{ type: String, trim: true, lowercase: true }],
+      bcc: [{ type: String, trim: true, lowercase: true }],
+      subject: { type: String, default: "New Form Submission", trim: true },
+      anonymousSubmissions: { type: Boolean, default: false },
+      improveWithAi: { type: Boolean, default: false },
+    },
     layout: {
       header: {
         logoUrl: String,

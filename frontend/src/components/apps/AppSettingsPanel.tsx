@@ -43,10 +43,26 @@ export function AppSettingsPanel({ app, workspaceId, onUpdate, onSave, saving }:
     const bgInputRef = useRef<HTMLInputElement>(null);
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const formSettings = {
+        recipients: app.formSettings?.recipients || [],
+        cc: app.formSettings?.cc || [],
+        bcc: app.formSettings?.bcc || [],
+        subject: app.formSettings?.subject || 'New Form Submission',
+        anonymousSubmissions: app.formSettings?.anonymousSubmissions || false,
+        improveWithAi: app.formSettings?.improveWithAi || false,
+    };
 
     const toggleSection = (key: string) => {
         setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
     };
+
+    const textToEmails = (value: string) =>
+        value
+            .split(/[\n,;]+/)
+            .map((v) => v.trim().toLowerCase())
+            .filter(Boolean);
+
+    const emailsToText = (list: string[]) => list.join('\n');
 
     // --- Logo Upload ---
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -450,6 +466,124 @@ export function AppSettingsPanel({ app, workspaceId, onUpdate, onSave, saving }:
                             <p className="text-[10px] text-purple-700 leading-tight">
                                 When enabled, AI will automatically refine and improve the generated output for better quality.
                             </p>
+                        </div>
+                    )}
+
+                    {app.tag === 'form' && (
+                        <div className="space-y-3">
+                            <div>
+                                <label className="text-xs font-bold block mb-1 text-text-primary">Recipients (To)</label>
+                                <textarea
+                                    className="w-full border border-border-light rounded-lg p-2.5 text-xs focus:border-blue-500 outline-none transition-all h-20 resize-none font-mono"
+                                    value={emailsToText(formSettings.recipients)}
+                                    onChange={(e) =>
+                                        onUpdate({
+                                            formSettings: {
+                                                ...formSettings,
+                                                recipients: textToEmails(e.target.value),
+                                            },
+                                        })
+                                    }
+                                    placeholder="admin@company.com"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold block mb-1 text-text-primary">CC</label>
+                                <textarea
+                                    className="w-full border border-border-light rounded-lg p-2.5 text-xs focus:border-blue-500 outline-none transition-all h-16 resize-none font-mono"
+                                    value={emailsToText(formSettings.cc)}
+                                    onChange={(e) =>
+                                        onUpdate({
+                                            formSettings: {
+                                                ...formSettings,
+                                                cc: textToEmails(e.target.value),
+                                            },
+                                        })
+                                    }
+                                    placeholder="cc@company.com"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold block mb-1 text-text-primary">BCC</label>
+                                <textarea
+                                    className="w-full border border-border-light rounded-lg p-2.5 text-xs focus:border-blue-500 outline-none transition-all h-16 resize-none font-mono"
+                                    value={emailsToText(formSettings.bcc)}
+                                    onChange={(e) =>
+                                        onUpdate({
+                                            formSettings: {
+                                                ...formSettings,
+                                                bcc: textToEmails(e.target.value),
+                                            },
+                                        })
+                                    }
+                                    placeholder="audit@company.com"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold block mb-1 text-text-primary">Email Subject</label>
+                                <input
+                                    type="text"
+                                    className="w-full border border-border-light rounded-lg p-2.5 text-sm focus:border-blue-500 outline-none transition-all"
+                                    value={formSettings.subject}
+                                    onChange={(e) =>
+                                        onUpdate({
+                                            formSettings: {
+                                                ...formSettings,
+                                                subject: e.target.value,
+                                            },
+                                        })
+                                    }
+                                />
+                            </div>
+
+                            <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                <label className="flex items-center gap-2 text-sm cursor-pointer select-none mb-1">
+                                    <input
+                                        type="checkbox"
+                                        className="w-4 h-4 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+                                        checked={formSettings.anonymousSubmissions}
+                                        onChange={(e) =>
+                                            onUpdate({
+                                                formSettings: {
+                                                    ...formSettings,
+                                                    anonymousSubmissions: e.target.checked,
+                                                },
+                                            })
+                                        }
+                                    />
+                                    <span className="font-bold text-blue-800">Anonymous submissions</span>
+                                </label>
+                                <p className="text-[10px] text-blue-700 leading-tight">
+                                    Sender identity is omitted from outbound submission emails.
+                                </p>
+                            </div>
+
+                            <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                                <label className="flex items-center gap-2 text-sm cursor-pointer select-none mb-1">
+                                    <input
+                                        type="checkbox"
+                                        className="w-4 h-4 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500"
+                                        checked={formSettings.improveWithAi}
+                                        onChange={(e) =>
+                                            onUpdate({
+                                                formSettings: {
+                                                    ...formSettings,
+                                                    improveWithAi: e.target.checked,
+                                                },
+                                            })
+                                        }
+                                    />
+                                    <span className="font-bold text-indigo-800 flex items-center gap-1">
+                                        <Sparkles size={12} /> Improve submission text with AI
+                                    </span>
+                                </label>
+                                <p className="text-[10px] text-indigo-700 leading-tight">
+                                    Secret fields stay masked from AI and are restored before email is sent.
+                                </p>
+                            </div>
                         </div>
                     )}
                 </div>
