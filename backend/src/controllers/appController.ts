@@ -328,11 +328,14 @@ const resolveFilesByFieldId = (req: Request): Record<string, Express.Multer.File
 const processAndSendFormSubmission = async (
     req: Request,
     res: Response,
-    appId: string,
+    appId: string | string[],
     inputs: Record<string, any>,
     filesByFieldId: Record<string, Express.Multer.File>
 ) => {
-    const app = await App.findOne({ _id: appId, workspaceId: req.workspace!._id });
+    const resolvedAppId = Array.isArray(appId) ? appId[0] : appId;
+    if (!resolvedAppId) return sendError(res, 'App ID required', 400);
+
+    const app = await App.findOne({ _id: resolvedAppId, workspaceId: req.workspace!._id });
 
     if (!app) return sendError(res, 'App not found', 404);
     if (app.tag !== 'form') return sendError(res, 'Only form apps can be submitted here', 400);
