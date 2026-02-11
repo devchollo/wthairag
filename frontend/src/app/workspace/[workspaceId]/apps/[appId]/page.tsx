@@ -83,7 +83,7 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
             const hasFileFields = (app?.fields || []).some((field) => field.type === 'file');
-            const endpoint = `${apiUrl}/api/workspaces/${workspaceId}/apps/${appId}/run`;
+            const endpoint = `${apiUrl}/api/workspaces/${workspaceId}/apps/${appId}/${app?.tag === 'form' ? 'submit' : 'run'}`;
 
             const requestInit: RequestInit = hasFileFields
                 ? (() => {

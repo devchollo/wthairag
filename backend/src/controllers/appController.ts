@@ -370,8 +370,6 @@ const processAndSendFormSubmission = async (
     }
 
     const aiAllowed = app.formSettings?.improveWithAi === true;
-    const workspaceId = req.workspace!._id.toString();
-
     const baseMarkdown = buildNoAiMarkdownResponse(
         Object.fromEntries(
             Object.entries(allValues).map(([fieldId, fieldData]) => {
@@ -393,23 +391,9 @@ const processAndSendFormSubmission = async (
     let aiImproved = false;
 
     if (aiAllowed) {
-        const improvePrompt = `You improve form submission text for grammar and clarity.
-Rules:
-1. Keep all "## Header" sections.
-2. Keep every bullet item.
-3. Preserve placeholders like [[SECRET_VALUE:...]] exactly.
-4. Return only improved markdown text.`;
-
-        const improved = await AIService.getQueryResponse(
-            'Improve this form submission message while preserving structure and placeholders.',
-            baseMarkdown,
-            workspaceId,
-            improvePrompt,
-            1800
-        );
-
-        if (improved.answer && improved.answer.trim().length > 0) {
-            renderedMarkdown = improved.answer;
+        const improvedMarkdown = await AIService.improveFormSubmissionMarkdown(baseMarkdown);
+        if (improvedMarkdown) {
+            renderedMarkdown = improvedMarkdown;
             aiImproved = true;
         }
     }

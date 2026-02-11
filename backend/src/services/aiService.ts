@@ -21,6 +21,7 @@ export class AIService {
     private static geminiKey = process.env.GEMINI_API_KEY;
     private static readonly DEFAULT_CHAT_MODEL = 'gpt-4o';
     private static readonly HARD_CHAT_MODEL = 'gpt-4.1-mini';
+    private static readonly FORM_CHAT_MODEL = 'gpt-4o-mini';
 
     private static estimateTokens(text: string) {
         return Math.ceil(text.length / 4);
@@ -140,6 +141,55 @@ export class AIService {
         } catch (error: any) {
             console.error('Embedding Error:', error.response?.data || error.message);
             throw new Error('Failed to generate embedding');
+        }
+    }
+
+
+    static async improveFormSubmissionMarkdown(markdown: string): Promise<string | null> {
+        if (!this.openaiKey) {
+            console.warn('Form AI improve skipped: OpenAI API Key is not configured.');
+            return null;
+        }
+
+        const systemPrompt = `You improve form submission text for grammar and clarity.
+Rules:
+1. Keep all "## Header" sections.
+2. Keep every bullet item.
+3. Preserve placeholders like [[SECRET_VALUE:...]] exactly.
+4. Return only improved markdown text.`;
+
+        try {
+            const response = await axios.post(
+                'https://api.openai.com/v1/chat/completions',
+                {
+                    model: this.FORM_CHAT_MODEL,
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        {
+                            role: 'user',
+                            content: `Improve this form submission message while preserving structure and placeholders.\n\n${markdown}`
+                        }
+                    ],
+                    temperature: 0.1,
+                    max_tokens: 1800
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${this.openaiKey}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            const answer = response.data?.choices?.[0]?.message?.content;
+            if (typeof answer !== 'string' || answer.trim().length === 0) {
+                return null;
+            }
+
+            return answer;
+        } catch (error: any) {
+            console.warn('Form AI improve failed:', error?.response?.data || error?.message || error);
+            return null;
         }
     }
 
