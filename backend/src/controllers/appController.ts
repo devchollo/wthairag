@@ -136,6 +136,56 @@ export const deleteApp = async (req: Request, res: Response) => {
 
 // --- RUNTIME ---
 
+type SubmittedFieldValue = {
+    label: string;
+    value: any;
+    isSecret: boolean;
+};
+
+const normalizeMarkdownText = (value: unknown): string => {
+    if (value === null || value === undefined) return '_No value provided_';
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        return trimmed.length > 0 ? trimmed : '_No value provided_';
+    }
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    if (typeof value === 'number' || typeof value === 'bigint') return String(value);
+    if (Array.isArray(value)) {
+        if (value.length === 0) return '_No value provided_';
+        return value.map((item) => normalizeMarkdownText(item)).join(', ');
+    }
+    if (typeof value === 'object') {
+        const entries = Object.entries(value as Record<string, unknown>);
+        if (entries.length === 0) return '_No value provided_';
+        return entries.map(([key, val]) => `${key}: ${normalizeMarkdownText(val)}`).join('; ');
+    }
+    return String(value);
+};
+
+const toMarkdownBullets = (value: unknown): string[] => {
+    if (Array.isArray(value)) {
+        if (value.length === 0) return ['- _No value provided_'];
+        return value.map((item) => `- ${normalizeMarkdownText(item)}`);
+    }
+
+    if (value !== null && typeof value === 'object') {
+        const entries = Object.entries(value as Record<string, unknown>);
+        if (entries.length === 0) return ['- _No value provided_'];
+        return entries.map(([key, val]) => `- ${key}: ${normalizeMarkdownText(val)}`);
+    }
+
+    return [`- ${normalizeMarkdownText(value)}`];
+};
+
+const buildNoAiMarkdownResponse = (allValues: Record<string, SubmittedFieldValue>): string => {
+    const sections = Object.values(allValues).map((fieldData) => {
+        const safeLabel = (fieldData.label || 'Untitled').replace(/\r?\n/g, ' ').trim();
+        const bullets = toMarkdownBullets(fieldData.value).join('\n');
+        return `## ${safeLabel}\n${bullets}`;
+    });
+    return sections.join('\n\n');
+};
+
 export const runApp = async (req: Request, res: Response) => {
     try {
         const { appId } = req.params;
@@ -155,7 +205,7 @@ export const runApp = async (req: Request, res: Response) => {
         }
 
         // Collect ALL input values and separate for AI context
-        const allValues: Record<string, any> = {};
+        const allValues: Record<string, SubmittedFieldValue> = {};
         const labeledValues: Record<string, any> = {};
 
         for (const field of app.fields) {
@@ -181,6 +231,11 @@ export const runApp = async (req: Request, res: Response) => {
             }
         }
 
+        const rawValues = Object.fromEntries(
+            Object.entries(allValues).map(([fieldId, fieldData]) => [fieldId, fieldData.value])
+        );
+        const aiAllowed = app.allowAiImprove === true;
+
         if (app.tag === 'form') {
             return sendSuccess(res, {
                 processed: true,
@@ -189,13 +244,9 @@ export const runApp = async (req: Request, res: Response) => {
             }, 'Form submitted successfully');
         }
 
-        if (app.tag === 'generator') {
+        if (app.tag === 'generator' && aiAllowed) {
             const context = `Inputs:\n${JSON.stringify(labeledValues, null, 2)}`;
             const workspaceId = req.workspace!._id.toString();
-            const allowAiImprove = app.allowAiImprove === true;
-            const rawValues = Object.fromEntries(
-                Object.entries(allValues).map(([fieldId, fieldData]) => [fieldId, fieldData.value])
-            );
 
             const baseSystemPrompt = `You are a helpful AI generator assistant.
 Your goal is to process the provided input and generate a clean, direct output based on the user's request.
@@ -210,17 +261,16 @@ IMPORTANT RULES:
             let resultText = '';
             let aiImproved = false;
 
-            if (allowAiImprove) {
-                const draftResponse = await AIService.getQueryResponse(
-                    "Generate the result based on these inputs.",
-                    context,
-                    workspaceId,
-                    baseSystemPrompt,
-                    2000
-                );
-                resultText = draftResponse.answer;
+            const draftResponse = await AIService.getQueryResponse(
+                "Generate the result based on these inputs.",
+                context,
+                workspaceId,
+                baseSystemPrompt,
+                2000
+            );
+            resultText = draftResponse.answer;
 
-                const improvementPrompt = `
+            const improvementPrompt = `
 You are an expert editor and robust AI assistant.
 Your task is to IMPROVE the provided text for grammar, clarity, structure, and professional polish.
 
@@ -230,19 +280,15 @@ CRITICAL INSTRUCTIONS:
 3. STRICTLY PRESERVE any "[[SECRET_VALUE:...]]" placeholders exactly as they appear. Do not modify or remove them.
 4. Return ONLY the improved text.
 `;
-                const improvedResponse = await AIService.getQueryResponse(
-                    "Improve this text while preserving placeholders/headers.",
-                    resultText,
-                    workspaceId,
-                    improvementPrompt,
-                    2000
-                );
-                resultText = improvedResponse.answer;
-                aiImproved = true;
-            } else {
-                // Explicit no-AI path: send raw values back to frontend only.
-                resultText = '';
-            }
+            const improvedResponse = await AIService.getQueryResponse(
+                "Improve this text while preserving placeholders/headers.",
+                resultText,
+                workspaceId,
+                improvementPrompt,
+                2000
+            );
+            resultText = improvedResponse.answer;
+            aiImproved = true;
 
             // Post-processing: Replace Secret Placeholders with Actual Values
             // We do a global replace for each secret field found in allValues
@@ -260,6 +306,20 @@ CRITICAL INSTRUCTIONS:
                 rawValues,
                 mode: 'generator',
                 aiImproved,
+                aiAllowed,
+                submittedValues: allValues
+            }, 'Generated successfully');
+        }
+
+        if (app.tag === 'generator' && !aiAllowed) {
+            const resultText = buildNoAiMarkdownResponse(allValues);
+
+            return sendSuccess(res, {
+                resultText,
+                rawValues,
+                mode: 'generator',
+                aiImproved: false,
+                aiAllowed,
                 submittedValues: allValues
             }, 'Generated successfully');
         }
