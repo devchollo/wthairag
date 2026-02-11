@@ -148,7 +148,7 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
             </aside>
 
             <main className="flex-1 p-6 lg:p-10 bg-white transition-all duration-300">
-                <div className={`mx-auto animate-in fade-in slide-in-from-bottom-2 duration-400 ${collapsed ? 'max-w-6xl' : 'max-w-5xl'}`}>
+                <div className="mx-auto animate-in fade-in slide-in-from-bottom-2 duration-400">
                     {children}
                 </div>
             </main>
