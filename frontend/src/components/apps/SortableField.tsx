@@ -18,13 +18,18 @@ export function SortableField({ field, isSelected, onSelect, onDelete }: Sortabl
         listeners,
         setNodeRef,
         transform,
-        transition,
         isDragging
-    } = useSortable({ id: field.id });
+    } = useSortable({
+        id: field.id,
+        transition: {
+            duration: 120,
+            easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+        },
+    });
 
     const style = {
         transform: CSS.Transform.toString(transform),
-        transition,
+        transition: isDragging ? 'none' : undefined,
         opacity: isDragging ? 0.5 : 1,
     };
 
@@ -40,7 +45,7 @@ export function SortableField({ field, isSelected, onSelect, onDelete }: Sortabl
                 style={style}
                 onClick={() => onSelect(field.id)}
                 className={`
-                    p-4 rounded-lg border-2 mb-3 cursor-pointer transition-all
+                    p-4 rounded-lg border-2 mb-3 cursor-pointer transition-colors
                     ${isSelected ? 'border-blue-500 bg-blue-50/50' : 'border-dashed border-border-light bg-surface-light'}
                 `}
             >
@@ -62,7 +67,7 @@ export function SortableField({ field, isSelected, onSelect, onDelete }: Sortabl
                 onSelect(field.id);
             }}
             className={`
-                group relative p-4 rounded-lg border-2 mb-3 cursor-pointer transition-all bg-white
+                group relative p-4 rounded-lg border-2 mb-3 cursor-pointer transition-colors bg-white
                 ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-transparent hover:border-border-light shadow-sm'}
             `}
         >

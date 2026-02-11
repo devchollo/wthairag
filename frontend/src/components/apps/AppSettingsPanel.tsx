@@ -16,7 +16,9 @@ import {
     Settings,
     ChevronDown,
     ChevronRight,
-    AlertTriangle
+    AlertTriangle,
+    Plus,
+    X
 } from 'lucide-react';
 
 interface AppSettingsPanelProps {
@@ -39,6 +41,7 @@ export function AppSettingsPanel({ app, workspaceId, onUpdate, onSave, saving }:
     const [bgUploading, setBgUploading] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
+    const [recipientInput, setRecipientInput] = useState('');
     const logoInputRef = useRef<HTMLInputElement>(null);
     const bgInputRef = useRef<HTMLInputElement>(null);
 
@@ -61,6 +64,28 @@ export function AppSettingsPanel({ app, workspaceId, onUpdate, onSave, saving }:
             .split(/[\n,;]+/)
             .map((v) => v.trim().toLowerCase())
             .filter(Boolean);
+
+    const addRecipients = (rawValue: string) => {
+        const additions = textToEmails(rawValue);
+        if (additions.length === 0) return;
+
+        onUpdate({
+            formSettings: {
+                ...formSettings,
+                recipients: Array.from(new Set([...(formSettings.recipients || []), ...additions])),
+            },
+        });
+        setRecipientInput('');
+    };
+
+    const removeRecipient = (email: string) => {
+        onUpdate({
+            formSettings: {
+                ...formSettings,
+                recipients: formSettings.recipients.filter((recipient) => recipient !== email),
+            },
+        });
+    };
 
     const emailsToText = (list: string[]) => list.join('\n');
 
@@ -473,19 +498,51 @@ export function AppSettingsPanel({ app, workspaceId, onUpdate, onSave, saving }:
                         <div className="space-y-3">
                             <div>
                                 <label className="text-xs font-bold block mb-1 text-text-primary">Recipients (To)</label>
-                                <textarea
-                                    className="w-full border border-border-light rounded-lg p-2.5 text-xs focus:border-blue-500 outline-none transition-all h-20 resize-none font-mono"
-                                    value={emailsToText(formSettings.recipients)}
-                                    onChange={(e) =>
-                                        onUpdate({
-                                            formSettings: {
-                                                ...formSettings,
-                                                recipients: textToEmails(e.target.value),
-                                            },
-                                        })
-                                    }
-                                    placeholder="admin@company.com"
-                                />
+                                <div className="space-y-2">
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            className="flex-1 border border-border-light rounded-lg p-2.5 text-xs focus:border-blue-500 outline-none transition-all font-mono"
+                                            value={recipientInput}
+                                            onChange={(e) => setRecipientInput(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    addRecipients(recipientInput);
+                                                }
+                                            }}
+                                            placeholder="admin@company.com (comma, semicolon, or newline separated)"
+                                        />
+                                        <button
+                                            type="button"
+                                            className="px-3 rounded-lg border border-border-light text-xs font-bold text-text-primary hover:bg-surface-light transition-colors flex items-center gap-1"
+                                            onClick={() => addRecipients(recipientInput)}
+                                        >
+                                            <Plus size={12} /> Add
+                                        </button>
+                                    </div>
+
+                                    <div className="min-h-12 border border-border-light rounded-lg p-2 bg-surface-light/30">
+                                        {formSettings.recipients.length > 0 ? (
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {formSettings.recipients.map((email) => (
+                                                    <span key={email} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-100 text-blue-800 text-[11px] font-semibold">
+                                                        {email}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeRecipient(email)}
+                                                            className="text-blue-700 hover:text-blue-900"
+                                                        >
+                                                            <X size={12} />
+                                                        </button>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-[11px] text-text-muted">No recipients added yet.</p>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
 
                             <div>

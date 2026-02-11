@@ -138,12 +138,18 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const sanitizeEmailList = (value: unknown): string[] => {
     if (!value) return [];
-    if (!Array.isArray(value)) return [];
+    const rawItems = Array.isArray(value)
+        ? value
+        : typeof value === 'string'
+            ? value.split(/[\n,;]+/)
+            : [];
 
-    return value
+    return rawItems
         .map((item) => (typeof item === 'string' ? item.trim().toLowerCase() : ''))
         .filter((item) => item.length > 0 && emailRegex.test(item));
 };
+
+const dedupeEmails = (emails: string[]): string[] => [...new Set(emails)];
 
 const prepareSubmission = (
     fields: IAppField[],
@@ -355,9 +361,9 @@ const processAndSendFormSubmission = async (
     const { allValues, labeledValues, rawValues, attachments } = prepared.data;
 
     const subject = (app.formSettings?.subject || DEFAULT_FORM_SUBJECT).trim() || DEFAULT_FORM_SUBJECT;
-    const recipients = sanitizeEmailList(app.formSettings?.recipients);
-    const cc = sanitizeEmailList(app.formSettings?.cc);
-    const bcc = sanitizeEmailList(app.formSettings?.bcc);
+    const recipients = dedupeEmails(sanitizeEmailList(app.formSettings?.recipients));
+    const cc = dedupeEmails(sanitizeEmailList(app.formSettings?.cc));
+    const bcc = dedupeEmails(sanitizeEmailList(app.formSettings?.bcc));
 
     if (recipients.length === 0) {
         return sendError(res, 'No valid recipient emails configured for this form app', 400);
@@ -545,6 +551,16 @@ export const updateApp = async (req: Request, res: Response) => {
             }
             if (fields[fields.length - 1].type !== 'submit') {
                 return sendError(res, 'Submit button must be the last field', 400);
+            }
+        }
+
+        if (updates.formSettings && typeof updates.formSettings === 'object') {
+            const settings = updates.formSettings as Record<string, unknown>;
+            settings.recipients = dedupeEmails(sanitizeEmailList(settings.recipients));
+            settings.cc = dedupeEmails(sanitizeEmailList(settings.cc));
+            settings.bcc = dedupeEmails(sanitizeEmailList(settings.bcc));
+            if (typeof settings.subject === 'string') {
+                settings.subject = settings.subject.trim() || DEFAULT_FORM_SUBJECT;
             }
         }
 
