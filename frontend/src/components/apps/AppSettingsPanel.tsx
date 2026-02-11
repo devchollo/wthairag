@@ -18,7 +18,10 @@ import {
     ChevronRight,
     AlertTriangle,
     Plus,
-    X
+    X,
+    Link2,
+    Copy,
+    Check
 } from 'lucide-react';
 
 interface AppSettingsPanelProps {
@@ -42,6 +45,7 @@ export function AppSettingsPanel({ app, workspaceId, onUpdate, onSave, saving }:
     const [deleting, setDeleting] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [recipientInput, setRecipientInput] = useState('');
+    const [copiedLink, setCopiedLink] = useState(false);
     const logoInputRef = useRef<HTMLInputElement>(null);
     const bgInputRef = useRef<HTMLInputElement>(null);
 
@@ -54,6 +58,14 @@ export function AppSettingsPanel({ app, workspaceId, onUpdate, onSave, saving }:
         anonymousSubmissions: app.formSettings?.anonymousSubmissions || false,
         improveWithAi: app.formSettings?.improveWithAi || false,
     };
+    const publicShare = {
+        enabled: app.publicShare?.enabled || false,
+        token: app.publicShare?.token || '',
+        expiresAt: app.publicShare?.expiresAt || null,
+    };
+
+    const frontendUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+    const publicShareUrl = publicShare.token ? `${frontendUrl}/app/public/${publicShare.token}` : '';
 
     const toggleSection = (key: string) => {
         setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -88,6 +100,17 @@ export function AppSettingsPanel({ app, workspaceId, onUpdate, onSave, saving }:
     };
 
     const emailsToText = (list: string[]) => list.join('\n');
+
+    const copyPublicShareUrl = async () => {
+        if (!publicShareUrl) return;
+        try {
+            await navigator.clipboard.writeText(publicShareUrl);
+            setCopiedLink(true);
+            setTimeout(() => setCopiedLink(false), 1400);
+        } catch {
+            alert('Could not copy link');
+        }
+    };
 
     // --- Logo Upload ---
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -640,6 +663,74 @@ export function AppSettingsPanel({ app, workspaceId, onUpdate, onSave, saving }:
                                 <p className="text-[10px] text-indigo-700 leading-tight">
                                     Secret fields stay masked from AI and are restored before email is sent.
                                 </p>
+                            </div>
+
+
+                            <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100 space-y-2">
+                                <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        className="w-4 h-4 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500"
+                                        checked={publicShare.enabled}
+                                        onChange={(e) =>
+                                            onUpdate({
+                                                publicShare: {
+                                                    ...publicShare,
+                                                    enabled: e.target.checked,
+                                                    expiresAt: publicShare.expiresAt,
+                                                },
+                                            })
+                                        }
+                                    />
+                                    <span className="font-bold text-emerald-800 flex items-center gap-1">
+                                        <Link2 size={12} /> Public share link
+                                    </span>
+                                </label>
+                                <p className="text-[10px] text-emerald-700 leading-tight">
+                                    Workspace members keep access. Public users with the unique URL can open and submit the form until it expires.
+                                </p>
+
+                                {publicShare.enabled && (
+                                    <>
+                                        <div>
+                                            <label className="text-[11px] font-bold block mb-1 text-emerald-900">Expires At (optional)</label>
+                                            <input
+                                                type="datetime-local"
+                                                className="w-full border border-emerald-200 rounded-lg p-2 text-xs focus:border-emerald-500 outline-none transition-all"
+                                                value={publicShare.expiresAt ? new Date(publicShare.expiresAt).toISOString().slice(0, 16) : ''}
+                                                onChange={(e) =>
+                                                    onUpdate({
+                                                        publicShare: {
+                                                            ...publicShare,
+                                                            enabled: true,
+                                                            expiresAt: e.target.value ? new Date(e.target.value).toISOString() : null,
+                                                        },
+                                                    })
+                                                }
+                                            />
+                                        </div>
+
+                                        <div className="rounded-lg border border-emerald-200 bg-white p-2">
+                                            <p className="text-[10px] font-bold text-emerald-800 mb-1 uppercase">Share URL</p>
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="text"
+                                                    readOnly
+                                                    value={publicShareUrl || 'Save changes to generate a share URL'}
+                                                    className="flex-1 border border-emerald-100 rounded-md px-2 py-1.5 text-[11px] text-emerald-900 bg-emerald-50"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={copyPublicShareUrl}
+                                                    disabled={!publicShareUrl}
+                                                    className="px-2 py-1.5 rounded-md border border-emerald-200 text-emerald-700 text-[11px] font-bold hover:bg-emerald-100 disabled:opacity-50 inline-flex items-center gap-1"
+                                                >
+                                                    {copiedLink ? <><Check size={12} /> Copied</> : <><Copy size={12} /> Copy</>}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
                     )}

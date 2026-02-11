@@ -61,6 +61,11 @@ export interface IApp extends Document {
   enabled: boolean;
   allowAiImprove: boolean;
   formSettings: IAppFormSettings;
+  publicShare: {
+    enabled: boolean;
+    token?: string;
+    expiresAt?: Date | null;
+  };
   layout: IAppLayout;
   fields: IAppField[];
   createdAt: Date;
@@ -125,6 +130,11 @@ const AppSchema: Schema = new Schema(
       subject: { type: String, default: "New Form Submission", trim: true },
       anonymousSubmissions: { type: Boolean, default: false },
       improveWithAi: { type: Boolean, default: false },
+    },
+    publicShare: {
+      enabled: { type: Boolean, default: false },
+      token: { type: String, trim: true, index: true },
+      expiresAt: { type: Date, default: null },
     },
     layout: {
       header: {

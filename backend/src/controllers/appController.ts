@@ -5,6 +5,7 @@ import { AIService } from '../services/aiService';
 import { getUploadUrl, uploadFile } from '../services/s3Service';
 import { sendFormSubmissionEmail } from '../services/emailService';
 import sharp from 'sharp';
+import crypto from 'crypto';
 
 type SubmittedFieldValue = {
     label: string;
@@ -20,6 +21,15 @@ type PreparedSubmission = {
 };
 
 const DEFAULT_FORM_SUBJECT = 'New Form Submission';
+const PUBLIC_SHARE_TOKEN_BYTES = 18;
+
+const generatePublicShareToken = () => crypto.randomBytes(PUBLIC_SHARE_TOKEN_BYTES).toString('base64url');
+
+const isPublicShareValid = (app: { publicShare?: { enabled?: boolean; token?: string; expiresAt?: Date | null } }) => {
+    if (!app.publicShare?.enabled || !app.publicShare?.token) return false;
+    if (!app.publicShare.expiresAt) return true;
+    return new Date(app.publicShare.expiresAt).getTime() > Date.now();
+};
 
 const normalizeMarkdownText = (value: unknown): string => {
     if (value === null || value === undefined) return '_No value provided_';
@@ -334,14 +344,14 @@ const resolveFilesByFieldId = (req: Request): Record<string, Express.Multer.File
 const processAndSendFormSubmission = async (
     req: Request,
     res: Response,
-    appId: string | string[],
+    appSource: string | string[] | any,
     inputs: Record<string, any>,
-    filesByFieldId: Record<string, Express.Multer.File>
+    filesByFieldId: Record<string, Express.Multer.File>,
+    submitterLabelOverride?: string
 ) => {
-    const resolvedAppId = Array.isArray(appId) ? appId[0] : appId;
-    if (!resolvedAppId) return sendError(res, 'App ID required', 400);
-
-    const app = await App.findOne({ _id: resolvedAppId, workspaceId: req.workspace!._id });
+    const app = typeof appSource === 'string' || Array.isArray(appSource)
+        ? await App.findOne({ _id: Array.isArray(appSource) ? appSource[0] : appSource, workspaceId: req.workspace!._id })
+        : appSource;
 
     if (!app) return sendError(res, 'App not found', 404);
     if (app.tag !== 'form') return sendError(res, 'Only form apps can be submitted here', 400);
@@ -400,9 +410,9 @@ const processAndSendFormSubmission = async (
 
     renderedMarkdown = replaceSecretPlaceholders(renderedMarkdown, allValues);
 
-    const submitterLabel = app.formSettings?.anonymousSubmissions
+    const submitterLabel = submitterLabelOverride || (app.formSettings?.anonymousSubmissions
         ? 'Anonymous'
-        : `${req.user?.name || 'Unknown User'} <${req.user?.email || 'Unknown Email'}>`;
+        : `${req.user?.name || 'Unknown User'} <${req.user?.email || 'Unknown Email'}>`);
 
     const emailSent = await sendFormSubmissionEmail({
         to: recipients,
@@ -466,6 +476,11 @@ export const createApp = async (req: Request, res: Response) => {
                 subject: DEFAULT_FORM_SUBJECT,
                 anonymousSubmissions: false,
                 improveWithAi: false,
+            },
+            publicShare: {
+                enabled: false,
+                token: generatePublicShareToken(),
+                expiresAt: null,
             },
             layout: {
                 header: {},
@@ -546,6 +561,21 @@ export const updateApp = async (req: Request, res: Response) => {
             if (typeof settings.subject === 'string') {
                 settings.subject = settings.subject.trim() || DEFAULT_FORM_SUBJECT;
             }
+        }
+
+        if (updates.publicShare && typeof updates.publicShare === 'object') {
+            const publicShare = updates.publicShare as Record<string, unknown>;
+            const enabled = publicShare.enabled === true;
+            const expiresAt = typeof publicShare.expiresAt === 'string' || publicShare.expiresAt instanceof Date
+                ? new Date(publicShare.expiresAt as string | Date)
+                : null;
+
+            if (enabled && (!publicShare.token || typeof publicShare.token !== 'string' || publicShare.token.trim().length === 0)) {
+                publicShare.token = generatePublicShareToken();
+            }
+
+            publicShare.enabled = enabled;
+            publicShare.expiresAt = expiresAt && !Number.isNaN(expiresAt.getTime()) ? expiresAt : null;
         }
 
         const app = await App.findOneAndUpdate(
@@ -633,6 +663,61 @@ export const submitFormApp = async (req: Request, res: Response) => {
     } catch (error: any) {
         console.error('Submit Form Error:', error);
         return sendError(res, 'Failed to submit form app', 500);
+    }
+};
+
+export const getPublicSharedApp = async (req: Request, res: Response) => {
+    try {
+        const { shareToken } = req.params;
+        if (!shareToken) return sendError(res, 'Share token required', 400);
+
+        const app = await App.findOne({
+            'publicShare.token': shareToken,
+            tag: 'form',
+            status: 'published',
+            enabled: true,
+        });
+
+        if (!app || !isPublicShareValid(app)) {
+            return sendError(res, 'Shared form not found or expired', 404);
+        }
+
+        return sendSuccess(res, app, 'Shared app details');
+    } catch (error: any) {
+        return sendError(res, 'Failed to fetch shared app', 500);
+    }
+};
+
+export const submitPublicSharedApp = async (req: Request, res: Response) => {
+    try {
+        const { shareToken } = req.params;
+        if (!shareToken) return sendError(res, 'Share token required', 400);
+
+        const app = await App.findOne({
+            'publicShare.token': shareToken,
+            tag: 'form',
+            status: 'published',
+            enabled: true,
+        });
+
+        if (!app || !isPublicShareValid(app)) {
+            return sendError(res, 'Shared form not found or expired', 404);
+        }
+
+        const inputs = parseRawInputs(req.body?.inputs);
+        const filesByFieldId = resolveFilesByFieldId(req);
+
+        return processAndSendFormSubmission(
+            req,
+            res,
+            app,
+            inputs,
+            filesByFieldId,
+            app.formSettings?.anonymousSubmissions ? 'Anonymous (Public Link)' : 'Public User'
+        );
+    } catch (error: any) {
+        console.error('Submit Public Form Error:', error);
+        return sendError(res, 'Failed to submit shared form app', 500);
     }
 };
 

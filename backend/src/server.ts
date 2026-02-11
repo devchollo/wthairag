@@ -103,12 +103,14 @@ import membershipRoutes from './routes/membership';
 import analyticsRoutes from './routes/analytics';
 import adminRoutes from './routes/admin';
 import appRoutes from './routes/apps';
+import publicAppRoutes from './routes/publicApps';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/tools', toolsRoutes);
 app.use('/api/workspace', workspaceRoutes);
 app.use('/api/workspaces', workspaceRoutes); // Alias for plural usage
 app.use('/api/workspaces/:workspaceId/apps', appRoutes); // Apps sub-route
+app.use('/api/apps/public', publicAppRoutes);
 app.use('/api/workspace-data', workspaceDataRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/files', filesRoutes);
