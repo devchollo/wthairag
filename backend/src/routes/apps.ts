@@ -38,8 +38,8 @@ router.use(workspaceOverlay);
 // Public-ish routes (Members/Viewers)
 router.get('/', getApps);
 router.get('/:appId', getApp);
-router.post('/:appId/run', aiLimiter, runApp);
-router.post('/:appId/submit', formSubmitUpload.any(), aiLimiter, submitFormApp);
+router.post('/:appId/run', aiLimiter, formSubmitUpload.any(), runApp);
+router.post('/:appId/submit', aiLimiter, formSubmitUpload.any(), submitFormApp);
 
 // Admin-only routes
 router.post('/', authorize('owner', 'admin'), createApp);
