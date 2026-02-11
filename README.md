@@ -38,7 +38,7 @@ It is designed for teams and individuals who want:
 
 ### 1) Clone the repository
 ```bash
-git clone [<your-repo-url>](https://github.com/devchollo/wthairag.git)
+git clone https://github.com/devchollo/wthairag.git
 cd wthairag
 ```
 
