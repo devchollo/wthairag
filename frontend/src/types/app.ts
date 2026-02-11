@@ -1,4 +1,4 @@
-export type AppFieldType = 'text' | 'textarea' | 'radio' | 'checkbox' | 'message' | 'submit' | 'email' | 'phone' | 'number' | 'list' | 'date';
+export type AppFieldType = 'text' | 'textarea' | 'radio' | 'checkbox' | 'message' | 'submit' | 'email' | 'phone' | 'number' | 'list' | 'date' | 'file';
 
 export interface IAppField {
     id: string;
@@ -6,9 +6,19 @@ export interface IAppField {
     label?: string;
     required?: boolean;
     isSecret?: boolean;
+    acceptedFileTypes?: string;
     options?: { label: string; value: string }[];
     messageHtml?: string;
     submitText?: string;
+}
+
+export interface IAppFormSettings {
+    recipients: string[];
+    cc: string[];
+    bcc: string[];
+    subject: string;
+    anonymousSubmissions: boolean;
+    improveWithAi: boolean;
 }
 
 export interface IAppBackground {
@@ -37,6 +47,7 @@ export interface IApp {
     launchMode: 'modal' | 'new_tab';
     enabled: boolean;
     allowAiImprove: boolean;
+    formSettings?: IAppFormSettings;
     layout: IAppLayout;
     fields: IAppField[];
     createdAt: string;

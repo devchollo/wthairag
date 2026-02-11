@@ -1,7 +1,7 @@
 'use client';
 
 import { IAppField } from '@/types/app';
-import { Type, AlignLeft, CheckSquare, Info, Trash2, Mail, Phone, Hash, List, Calendar } from 'lucide-react';
+import { Type, AlignLeft, CheckSquare, Info, Trash2, Mail, Phone, Hash, List, Calendar, Paperclip } from 'lucide-react';
 
 interface FieldInspectorProps {
     field: IAppField | null;
@@ -33,6 +33,7 @@ export function FieldInspector({ field, onUpdate, onDelete }: FieldInspectorProp
                     {field.type === 'number' && <Hash size={12} />}
                     {field.type === 'list' && <List size={12} />}
                     {field.type === 'date' && <Calendar size={12} />}
+                    {field.type === 'file' && <Paperclip size={12} />}
                     {field.type} Properties
                 </span>
                 <button 
@@ -113,6 +114,20 @@ export function FieldInspector({ field, onUpdate, onDelete }: FieldInspectorProp
                             onChange={(e) => onUpdate(field.id, { messageHtml: e.target.value })}
                             placeholder="<p>Enter your text here...</p>"
                         />
+                    </div>
+                )}
+
+                {field.type === 'file' && (
+                    <div>
+                        <label className="text-xs font-bold block mb-1 text-text-primary">Accepted File Types</label>
+                        <input
+                            type="text"
+                            className="w-full border border-border-light rounded-lg p-2 text-sm focus:border-blue-500 outline-none"
+                            value={field.acceptedFileTypes || ''}
+                            onChange={(e) => onUpdate(field.id, { acceptedFileTypes: e.target.value })}
+                            placeholder=".pdf,.png,.jpg,.doc,.docx"
+                        />
+                        <p className="text-[10px] text-text-muted mt-1">Comma-separated list for browser-level file filter.</p>
                     </div>
                 )}
 

@@ -88,6 +88,7 @@ export function SortableField({ field, isSelected, onSelect, onDelete }: Sortabl
                              <div key={i} className="flex items-center gap-2"><div className="w-4 h-4 rounded-full border"></div> <span>{opt.label}</span></div>
                          ))}
                     </div>}
+                    {field.type === 'file' && <input type="file" className="input-base" disabled />}
                     {field.type === 'message' && <div className="p-4 bg-blue-50 text-blue-800 rounded text-sm">Message / Instructions Preview</div>}
                 </div>
             </div>

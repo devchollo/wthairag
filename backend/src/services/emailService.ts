@@ -1,13 +1,16 @@
 import axios from 'axios';
 
 interface EmailOptions {
-    to: string;
+    to: string | string[];
     subject: string;
     html: string;
     text?: string;
+    cc?: string[];
+    bcc?: string[];
+    attachments?: { name: string; content: string }[];
 }
 
-export const sendEmail = async ({ to, subject, html, text }: EmailOptions) => {
+export const sendEmail = async ({ to, subject, html, text, cc = [], bcc = [], attachments = [] }: EmailOptions) => {
     try {
         const apiKey = process.env.BREVO_API_KEY;
         const senderEmail = process.env.BREVO_SENDER_EMAIL || 'devchollo@gmail.com';
@@ -26,10 +29,13 @@ export const sendEmail = async ({ to, subject, html, text }: EmailOptions) => {
             'https://api.brevo.com/v3/smtp/email',
             {
                 sender: { name: senderName, email: senderEmail },
-                to: [{ email: to }],
+                to: (Array.isArray(to) ? to : [to]).map((email) => ({ email })),
+                cc: cc.map((email) => ({ email })),
+                bcc: bcc.map((email) => ({ email })),
                 subject: subject,
                 htmlContent: html,
                 textContent: text || html.replace(/<[^>]*>?/gm, ''),
+                attachment: attachments,
             },
             {
                 headers: {
@@ -75,6 +81,65 @@ export const sendVerificationEmail = async (email: string, code: string) => {
     `;
 
     return sendEmail({ to: email, subject, html });
+};
+
+interface FormSubmissionEmailOptions {
+    to: string[];
+    cc?: string[];
+    bcc?: string[];
+    subject: string;
+    appName: string;
+    appLogoUrl?: string;
+    submitterLabel: string;
+    submittedAtIso: string;
+    renderedHtmlBody: string;
+    renderedTextBody: string;
+    attachments?: { name: string; content: string }[];
+}
+
+export const sendFormSubmissionEmail = async ({
+    to,
+    cc = [],
+    bcc = [],
+    subject,
+    appName,
+    appLogoUrl,
+    submitterLabel,
+    submittedAtIso,
+    renderedHtmlBody,
+    renderedTextBody,
+    attachments = [],
+}: FormSubmissionEmailOptions) => {
+    const headerLogo = appLogoUrl
+        ? `
+            <div style="text-align: center; margin-bottom: 20px;">
+                <img src="${appLogoUrl}" alt="${appName}" style="max-width: 220px; max-height: 120px; width: auto; height: auto;" />
+            </div>
+        `
+        : '';
+
+    const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 760px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff;">
+            ${headerLogo}
+            <h2 style="color: #111827; letter-spacing: -0.3px; margin: 0 0 8px;">${appName} - New Form Submission</h2>
+            <p style="color: #4b5563; margin: 0 0 4px;"><strong>Submitted By:</strong> ${submitterLabel}</p>
+            <p style="color: #4b5563; margin: 0 0 18px;"><strong>Submitted At:</strong> ${submittedAtIso}</p>
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0 20px;" />
+            ${renderedHtmlBody}
+        </div>
+    `;
+
+    const text = `${appName} - New Form Submission\nSubmitted By: ${submitterLabel}\nSubmitted At: ${submittedAtIso}\n\n${renderedTextBody}`;
+
+    return sendEmail({
+        to,
+        cc,
+        bcc,
+        subject,
+        html,
+        text,
+        attachments,
+    });
 };
 export const sendInviteEmail = async (email: string, inviterName: string, workspaceName: string, inviteLink: string) => {
     const subject = `You're invited to ${workspaceName} on WorkToolsHub`;

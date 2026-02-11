@@ -1,7 +1,7 @@
 'use client';
 
 import { useDraggable } from '@dnd-kit/core';
-import { Type, AlignLeft, CheckSquare, Info, CircleDot, Mail, Phone, Hash, List, Calendar } from 'lucide-react';
+import { Type, AlignLeft, CheckSquare, Info, CircleDot, Mail, Phone, Hash, List, Calendar, Paperclip } from 'lucide-react';
 import { AppFieldType } from '@/types/app';
 
 interface SidebarItemProps {
@@ -30,6 +30,7 @@ export function SidebarItem({ type, label }: SidebarItemProps) {
         number: Hash,
         list: List,
         date: Calendar,
+        file: Paperclip,
         submit: null // Submit is not draggable from sidebar, it's always there or added via special action? 
                      // Requirement says "Exactly one Submit button... Submit button must always be last".
                      // So maybe we don't drag it, it's just fixed at bottom or we append it automatically.
