@@ -54,6 +54,7 @@ export default function AppBuilderPage({ params }: { params: Promise<{ workspace
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [hasUnsaved, setHasUnsaved] = useState(false);
+    const [bannerMessage, setBannerMessage] = useState<{ type: 'error' | 'info'; text: string } | null>(null);
     
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -134,7 +135,7 @@ export default function AppBuilderPage({ params }: { params: Promise<{ workspace
             setTimeout(() => setSaveSuccess(false), 2000);
             await fetchApp();
         } catch (err: any) {
-            alert('Error saving: ' + err.message);
+            setBannerMessage({ type: 'error', text: `Error saving: ${err.message}` });
         } finally {
             setSaving(false);
         }
@@ -149,6 +150,11 @@ export default function AppBuilderPage({ params }: { params: Promise<{ workspace
 
     // Field management
     const addField = (type: AppFieldType) => {
+        if (type === 'file' && app?.tag === 'generator') {
+            setBannerMessage({ type: 'info', text: 'File upload fields are available only for Form apps.' });
+            return;
+        }
+
         const newField: IAppField = {
             id: `field-${Date.now()}`,
             type,
@@ -238,6 +244,7 @@ export default function AppBuilderPage({ params }: { params: Promise<{ workspace
                     <div className="border-l border-border-light pl-3">
                         <h1 className="font-black text-sm text-text-primary leading-tight">{app.name}</h1>
                         <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700">Beta v0.2</span>
                             <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded-full ${
                                 app.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                             }`}>{app.status}</span>
@@ -271,6 +278,15 @@ export default function AppBuilderPage({ params }: { params: Promise<{ workspace
             </div>
 
             {/* Main Content */}
+            {bannerMessage && (
+                <div className={`mx-4 mt-3 inline-flex items-center self-start rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide ${
+                    bannerMessage.type === 'error'
+                        ? 'bg-red-100 text-red-700 border border-red-200'
+                        : 'bg-amber-100 text-amber-800 border border-amber-200'
+                }`}>
+                    {bannerMessage.text}
+                </div>
+            )}
             <DndContext 
                 sensors={sensors} 
                 collisionDetection={closestCenter} 
@@ -318,7 +334,12 @@ export default function AppBuilderPage({ params }: { params: Promise<{ workspace
                                             <SidebarItem type="number" label="Number" />
                                             <SidebarItem type="list" label="Dropdown List" />
                                             <SidebarItem type="date" label="Date Picker" />
-                                            <SidebarItem type="file" label="File Upload" />
+                                            <SidebarItem
+                                                type="file"
+                                                label="File Upload"
+                                                disabled={app.tag === 'generator'}
+                                                disabledBadgeText={app.tag === 'generator' ? 'Form only' : undefined}
+                                            />
                                             <SidebarItem type="checkbox" label="Checkbox" />
                                             <SidebarItem type="radio" label="Radio Group" />
                                             <SidebarItem type="message" label="Info Message" />

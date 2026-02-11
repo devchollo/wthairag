@@ -26,6 +26,7 @@ export default function WorkspaceAppsPage({ params }: { params: Promise<{ worksp
     const [loading, setLoading] = useState(true);
     const router = useRouter();
     const [error, setError] = useState('');
+    const [bannerMessage, setBannerMessage] = useState<{ type: 'error' | 'info'; text: string } | null>(null);
 
     const membership = memberships.find(m => m.workspaceId._id === workspaceId);
     const isAdmin = membership && ['owner', 'admin'].includes(membership.role);
@@ -72,7 +73,7 @@ export default function WorkspaceAppsPage({ params }: { params: Promise<{ worksp
             const data = await res.json();
             router.push(`/workspace/${workspaceId}/apps/${data.data._id}/builder`);
         } catch (err: any) {
-            alert('Failed to create app: ' + err.message);
+            setBannerMessage({ type: 'error', text: `Failed to create app: ${err.message}` });
         }
     };
 
@@ -84,6 +85,7 @@ export default function WorkspaceAppsPage({ params }: { params: Promise<{ worksp
                 <div>
                     <h1 className="text-2xl font-black text-text-primary tracking-tight">Workspace Apps</h1>
                     <p className="text-text-muted font-medium mt-1">Manage and run your custom tools.</p>
+                    <span className="mt-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-100 text-indigo-700">Beta v0.2</span>
                 </div>
                 {isAdmin && (
                     <button
@@ -95,6 +97,16 @@ export default function WorkspaceAppsPage({ params }: { params: Promise<{ worksp
                     </button>
                 )}
             </div>
+
+            {bannerMessage && (
+                <div className={`mb-4 inline-flex items-center rounded-full px-4 py-2 text-[11px] font-bold uppercase tracking-wide ${
+                    bannerMessage.type === 'error'
+                        ? 'bg-red-100 text-red-700 border border-red-200'
+                        : 'bg-amber-100 text-amber-800 border border-amber-200'
+                }`}>
+                    {bannerMessage.text}
+                </div>
+            )}
 
             {error && (
                 <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6 border border-red-100">
@@ -138,6 +150,9 @@ export default function WorkspaceAppsPage({ params }: { params: Promise<{ worksp
                                                 app.tag === 'generator' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'
                                             }`}>
                                                 {app.tag}
+                                            </span>
+                                            <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                                                Beta v0.2
                                             </span>
                                             {app.status === 'draft' && (
                                                 <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">

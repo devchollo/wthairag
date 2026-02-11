@@ -28,6 +28,9 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
     const [copied, setCopied] = useState(false);
     const [viewMode, setViewMode] = useState<'rendered' | 'raw'>('raw');
     const [submissionMode, setSubmissionMode] = useState<'generator' | 'form' | null>(null);
+    const [bannerMessage, setBannerMessage] = useState<{ type: 'error' | 'info'; text: string } | null>(null);
+    const [initialInputs, setInitialInputs] = useState<Record<string, any>>({});
+    const [initialFileInputs, setInitialFileInputs] = useState<Record<string, File | null>>({});
 
     const fetchApp = useCallback(async () => {
         try {
@@ -54,6 +57,8 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
 
             setInputs(defaults);
             setFileInputs(fileDefaults);
+            setInitialInputs(defaults);
+            setInitialFileInputs(fileDefaults);
         } catch (err) {
             console.error(err);
         } finally {
@@ -73,15 +78,14 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
         setSubmittedValues(null);
         setAiImproved(false);
         setSubmissionMode(null);
+        setBannerMessage(null);
 
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-            const isForm = app?.tag === 'form';
-            const endpoint = isForm
-                ? `${apiUrl}/api/workspaces/${workspaceId}/apps/${appId}/submit`
-                : `${apiUrl}/api/workspaces/${workspaceId}/apps/${appId}/run`;
+            const hasFileFields = (app?.fields || []).some((field) => field.type === 'file');
+            const endpoint = `${apiUrl}/api/workspaces/${workspaceId}/apps/${appId}/run`;
 
-            const requestInit: RequestInit = isForm
+            const requestInit: RequestInit = hasFileFields
                 ? (() => {
                       const formData = new FormData();
                       formData.append('inputs', JSON.stringify(inputs));
@@ -127,7 +131,7 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
                 setSubmittedValues(data.data.submittedValues);
             }
         } catch (err: any) {
-            alert('Error: ' + err.message);
+            setBannerMessage({ type: 'error', text: `Error: ${err.message}` });
         } finally {
             setSubmitting(false);
         }
@@ -202,9 +206,27 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
                             <img src={app.layout.header.logoUrl} alt="Logo" className="h-auto w-auto max-w-[300px] max-h-[300px] mx-auto mb-4 object-contain rounded-lg" />
                         )}
                         <h1 className="text-3xl font-black text-text-primary tracking-tight">{app.name}</h1>
+                        <div className="mt-2 flex items-center justify-center gap-2">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-100 text-indigo-700">Beta v0.2</span>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                                app.tag === 'generator' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                            }`}>
+                                {app.tag}
+                            </span>
+                        </div>
                         {app.description && <p className="text-text-muted mt-1.5 text-sm">{app.description}</p>}
                         {app.layout?.header?.subtitle && <p className="text-text-muted mt-2 font-medium">{app.layout.header.subtitle}</p>}
                     </div>
+
+                    {bannerMessage && (
+                        <div className={`mx-8 mt-6 rounded-full px-4 py-2 text-[11px] font-bold uppercase tracking-wide inline-flex items-center ${
+                            bannerMessage.type === 'error'
+                                ? 'bg-red-100 text-red-700 border border-red-200'
+                                : 'bg-amber-100 text-amber-800 border border-amber-200'
+                        }`}>
+                            {bannerMessage.text}
+                        </div>
+                    )}
 
                     {hasOutput && (
                         <div className="p-8 bg-blue-50 border-b border-blue-100">
@@ -282,7 +304,9 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
                                     setAiImproved(false);
                                     setSubmissionMode(null);
                                     setViewMode('rendered');
-                                    setFileInputs((prev) => Object.fromEntries(Object.keys(prev).map((k) => [k, null])));
+                                    setInputs(initialInputs);
+                                    setFileInputs(initialFileInputs);
+                                    setBannerMessage(null);
                                 }}
                                 className="mt-4 text-xs font-bold text-blue-600 hover:underline"
                             >

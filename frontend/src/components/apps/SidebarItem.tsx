@@ -7,15 +7,18 @@ import { AppFieldType } from '@/types/app';
 interface SidebarItemProps {
     type: AppFieldType;
     label: string;
+    disabled?: boolean;
+    disabledBadgeText?: string;
 }
 
-export function SidebarItem({ type, label }: SidebarItemProps) {
+export function SidebarItem({ type, label, disabled = false, disabledBadgeText }: SidebarItemProps) {
     const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
         id: `sidebar-${type}`,
         data: {
             type: 'sidebar-item',
             fieldType: type
-        }
+        },
+        disabled,
     });
 
     const Icon = {
@@ -46,13 +49,19 @@ export function SidebarItem({ type, label }: SidebarItemProps) {
             {...listeners} 
             {...attributes}
             className={`
-                p-3 border border-border-light rounded bg-white cursor-grab flex items-center gap-3
-                hover:border-blue-500 hover:shadow-sm transition-all
+                p-3 border border-border-light rounded bg-white flex items-center gap-3
+                transition-all
+                ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-grab hover:border-blue-500 hover:shadow-sm'}
                 ${isDragging ? 'opacity-50' : ''}
             `}
         >
             <Icon size={16} className="text-text-muted" />
-            <span className="text-sm font-medium text-text-primary">{label}</span>
+            <span className="text-sm font-medium text-text-primary flex-1">{label}</span>
+            {disabled && disabledBadgeText && (
+                <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded-full bg-gray-200 text-gray-700 tracking-wide">
+                    {disabledBadgeText}
+                </span>
+            )}
         </div>
     );
 }
