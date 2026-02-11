@@ -57,7 +57,7 @@ export default function AppBuilderPage({ params }: { params: Promise<{ workspace
     
     const sensors = useSensors(
         useSensor(PointerSensor, {
-            activationConstraint: { distance: 5 },
+            activationConstraint: { distance: 2 },
         }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
@@ -400,7 +400,7 @@ export default function AppBuilderPage({ params }: { params: Promise<{ workspace
                     </div>
                 </div>
                 
-                <DragOverlay>
+                <DragOverlay dropAnimation={null}>
                     {activeDragItem ? (
                         <div className="p-3 bg-white border-2 border-blue-500 shadow-2xl rounded-lg opacity-90 cursor-grabbing text-sm font-bold text-blue-600">
                             + Adding field
