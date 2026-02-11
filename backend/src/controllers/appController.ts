@@ -191,8 +191,13 @@ export const runApp = async (req: Request, res: Response) => {
 
         if (app.tag === 'generator') {
             const context = `Inputs:\n${JSON.stringify(labeledValues, null, 2)}`;
+            const workspaceId = req.workspace!._id.toString();
+            const allowAiImprove = app.allowAiImprove === true;
+            const rawValues = Object.fromEntries(
+                Object.entries(allValues).map(([fieldId, fieldData]) => [fieldId, fieldData.value])
+            );
 
-            let baseSystemPrompt = `You are a helpful AI generator assistant.
+            const baseSystemPrompt = `You are a helpful AI generator assistant.
 Your goal is to process the provided input and generate a clean, direct output based on the user's request.
 IMPORTANT RULES:
 1. Return ONLY the result text. Do not define what it is.
@@ -205,18 +210,16 @@ IMPORTANT RULES:
             let resultText = '';
             let aiImproved = false;
 
-            // Step 1: Draft Generation
-            const draftResponse = await AIService.getQueryResponse(
-                "Generate the result based on these inputs.",
-                context,
-                req.workspace!._id.toString(),
-                baseSystemPrompt, // No improvement instructions yet
-                2000
-            );
-            resultText = draftResponse.answer;
+            if (allowAiImprove) {
+                const draftResponse = await AIService.getQueryResponse(
+                    "Generate the result based on these inputs.",
+                    context,
+                    workspaceId,
+                    baseSystemPrompt,
+                    2000
+                );
+                resultText = draftResponse.answer;
 
-            // Step 2: AI Improvement (if enabled)
-            if (app.allowAiImprove) {
                 const improvementPrompt = `
 You are an expert editor and robust AI assistant.
 Your task is to IMPROVE the provided text for grammar, clarity, structure, and professional polish.
@@ -229,13 +232,16 @@ CRITICAL INSTRUCTIONS:
 `;
                 const improvedResponse = await AIService.getQueryResponse(
                     "Improve this text while preserving placeholders/headers.",
-                    resultText, // The draft becomes the context
-                    req.workspace!._id.toString(),
+                    resultText,
+                    workspaceId,
                     improvementPrompt,
                     2000
                 );
                 resultText = improvedResponse.answer;
                 aiImproved = true;
+            } else {
+                // Explicit no-AI path: send raw values back to frontend only.
+                resultText = '';
             }
 
             // Post-processing: Replace Secret Placeholders with Actual Values
@@ -251,6 +257,7 @@ CRITICAL INSTRUCTIONS:
 
             return sendSuccess(res, {
                 resultText,
+                rawValues,
                 mode: 'generator',
                 aiImproved,
                 submittedValues: allValues

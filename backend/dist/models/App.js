@@ -38,7 +38,7 @@ const FieldSchema = new mongoose_1.Schema({
     id: { type: String, required: true },
     type: {
         type: String,
-        enum: ["text", "textarea", "radio", "checkbox", "message", "submit"],
+        enum: ["text", "textarea", "radio", "checkbox", "message", "submit", "email", "phone", "number", "list", "date"],
         required: true,
     },
     label: { type: String },
@@ -61,6 +61,7 @@ const AppSchema = new mongoose_1.Schema({
         index: true,
     },
     name: { type: String, required: true, trim: true },
+    description: { type: String, trim: true },
     status: {
         type: String,
         enum: ["draft", "published"],
@@ -77,11 +78,22 @@ const AppSchema = new mongoose_1.Schema({
         default: "modal",
     },
     enabled: { type: Boolean, default: true },
+    allowAiImprove: { type: Boolean, default: false },
     layout: {
         header: {
             logoUrl: String,
+            logoKey: String,
             title: String,
             subtitle: String,
+        },
+        background: {
+            type: {
+                type: String,
+                enum: ["solid", "gradient", "image"],
+                default: "solid",
+            },
+            value: { type: String, default: "#ffffff" },
+            imageKey: String,
         },
     },
     fields: [FieldSchema],

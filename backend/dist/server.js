@@ -122,9 +122,10 @@ mongoose_1.default
     .connect(MONGO_URI)
     .then(() => {
     console.log('MongoDB Connected');
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`);
     });
+    server.setTimeout(300000); // 5 minutes timeout
 })
     .catch((err) => {
     console.error('MongoDB Connection Error:', err);

@@ -21,6 +21,7 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
     const [submitting, setSubmitting] = useState(false);
     const [inputs, setInputs] = useState<Record<string, any>>({});
     const [result, setResult] = useState<string | null>(null);
+    const [rawValues, setRawValues] = useState<Record<string, any> | null>(null);
     const [submittedValues, setSubmittedValues] = useState<Record<string, SubmittedValue> | null>(null);
     const [aiImproved, setAiImproved] = useState(false);
     const [copied, setCopied] = useState(false);
@@ -57,6 +58,7 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
         e.preventDefault();
         setSubmitting(true);
         setResult(null);
+        setRawValues(null);
         setSubmittedValues(null);
         setAiImproved(false);
 
@@ -77,10 +79,15 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
             const data = await res.json();
             
             if (data.data.mode === 'generator') {
-                setResult(data.data.resultText);
+                const nextResult = typeof data.data.resultText === 'string' && data.data.resultText.trim().length > 0
+                    ? data.data.resultText
+                    : null;
+                setResult(nextResult);
+                setRawValues(data.data.rawValues || null);
                 setAiImproved(!!data.data.aiImproved);
             } else {
                 setResult(null);
+                setRawValues(null);
             }
 
             if (data.data.submittedValues) {
@@ -94,8 +101,9 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
     };
 
     const handleCopy = () => {
-        if (!result) return;
-        navigator.clipboard.writeText(result);
+        const textToCopy = result || (rawValues ? JSON.stringify(rawValues, null, 2) : '');
+        if (!textToCopy) return;
+        navigator.clipboard.writeText(textToCopy);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
@@ -113,6 +121,7 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
     const fields = app.fields || [];
     const submitField = fields.find(f => f.type === 'submit');
     const bg = app.layout?.background;
+    const hasOutput = !!result || !!rawValues;
 
     // Build background style for new_tab apps
     const bgStyle: React.CSSProperties = {};
@@ -158,11 +167,11 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
                     </div>
 
                     {/* Result Panel */}
-                    {result && (
+                    {hasOutput && (
                         <div className="p-8 bg-blue-50 border-b border-blue-100">
                              <div className="flex items-center justify-between mb-4">
                                  <h3 className="text-sm font-bold uppercase text-blue-800 flex items-center gap-2">
-                                     <Sparkles size={16} /> Generated Result
+                                     <Sparkles size={16} /> {result ? 'Generated Result' : 'Raw Submitted Values'}
                                      {aiImproved && (
                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-[10px] font-black uppercase">
                                              <Zap size={10} /> AI Enhanced
@@ -171,24 +180,26 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
                                  </h3>
                                  <div className="flex items-center gap-2">
                                      {/* View toggle */}
-                                     <div className="flex bg-white rounded-lg border border-blue-200 overflow-hidden">
-                                         <button
-                                             onClick={() => setViewMode('rendered')}
-                                             className={`px-2.5 py-1.5 text-[10px] font-bold flex items-center gap-1 transition-colors ${
-                                                 viewMode === 'rendered' ? 'bg-blue-600 text-white' : 'text-blue-600 hover:bg-blue-50'
-                                             }`}
-                                         >
-                                             <FileText size={10} /> Rendered
-                                         </button>
-                                         <button
-                                             onClick={() => setViewMode('raw')}
-                                             className={`px-2.5 py-1.5 text-[10px] font-bold flex items-center gap-1 transition-colors ${
-                                                 viewMode === 'raw' ? 'bg-blue-600 text-white' : 'text-blue-600 hover:bg-blue-50'
-                                             }`}
-                                         >
-                                             <Code size={10} /> Raw MD
-                                         </button>
-                                     </div>
+                                     {result && (
+                                        <div className="flex bg-white rounded-lg border border-blue-200 overflow-hidden">
+                                            <button
+                                                onClick={() => setViewMode('rendered')}
+                                                className={`px-2.5 py-1.5 text-[10px] font-bold flex items-center gap-1 transition-colors ${
+                                                    viewMode === 'rendered' ? 'bg-blue-600 text-white' : 'text-blue-600 hover:bg-blue-50'
+                                                }`}
+                                            >
+                                                <FileText size={10} /> Rendered
+                                            </button>
+                                            <button
+                                                onClick={() => setViewMode('raw')}
+                                                className={`px-2.5 py-1.5 text-[10px] font-bold flex items-center gap-1 transition-colors ${
+                                                    viewMode === 'raw' ? 'bg-blue-600 text-white' : 'text-blue-600 hover:bg-blue-50'
+                                                }`}
+                                            >
+                                                <Code size={10} /> Raw MD
+                                            </button>
+                                        </div>
+                                     )}
                                      <button onClick={handleCopy} className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-xs font-bold uppercase bg-white px-2.5 py-1.5 rounded-lg border border-blue-200">
                                          {copied ? <Check size={12} /> : <Copy size={12} />}
                                          {copied ? 'Copied' : 'Copy'}
@@ -213,24 +224,24 @@ export default function AppRunnerPage({ params }: { params: Promise<{ workspaceI
                                  </div>
                              )}
 
-                             {viewMode === 'rendered' ? (
+                             {result && viewMode === 'rendered' ? (
                                  <div className="prose prose-sm max-w-none bg-white p-6 rounded-xl border border-blue-100 shadow-sm">
                                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{result}</ReactMarkdown>
                                  </div>
                              ) : (
                                  <pre className="bg-gray-900 text-gray-100 p-6 rounded-xl border border-blue-100 shadow-sm text-sm font-mono whitespace-pre-wrap overflow-x-auto">
-                                     {result}
+                                     {result || JSON.stringify(rawValues || {}, null, 2)}
                                  </pre>
                              )}
 
-                             <button onClick={() => { setResult(null); setSubmittedValues(null); setAiImproved(false); setViewMode('rendered'); }} className="mt-4 text-xs font-bold text-blue-600 hover:underline">
+                             <button onClick={() => { setResult(null); setRawValues(null); setSubmittedValues(null); setAiImproved(false); setViewMode('rendered'); }} className="mt-4 text-xs font-bold text-blue-600 hover:underline">
                                  Start Over
                              </button>
                         </div>
                     )}
 
                     {/* Form */}
-                    {!result && (
+                    {!hasOutput && (
                         <form onSubmit={handleSubmit} className="p-8 space-y-6">
                             {fields.map(field => {
                                 if (field.type === 'submit') return null;
